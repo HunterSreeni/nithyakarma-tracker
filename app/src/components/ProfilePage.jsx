@@ -11,6 +11,16 @@ export default function ProfilePage() {
   const [showAdd, setShowAdd] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState('')
   const [error, setError] = useState(null)
+  const [optOut, setOptOut] = useState(profile.leaderboard_opt_out)
+
+  const toggleOptOut = async (checked) => {
+    setOptOut(checked) // optimistic - revert on failure
+    try {
+      await updateProfile({ leaderboard_opt_out: checked })
+    } catch {
+      setOptOut(!checked)
+    }
+  }
 
   const tp = tierProgress(profile.punya)
   const tier = tierFor(profile.punya)
@@ -101,8 +111,8 @@ export default function ProfilePage() {
       <div className="card">
         <div className="card-h">Privacy</div>
         <label className="checkbox-row" style={{ marginTop: 0 }}>
-          <input type="checkbox" checked={profile.leaderboard_opt_out}
-            onChange={e => updateProfile({ leaderboard_opt_out: e.target.checked })} />
+          <input type="checkbox" checked={optOut}
+            onChange={e => toggleOptOut(e.target.checked)} />
           Hide me from community leaderboards (only you can see your row)
         </label>
       </div>

@@ -88,6 +88,33 @@ test.describe.serial('Nithyakarma full journey', () => {
     await expect(page.getByRole('button', { name: 'Saved ✓' })).toBeVisible({ timeout: 15000 })
   })
 
+  test('leaderboard privacy opt-out persists', async () => {
+    const optOut = page.getByRole('checkbox', { name: /Hide me from community leaderboards/ })
+    await expect(optOut).not.toBeChecked()
+    const saved = page.waitForResponse(r =>
+      r.url().includes('/rest/v1/profiles') && r.request().method() === 'PATCH')
+    await optOut.check()
+    await saved
+    await page.reload()
+    await expect(page.getByRole('checkbox', { name: /Hide me from community leaderboards/ }))
+      .toBeChecked({ timeout: 15000 })
+    // own row must still be visible to the opted-out user
+    await page.getByRole('link', { name: /Sabha/ }).first().click()
+    await expect(page.locator('.lb-row.me')).toBeVisible({ timeout: 15000 })
+    await page.getByRole('link', { name: /Profile/ }).first().click()
+  })
+
+  test('notification toggle enables and saves the preference', async () => {
+    const toggle = page.getByRole('checkbox', { name: /Reminder notifications/ })
+    await expect(toggle).toBeEnabled({ timeout: 15000 })
+    await expect(toggle).not.toBeChecked()
+    await toggle.click() // state flips after async permission+save
+    await expect(toggle).toBeChecked({ timeout: 15000 })
+    await page.reload()
+    await expect(page.getByRole('checkbox', { name: /Reminder notifications/ }))
+      .toBeChecked({ timeout: 15000 })
+  })
+
   test('delete account cascades and returns to auth', async () => {
     await page.getByPlaceholder('Type DELETE').fill('DELETE')
     await page.getByRole('button', { name: /Delete my account/ }).click()

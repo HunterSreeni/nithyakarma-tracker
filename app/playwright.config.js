@@ -9,7 +9,11 @@ export default defineConfig({
     // E2E_BASE_URL=https://... runs the suite against a deployed site
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4173',
     headless: true,
+    // full chromium "new headless": the default headless shell has no
+    // Notification API, which the notification-toggle test needs
+    channel: 'chromium',
     screenshot: 'only-on-failure',
+    permissions: ['notifications'],
   },
   webServer: process.env.E2E_BASE_URL ? undefined : {
     command: 'npm run build && npm run preview',
