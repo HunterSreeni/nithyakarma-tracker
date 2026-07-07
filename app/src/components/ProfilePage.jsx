@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import NotificationSettings from './NotificationSettings'
 import { tierProgress, tierClass, tierFor } from '../utils/tiers'
 import { shareUrl } from '../utils/share'
 
@@ -96,6 +97,17 @@ export default function ProfilePage() {
         </div>
         <button className="btn-ref" onClick={inviteWhatsApp}>Share invite on WhatsApp</button>
       </div>
+
+      <div className="card">
+        <div className="card-h">Privacy</div>
+        <label className="checkbox-row" style={{ marginTop: 0 }}>
+          <input type="checkbox" checked={profile.leaderboard_opt_out}
+            onChange={e => updateProfile({ leaderboard_opt_out: e.target.checked })} />
+          Hide me from community leaderboards (only you can see your row)
+        </label>
+      </div>
+
+      <NotificationSettings />
 
       <div className="card">
         <div className="card-h">Account</div>

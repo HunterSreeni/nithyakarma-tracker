@@ -8,3 +8,8 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+// Web push service worker (no-op inside the Capacitor shell)
+if ('serviceWorker' in navigator && !window.Capacitor) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {})
+}

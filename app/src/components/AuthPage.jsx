@@ -7,15 +7,21 @@ export default function AuthPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
+  const [notice, setNotice] = useState(null)
   const [busy, setBusy] = useState(false)
 
   const submit = async (e) => {
     e.preventDefault()
-    setError(null); setBusy(true)
+    setError(null); setNotice(null); setBusy(true)
     const fn = mode === 'login' ? signInEmail : signUpEmail
-    const { error } = await fn(email, password)
+    const { data, error } = await fn(email, password)
     setBusy(false)
-    if (error) setError(error.message)
+    if (error) { setError(error.message); return }
+    // Signup with email confirmation on: user exists but no session yet
+    if (mode === 'signup' && data?.user && !data?.session) {
+      setNotice(`Verification email sent to ${email}. Please check your inbox (and spam) and click the link, then sign in.`)
+      setMode('login')
+    }
   }
 
   return (
@@ -36,6 +42,7 @@ export default function AuthPage() {
             onChange={e => setPassword(e.target.value)} required minLength={6}
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
           {error && <div className="auth-error">{error}</div>}
+          {notice && <div className="auth-notice">{notice}</div>}
           <button className="btn-auth" type="submit" disabled={busy}>
             {mode === 'login' ? 'Sign In' : 'Create Account'}
           </button>
