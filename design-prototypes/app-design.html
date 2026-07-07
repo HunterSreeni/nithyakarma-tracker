@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nithyakarma Tracker - UI/UX Design</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap');
+
+:root {
+  --saffron-50: #FFF7ED; --saffron-100: #FFEDD5; --saffron-200: #FED7AA;
+  --saffron-300: #FDBA74; --saffron-400: #FB923C; --saffron-500: #FF9933;
+  --saffron-600: #F37C02; --saffron-700: #C2410C;
+  --ink: #0d0d0d; --paper: #f5f0e8; --cream: #ede8dc; --warm: #d4c9b0;
+  --success: #16a34a; --gold: #d4a017; --silver: #9aa0a8; --bronze: #b0763b;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased;
+  background: #171310; padding: 2rem 1.5rem 3rem;
+}
+
+/* Syne is reserved for the wordmark and small uppercase labels only,
+   matching the real Sandhyavandhanam app. Everything else is DM Sans. */
+.label-syne { font-family: 'Syne', sans-serif; text-transform: uppercase; }
+
+/* ---------- gallery layout ---------- */
+.gallery-title { color: #fff; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
+.gallery-sub { color: #8a7f70; font-size: 0.8rem; margin-top: 4px; margin-bottom: 1.6rem; }
+.gallery { display: flex; gap: 2rem; overflow-x: auto; padding-bottom: 1.5rem; align-items: flex-start; }
+.frame-wrap { flex: 0 0 auto; }
+.frame-label {
+  color: var(--saffron-400); font-family: 'Syne', sans-serif; font-size: 0.7rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.7rem;
+}
+.frame-note { color: #6f6558; font-size: 0.68rem; margin-top: 0.6rem; max-width: 390px; line-height: 1.5; }
+.phone {
+  width: 390px; min-height: 780px; background: var(--paper); border-radius: 28px;
+  overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 6px solid #26211c;
+  display: flex; flex-direction: column; position: relative;
+}
+
+/* ---------- topbar ---------- */
+.topbar {
+  background: var(--ink); padding: 0 1.2rem; height: 52px; display: flex;
+  align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.wordmark { display: flex; align-items: center; gap: 7px; }
+.wordmark .diya { font-size: 0.95rem; }
+.wordmark .name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; color: #fff; letter-spacing: -0.02em; }
+.wordmark .name span { color: var(--saffron-500); }
+.top-right { display: flex; align-items: center; gap: 10px; }
+.streak-pill {
+  display: flex; align-items: center; gap: 4px; background: rgba(255,153,51,0.12);
+  border: 1px solid rgba(255,153,51,0.35); border-radius: 100px; padding: 3px 10px;
+  font-weight: 700; font-size: 0.75rem; color: var(--saffron-400);
+}
+.top-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.7rem; color: #fff;
+}
+
+.content { padding: 1.2rem 1rem 5.5rem; flex: 1; }
+
+/* ---------- bottom nav ---------- */
+.bottomnav {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 62px; background: #fff;
+  border-top: 1.5px solid var(--cream); display: flex; align-items: stretch;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; font-size: 1.05rem; color: #b6ab99;
+}
+.nav-item .nl { font-family: 'Syne', sans-serif; font-size: 0.55rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; }
+.nav-item.active { color: var(--saffron-600); }
+
+/* ---------- home ---------- */
+.eyebrow { font-size: 0.72rem; color: #999; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'Syne', sans-serif; }
+.greet { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 3px; color: var(--ink); }
+.greet-sub { color: #8a7f70; font-size: 0.78rem; margin-top: 3px; font-weight: 300; }
+
+.today-card {
+  background: linear-gradient(135deg, var(--saffron-500), var(--saffron-600));
+  border-radius: 16px; padding: 1rem 1.1rem; margin: 1.1rem 0; color: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 8px 24px rgba(243,124,2,0.22);
+}
+.tc-left .tc-label { font-family: 'Syne', sans-serif; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; }
+.tc-left .tc-big { font-size: 1.35rem; font-weight: 700; margin-top: 3px; }
+.tc-left .tc-hint { font-size: 0.72rem; opacity: 0.9; margin-top: 2px; font-weight: 300; }
+.progress-ring {
+  width: 70px; height: 70px; border-radius: 50%;
+  background: conic-gradient(#fff 0% 67%, rgba(255,255,255,0.25) 67% 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.pr-core {
+  width: 54px; height: 54px; border-radius: 50%; background: var(--saffron-600);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.88rem;
+}
+
+.section-h {
+  display: flex; align-items: center; justify-content: space-between; margin: 1.2rem 0 0.7rem;
+}
+.section-h h3 { font-family: 'Syne', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: #999; }
+
+.practice-card {
+  background: #fff; border-radius: 14px; padding: 0.85rem 1rem; margin-bottom: 0.7rem;
+  display: flex; align-items: center; gap: 0.85rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04);
+  border: 1.5px solid transparent;
+}
+.practice-card.done { border-color: #bbe3c8; background: #f4fbf6; }
+.p-icon {
+  width: 42px; height: 42px; border-radius: 12px; background: var(--saffron-100);
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+}
+.practice-card.done .p-icon { background: #d9f2e1; }
+.p-body { flex: 1; min-width: 0; }
+.p-name { font-weight: 700; font-size: 0.86rem; color: var(--ink); }
+.p-meta { font-size: 0.7rem; color: #a89a85; margin-top: 2px; font-weight: 300; }
+.p-meta .mini-flame { color: var(--saffron-600); font-weight: 700; }
+.btn-done {
+  font-weight: 700; font-size: 0.7rem; color: #fff;
+  background: var(--saffron-600); border: none; border-radius: 100px; padding: 9px 16px;
+  cursor: pointer; letter-spacing: 0.02em; font-family: 'DM Sans', sans-serif;
+}
+.done-check {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--success); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700;
+}
+
+/* ---------- profile switcher ---------- */
+.profile-switch { display: flex; gap: 6px; margin-top: 0.9rem; }
+.ps-chip {
+  display: flex; align-items: center; gap: 6px; padding: 5px 12px 5px 5px;
+  border-radius: 100px; background: #fff; border: 1.5px solid var(--cream);
+  font-size: 0.7rem; font-weight: 700; color: #8a7f70;
+}
+.ps-chip .ps-av {
+  width: 22px; height: 22px; border-radius: 50%; font-size: 0.55rem; color: #fff;
+  background: linear-gradient(135deg, var(--warm), #b8a888);
+  display: flex; align-items: center; justify-content: center; font-weight: 700;
+}
+.ps-chip.on { border-color: var(--saffron-400); background: var(--saffron-50); color: var(--ink); }
+.ps-chip.on .ps-av { background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600)); }
+
+/* ---------- add-practice dropdown ---------- */
+.add-select {
+  background: #fff; border: 1.5px dashed var(--warm); border-radius: 14px;
+  padding: 0.8rem 1rem; display: flex; align-items: center; justify-content: space-between;
+  color: #8a7f70; font-size: 0.8rem; cursor: pointer;
+}
+.add-select .plus { color: var(--saffron-600); font-weight: 700; }
+.dropdown {
+  background: #fff; border-radius: 14px; margin-top: 0.5rem; overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12); border: 1.5px solid var(--cream);
+}
+.dd-search { padding: 0.7rem 1rem; border-bottom: 1.5px solid var(--cream); color: #a89a85; font-size: 0.76rem; }
+.dd-item {
+  padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.7rem;
+  border-bottom: 1px solid #f6f2ea; font-size: 0.8rem; color: var(--ink);
+}
+.dd-item:last-child { border-bottom: none; }
+.dd-item .dd-icon { font-size: 1rem; width: 24px; text-align: center; }
+.dd-item .dd-name { flex: 1; font-weight: 500; }
+.dd-item .dd-freq { font-size: 0.62rem; color: #a89a85; font-weight: 300; }
+.dd-item.selected { background: var(--saffron-50); }
+.dd-item.muted { color: #c4b8a4; }
+.dd-item.muted .dd-name { font-weight: 300; }
+.dd-check { color: var(--success); font-weight: 700; font-size: 0.8rem; }
+
+/* ---------- celebration ---------- */
+.celebrate { text-align: center; padding-top: 1.5rem; }
+.confetti-row { font-size: 1.1rem; letter-spacing: 0.4em; opacity: 0.9; }
+.big-flame { font-size: 3.4rem; margin: 0.6rem 0 0.2rem; filter: drop-shadow(0 6px 18px rgba(243,124,2,0.3)); }
+.cel-streak { font-size: 1.7rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+.cel-streak span { color: var(--saffron-600); }
+.cel-sub { font-size: 0.8rem; color: #8a7f70; margin-top: 4px; font-weight: 300; }
+.share-card {
+  margin: 1.3rem auto 0; width: 300px; border-radius: 18px; overflow: hidden;
+  background: linear-gradient(160deg, #1a1208, #3b2408 55%, #7a4a10);
+  color: #fff; text-align: left; padding: 1.2rem 1.2rem 1rem; position: relative;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+}
+.share-card .sc-om { position: absolute; right: -6px; top: -10px; font-size: 5rem; opacity: 0.08; }
+.sc-brand { font-family: 'Syne', sans-serif; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--saffron-400); }
+.sc-days { font-size: 2.2rem; font-weight: 700; margin-top: 0.5rem; line-height: 1; }
+.sc-days span { font-size: 0.95rem; color: var(--saffron-300); font-weight: 500; }
+.sc-practice { font-size: 0.78rem; color: #e8d9be; margin-top: 6px; font-weight: 300; }
+.sc-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; font-size: 0.62rem; color: #b9a684; }
+.btn-whatsapp {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 1rem;
+  background: #25D366; color: #fff; border: none; border-radius: 100px; padding: 12px 24px;
+  font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.78rem; cursor: pointer;
+}
+.ad-slot {
+  margin: 1.4rem auto 0; width: 330px; border: 2px dashed var(--warm); border-radius: 14px;
+  padding: 1.4rem 1rem; text-align: center; color: #a89a85; background: #faf7f1;
+}
+.ad-slot .ad-tag { font-family: 'Syne', sans-serif; font-size: 0.58rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; }
+.ad-slot .ad-note { font-size: 0.68rem; margin-top: 4px; font-weight: 300; }
+
+/* ---------- leaderboard ---------- */
+.seg-toggle {
+  display: flex; background: var(--cream); border-radius: 100px; padding: 4px; margin-bottom: 1rem;
+}
+.seg {
+  flex: 1; text-align: center; font-size: 0.7rem; font-weight: 700;
+  padding: 8px 0; border-radius: 100px; color: #8a7f70;
+}
+.seg.on { background: #fff; color: var(--ink); box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+.hall-banner {
+  background: linear-gradient(135deg, #2a1c05, #5c3a08); border-radius: 16px; color: #fff;
+  padding: 1rem 1.1rem; display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.1rem;
+}
+.hall-avatar {
+  width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--gold);
+  background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; font-size: 0.85rem; flex-shrink: 0;
+}
+.hall-label { font-family: 'Syne', sans-serif; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.hall-name { font-weight: 700; font-size: 0.95rem; margin-top: 2px; }
+.hall-stat { font-size: 0.68rem; color: #d9c9a8; margin-top: 2px; font-weight: 300; }
+.lb-row {
+  background: #fff; border-radius: 13px; padding: 0.7rem 0.9rem; margin-bottom: 0.55rem;
+  display: flex; align-items: center; gap: 0.8rem; box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.lb-row.me { border: 1.5px solid var(--saffron-400); background: var(--saffron-50); }
+.lb-rank { font-weight: 700; font-size: 0.8rem; width: 22px; color: #8a7f70; }
+.lb-rank.r1 { color: var(--gold); } .lb-rank.r2 { color: var(--silver); } .lb-rank.r3 { color: var(--bronze); }
+.lb-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.66rem; color: #fff; flex-shrink: 0;
+}
+.lb-body { flex: 1; min-width: 0; }
+.lb-name { font-weight: 700; font-size: 0.78rem; color: var(--ink); }
+.tier-badge {
+  display: inline-block; font-family: 'Syne', sans-serif; font-size: 0.52rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em; padding: 2px 7px; border-radius: 100px; margin-top: 3px;
+}
+.tier-rishi { background: #f3e8ff; color: #7c3aed; }
+.tier-tapasvi { background: var(--saffron-100); color: var(--saffron-700); }
+.tier-sadhaka { background: #dbeafe; color: #1d4ed8; }
+.tier-jijnasu { background: var(--cream); color: #8a7f70; }
+.tier-brahmarishi { background: #fef3c7; color: #92400e; }
+.lb-score { font-weight: 700; font-size: 0.8rem; color: var(--ink); text-align: right; }
+.lb-score .u { display: block; font-family: 'Syne', sans-serif; font-size: 0.52rem; color: #a89a85; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ---------- profile ---------- */
+.profile-head { text-align: center; padding-top: 0.4rem; }
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: 50%; margin: 0 auto;
+  background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1.3rem; color: #fff;
+  border: 3px solid #fff; box-shadow: 0 4px 16px rgba(243,124,2,0.25);
+}
+.profile-name { font-weight: 700; font-size: 1.1rem; margin-top: 0.6rem; color: var(--ink); }
+.tier-progress { background: #fff; border-radius: 14px; padding: 0.9rem 1rem; margin-top: 1rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04); text-align: left; }
+.tp-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 700; }
+.tp-row .next { color: #a89a85; }
+.tp-bar { height: 8px; background: var(--cream); border-radius: 100px; margin-top: 8px; overflow: hidden; }
+.tp-fill { height: 100%; width: 64%; border-radius: 100px; background: linear-gradient(90deg, var(--saffron-400), var(--saffron-600)); }
+.tp-hint { font-size: 0.66rem; color: #a89a85; margin-top: 6px; font-weight: 300; }
+.stat-row { display: flex; gap: 0.7rem; margin-top: 0.9rem; }
+.stat-tile { flex: 1; background: #fff; border-radius: 14px; padding: 0.8rem; text-align: center; box-shadow: 0 1px 10px rgba(0,0,0,0.04); }
+.stat-num { font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+.stat-lbl { font-family: 'Syne', sans-serif; font-size: 0.54rem; color: #a89a85; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; margin-top: 2px; }
+.heatmap-card { background: #fff; border-radius: 14px; padding: 0.9rem 1rem; margin-top: 0.9rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04); }
+.hm-title { font-family: 'Syne', sans-serif; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: #a89a85; margin-bottom: 0.7rem; }
+.heatmap { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; }
+.hm-cell { aspect-ratio: 1; border-radius: 4px; background: var(--cream); }
+.hm-1 { background: var(--saffron-200); } .hm-2 { background: var(--saffron-400); } .hm-3 { background: var(--saffron-600); }
+.referral-card {
+  background: linear-gradient(135deg, #0d3b26, #16613f); border-radius: 16px; color: #fff;
+  padding: 1rem 1.1rem; margin-top: 0.9rem;
+}
+.ref-title { font-weight: 700; font-size: 0.88rem; }
+.ref-sub { font-size: 0.72rem; color: #bfe6d2; margin-top: 3px; line-height: 1.45; font-weight: 300; }
+.btn-ref {
+  margin-top: 0.7rem; background: #25D366; border: none; color: #fff; border-radius: 100px;
+  padding: 9px 18px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.68rem; cursor: pointer;
+}
+.settings-row {
+  background: #fff; border-radius: 13px; padding: 0.8rem 1rem; margin-top: 0.6rem;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.settings-row .sl { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.76rem; color: var(--ink); }
+.settings-row .sv { font-size: 0.7rem; color: var(--saffron-600); font-weight: 700; }
+
+/* ---------- notification frame ---------- */
+.phone.lock {
+  background: linear-gradient(180deg, #1c1917, #292320); min-height: 780px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  padding-top: 4.5rem;
+}
+.lock-time { font-size: 3rem; font-weight: 300; color: #f0e8da; letter-spacing: -0.02em; }
+.lock-date { color: #a89a85; font-size: 0.8rem; margin-top: 4px; font-weight: 300; }
+.notif {
+  margin-top: 2.2rem; width: 350px; background: rgba(245,240,232,0.97); border-radius: 18px;
+  padding: 0.9rem 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+.notif-head { display: flex; align-items: center; gap: 8px; }
+.notif-app-icon {
+  width: 20px; height: 20px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600));
+  display: flex; align-items: center; justify-content: center; font-size: 0.6rem;
+}
+.notif-app { font-family: 'Syne', sans-serif; font-size: 0.58rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: #8a7f70; flex: 1; }
+.notif-time { font-size: 0.6rem; color: #a89a85; }
+.notif-title { font-weight: 700; font-size: 0.84rem; color: var(--ink); margin-top: 7px; }
+.notif-body { font-size: 0.76rem; color: #55493a; margin-top: 3px; line-height: 1.45; font-weight: 300; }
+.notif.dim { opacity: 0.75; transform: scale(0.97); }
+</style>
+</head>
+<body>
+
+<h1 class="gallery-title">Nithyakarma Tracker &nbsp;🪔&nbsp; UI/UX Design v2</h1>
+<p class="gallery-sub">Saffron palette + subtle typography matching the Sandhyavandhanam app &middot; scroll right for all 6 screens &rarr;</p>
+
+<div class="gallery">
+
+  <!-- ============ 1. HOME / TODAY ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">1 &middot; Home / Today</div>
+    <div class="phone">
+      <div class="topbar">
+        <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
+        <div class="top-right">
+          <div class="streak-pill">🔥 47</div>
+          <div class="top-avatar">SH</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="eyebrow">Monday &middot; 07 July 2026</div>
+        <div class="greet">Namaskaram, Sreeni 🙏</div>
+        <div class="greet-sub">2 of 3 anushtanams done. Keep the deepam burning.</div>
+
+        <div class="profile-switch">
+          <div class="ps-chip on"><span class="ps-av">SH</span>Me</div>
+          <div class="ps-chip"><span class="ps-av">AH</span>Adhvaith (son)</div>
+          <div class="ps-chip"><span class="ps-av">+</span>Add child</div>
+        </div>
+
+        <div class="today-card">
+          <div class="tc-left">
+            <div class="tc-label">Current Streak</div>
+            <div class="tc-big">47 days 🔥</div>
+            <div class="tc-hint">Best: 82 days</div>
+          </div>
+          <div class="progress-ring"><div class="pr-core">2/3</div></div>
+        </div>
+
+        <div class="section-h"><h3>Today's Anushtanams</h3></div>
+
+        <div class="practice-card done">
+          <div class="p-icon">🌅</div>
+          <div class="p-body">
+            <div class="p-name">Sandhyavandhanam</div>
+            <div class="p-meta">3 sandhyas &middot; Gaayatri 108 &middot; <span class="mini-flame">🔥 47</span></div>
+          </div>
+          <div class="done-check">✓</div>
+        </div>
+
+        <div class="practice-card done">
+          <div class="p-icon">🕉️</div>
+          <div class="p-body">
+            <div class="p-name">Vishnu Sahasranamam</div>
+            <div class="p-meta">Done at 7:05 AM &middot; <span class="mini-flame">🔥 31</span></div>
+          </div>
+          <div class="done-check">✓</div>
+        </div>
+
+        <div class="practice-card">
+          <div class="p-icon">🐒</div>
+          <div class="p-body">
+            <div class="p-name">Hanuman Chalisa</div>
+            <div class="p-meta">Evening &middot; <span class="mini-flame">🔥 5</span></div>
+          </div>
+          <button class="btn-done">Mark Done</button>
+        </div>
+
+        <div class="add-select">
+          <span>Add an anushtanam to track...</span>
+          <span class="plus">+</span>
+        </div>
+      </div>
+      <div class="bottomnav">
+        <div class="nav-item active">🏠<span class="nl">Today</span></div>
+        <div class="nav-item">📖<span class="nl">History</span></div>
+        <div class="nav-item">🏆<span class="nl">Sabha</span></div>
+        <div class="nav-item">👤<span class="nl">Profile</span></div>
+      </div>
+    </div>
+    <p class="frame-note">Sandhyavandhanam appears only for male users (post-upanayanam), tracked daily across 3 sandhyas. The profile switcher (same family_members model as the existing app) lets a parent track children under 15 - no phones for kids. New practices are added via the dropdown below the list.</p>
+  </div>
+
+  <!-- ============ 2. ADD PRACTICE (DROPDOWN OPEN) ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">2 &middot; Add Practice (dropdown open)</div>
+    <div class="phone">
+      <div class="topbar">
+        <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
+        <div class="top-right"><div class="streak-pill">🔥 47</div><div class="top-avatar">SH</div></div>
+      </div>
+      <div class="content">
+        <div class="eyebrow">Monday &middot; 07 July 2026</div>
+        <div class="greet">Namaskaram, Sreeni 🙏</div>
+
+        <div class="add-select" style="margin-top: 1.1rem; border-style: solid; border-color: var(--saffron-400);">
+          <span style="color: var(--ink);">Add an anushtanam to track...</span>
+          <span class="plus">&times;</span>
+        </div>
+
+        <div class="dropdown">
+          <div class="dd-search">🔍 Search...</div>
+          <div class="dd-item muted">
+            <span class="dd-icon">🌅</span><span class="dd-name">Sandhyavandhanam</span>
+            <span class="dd-freq">already tracking</span><span class="dd-check">✓</span>
+          </div>
+          <div class="dd-item muted">
+            <span class="dd-icon">🕉️</span><span class="dd-name">Vishnu Sahasranamam</span>
+            <span class="dd-freq">already tracking</span><span class="dd-check">✓</span>
+          </div>
+          <div class="dd-item muted">
+            <span class="dd-icon">🐒</span><span class="dd-name">Hanuman Chalisa</span>
+            <span class="dd-freq">already tracking</span><span class="dd-check">✓</span>
+          </div>
+          <div class="dd-item selected">
+            <span class="dd-icon">🌺</span><span class="dd-name">Lalitha Sahasranamam</span>
+            <span class="dd-freq">daily</span>
+          </div>
+          <div class="dd-item">
+            <span class="dd-icon">📖</span><span class="dd-name">Narayaneeyam</span>
+            <span class="dd-freq">dasakam / day</span>
+          </div>
+          <div class="dd-item">
+            <span class="dd-icon">🔱</span><span class="dd-name">Shiva Panchakshari</span>
+            <span class="dd-freq">daily</span>
+          </div>
+          <div class="dd-item">
+            <span class="dd-icon">☀️</span><span class="dd-name">Aditya Hrudayam</span>
+            <span class="dd-freq">Sundays</span>
+          </div>
+          <div class="dd-item">
+            <span class="dd-icon">🪷</span><span class="dd-name">Bhagavad Gita Parayanam</span>
+            <span class="dd-freq">chapter / day</span>
+          </div>
+          <div class="dd-item muted" style="justify-content:center;">
+            <span class="dd-freq">scroll for 7 more...</span>
+          </div>
+        </div>
+      </div>
+      <div class="bottomnav">
+        <div class="nav-item active">🏠<span class="nl">Today</span></div>
+        <div class="nav-item">📖<span class="nl">History</span></div>
+        <div class="nav-item">🏆<span class="nl">Sabha</span></div>
+        <div class="nav-item">👤<span class="nl">Profile</span></div>
+      </div>
+    </div>
+    <p class="frame-note">The master list lives in the database (admin-extendable), rendered as a searchable dropdown. Already-tracked items are dimmed with a check. Selecting one associates it to the user and it appears on Home immediately.</p>
+  </div>
+
+  <!-- ============ 3. SUBMIT / CELEBRATION ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">3 &middot; Submit Moment + Share + Ad Slot</div>
+    <div class="phone">
+      <div class="topbar">
+        <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
+        <div class="top-right"><div class="streak-pill">🔥 48</div></div>
+      </div>
+      <div class="content">
+        <div class="celebrate">
+          <div class="confetti-row">✨ 🎉 ✨</div>
+          <div class="big-flame">🔥</div>
+          <div class="cel-streak"><span>48 Day</span> Streak!</div>
+          <div class="cel-sub">Hanuman Chalisa completed. Punyam grows daily.</div>
+
+          <div class="share-card">
+            <div class="sc-om">🕉</div>
+            <div class="sc-brand">🪔 Nithyakarma</div>
+            <div class="sc-days">48 <span>day streak</span></div>
+            <div class="sc-practice">Hanuman Chalisa &middot; daily<br/>Sreeni H &middot; Tapasvi tier</div>
+            <div class="sc-foot"><span>Join me on Nithyakarma</span><span>nithyakarma.app/r/SREENI48</span></div>
+          </div>
+
+          <button class="btn-whatsapp">Share to WhatsApp Status</button>
+
+          <div class="ad-slot">
+            <div class="ad-tag">Ad &middot; Interstitial slot</div>
+            <div class="ad-note">AdMob interstitial after every submit (sandhya or general),<br/>shown only after the API call is verified as saved. Hidden for ad-free users.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="frame-note">Celebration first, ad last - the sacred moment is never interrupted. Share card carries the referral link automatically.</p>
+  </div>
+
+  <!-- ============ 4. LEADERBOARD / SABHA ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">4 &middot; Sabha (Leaderboard)</div>
+    <div class="phone">
+      <div class="topbar">
+        <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
+        <div class="top-right"><div class="streak-pill">🔥 47</div><div class="top-avatar">SH</div></div>
+      </div>
+      <div class="content">
+        <div class="greet" style="font-size:1.1rem;">Sabha Leaderboard</div>
+        <div class="greet-sub" style="margin-bottom:1rem;">Week of 06 - 12 July &middot; resets Sunday night</div>
+
+        <div class="seg-toggle">
+          <div class="seg on">Week</div>
+          <div class="seg">Month</div>
+          <div class="seg">Friends</div>
+          <div class="seg">Kids 🧒</div>
+        </div>
+
+        <div class="hall-banner">
+          <div class="hall-avatar">RK</div>
+          <div>
+            <div class="hall-label">🏅 Hall of the Week</div>
+            <div class="hall-name">Radhika Krishnan</div>
+            <div class="hall-stat">28 anushtanams &middot; 112-day streak &middot; Rishi tier</div>
+          </div>
+        </div>
+
+        <div class="lb-row">
+          <div class="lb-rank r1">1</div><div class="lb-avatar">RK</div>
+          <div class="lb-body"><div class="lb-name">Radhika Krishnan</div><span class="tier-badge tier-rishi">Rishi</span></div>
+          <div class="lb-score">28<span class="u">this week</span></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank r2">2</div><div class="lb-avatar">VN</div>
+          <div class="lb-body"><div class="lb-name">Vishnu Namboothiri</div><span class="tier-badge tier-tapasvi">Tapasvi</span></div>
+          <div class="lb-score">26<span class="u">this week</span></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank r3">3</div><div class="lb-avatar">LM</div>
+          <div class="lb-body"><div class="lb-name">Lakshmi Menon</div><span class="tier-badge tier-tapasvi">Tapasvi</span></div>
+          <div class="lb-score">24<span class="u">this week</span></div>
+        </div>
+        <div class="lb-row me">
+          <div class="lb-rank">7</div><div class="lb-avatar">SH</div>
+          <div class="lb-body"><div class="lb-name">Sreeni H (You)</div><span class="tier-badge tier-tapasvi">Tapasvi</span></div>
+          <div class="lb-score">19<span class="u">this week</span></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank">8</div><div class="lb-avatar">AI</div>
+          <div class="lb-body"><div class="lb-name">Ananthu Iyer</div><span class="tier-badge tier-sadhaka">Sadhaka</span></div>
+          <div class="lb-score">17<span class="u">this week</span></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank">9</div><div class="lb-avatar">GP</div>
+          <div class="lb-body"><div class="lb-name">Gowri Pisharody</div><span class="tier-badge tier-jijnasu">Jijnasu</span></div>
+          <div class="lb-score">14<span class="u">this week</span></div>
+        </div>
+      </div>
+      <div class="bottomnav">
+        <div class="nav-item">🏠<span class="nl">Today</span></div>
+        <div class="nav-item">📖<span class="nl">History</span></div>
+        <div class="nav-item active">🏆<span class="nl">Sabha</span></div>
+        <div class="nav-item">👤<span class="nl">Profile</span></div>
+      </div>
+    </div>
+    <p class="frame-note">Tiers: Jijnasu &rarr; Sadhaka &rarr; Tapasvi &rarr; Rishi &rarr; Brahmarishi. Your row is pinned and highlighted even outside top ranks. The Kids tab is Bala Sabha - a separate leaderboard for family member profiles: first name only, parent opt-in, own weekly winner and simpler badges.</p>
+  </div>
+
+  <!-- ============ 5. PROFILE ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">5 &middot; Profile</div>
+    <div class="phone">
+      <div class="topbar">
+        <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
+        <div class="top-right"><div class="streak-pill">🔥 47</div></div>
+      </div>
+      <div class="content">
+        <div class="profile-head">
+          <div class="profile-avatar">SH</div>
+          <div class="profile-name">Sreeni H</div>
+          <span class="tier-badge tier-tapasvi" style="font-size:0.6rem; padding:3px 10px;">Tapasvi</span>
+        </div>
+
+        <div class="tier-progress">
+          <div class="tp-row"><span>Tapasvi</span><span class="next">Rishi</span></div>
+          <div class="tp-bar"><div class="tp-fill"></div></div>
+          <div class="tp-hint">640 / 1000 punya points &middot; 360 more to reach Rishi</div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-tile"><div class="stat-num">🔥 47</div><div class="stat-lbl">Streak</div></div>
+          <div class="stat-tile"><div class="stat-num">82</div><div class="stat-lbl">Best</div></div>
+          <div class="stat-tile"><div class="stat-num">1,204</div><div class="stat-lbl">Total Done</div></div>
+        </div>
+
+        <div class="heatmap-card">
+          <div class="hm-title">Last 60 days</div>
+          <div class="heatmap">
+            <div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-1"></div>
+            <div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div>
+            <div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-1"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div>
+            <div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-2"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div><div class="hm-cell hm-3"></div>
+          </div>
+        </div>
+
+        <div class="referral-card">
+          <div class="ref-title">Invite from your Sabha 🎁</div>
+          <div class="ref-sub">Every member who joins with your link gives you both 1 month ad-free.</div>
+          <button class="btn-ref">Share invite on WhatsApp</button>
+        </div>
+
+        <div class="settings-row"><div class="sl">✏️ Edit profile</div><div class="sv">Name &middot; Reminders</div></div>
+        <div class="settings-row"><div class="sl">⏰ Sandhya reminders</div><div class="sv">9:00 AM &middot; 12:30 PM &middot; 6:30 PM</div></div>
+        <div class="settings-row"><div class="sl">👨‍👦 Family members</div><div class="sv">Adhvaith &middot; Devika &middot; + Add</div></div>
+        <div class="settings-row" style="border: 1.5px solid #f3caca; background: #fdf6f6;"><div class="sl" style="color:#b91c1c;">🗑️ Delete account &amp; all data</div><div class="sv" style="color:#b91c1c;">Permanent</div></div>
+      </div>
+      <div class="bottomnav">
+        <div class="nav-item">🏠<span class="nl">Today</span></div>
+        <div class="nav-item">📖<span class="nl">History</span></div>
+        <div class="nav-item">🏆<span class="nl">Sabha</span></div>
+        <div class="nav-item active">👤<span class="nl">Profile</span></div>
+      </div>
+    </div>
+    <p class="frame-note">Fully free - no purchases. Referrals reward ad-free months directly. Family members (children under 15) are added here, same as the existing app's ProfilePage. Delete removes profile, family members, and all logs permanently (type-DELETE confirmation). Punya points drive tier progress.</p>
+  </div>
+
+  <!-- ============ 6. REMINDER NOTIFICATION ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">6 &middot; Streak Reminder (Push)</div>
+    <div class="phone lock">
+      <div class="lock-time">6:31</div>
+      <div class="lock-date">Monday, 07 July</div>
+
+      <div class="notif">
+        <div class="notif-head">
+          <div class="notif-app-icon">🪔</div>
+          <div class="notif-app">Nithyakarma</div>
+          <div class="notif-time">now</div>
+        </div>
+        <div class="notif-title">Saayamkala Sandhyavandhanam 🌇</div>
+        <div class="notif-body">Time for your evening sandhya. Open the app!</div>
+      </div>
+
+      <div class="notif dim">
+        <div class="notif-head">
+          <div class="notif-app-icon">🪔</div>
+          <div class="notif-app">Nithyakarma</div>
+          <div class="notif-time">12:30 PM</div>
+        </div>
+        <div class="notif-title">Madhyanika Sandhyavandhanam ☀️</div>
+        <div class="notif-body">Time for your noon sandhya. Open the app!</div>
+      </div>
+
+      <div class="notif dim">
+        <div class="notif-head">
+          <div class="notif-app-icon">🪔</div>
+          <div class="notif-app">Nithyakarma</div>
+          <div class="notif-time">9:00 AM</div>
+        </div>
+        <div class="notif-title">Prathakala Sandhyavandhanam 🌅</div>
+        <div class="notif-body">Time for your morning sandhya. Open the app!</div>
+      </div>
+
+      <div class="notif dim">
+        <div class="notif-head">
+          <div class="notif-app-icon">🪔</div>
+          <div class="notif-app">Nithyakarma</div>
+          <div class="notif-time">9:02 PM</div>
+        </div>
+        <div class="notif-title">Last call before midnight ⏳</div>
+        <div class="notif-body">Your streak ends at midnight. Mark today's anushtanam to keep 47 days alive.</div>
+      </div>
+    </div>
+    <p class="frame-note">Sandhyavandhanam gets 3 slot reminders exactly like the existing app: Prathakala 9:00 AM, Madhyanika 12:30 PM, Saayamkala 6:30 PM. Other practices get the evening nudge and midnight last-call.</p>
+  </div>
+
+</div>
+
+</body>
+</html>

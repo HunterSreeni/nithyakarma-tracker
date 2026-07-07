@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nithyakarma Tracker - Web App Design</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap');
+
+:root {
+  --saffron-50: #FFF7ED; --saffron-100: #FFEDD5; --saffron-200: #FED7AA;
+  --saffron-300: #FDBA74; --saffron-400: #FB923C; --saffron-500: #FF9933;
+  --saffron-600: #F37C02; --saffron-700: #C2410C;
+  --ink: #0d0d0d; --paper: #f5f0e8; --cream: #ede8dc; --warm: #d4c9b0;
+  --success: #16a34a; --gold: #d4a017; --silver: #9aa0a8; --bronze: #b0763b;
+  --danger: #b91c1c;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased;
+  background: #171310; padding: 2rem 1.5rem 3rem;
+}
+
+.gallery-title { color: #fff; font-size: 1.15rem; font-weight: 700; }
+.gallery-sub { color: #8a7f70; font-size: 0.8rem; margin-top: 4px; margin-bottom: 1.6rem; }
+.frame-label {
+  color: var(--saffron-400); font-family: 'Syne', sans-serif; font-size: 0.7rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; margin: 2.2rem 0 0.7rem;
+}
+.frame-note { color: #6f6558; font-size: 0.7rem; margin-top: 0.7rem; max-width: 900px; line-height: 1.5; }
+
+/* browser chrome */
+.browser {
+  width: 100%; max-width: 1000px; background: var(--paper); border-radius: 14px;
+  overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid #33291f;
+}
+.urlbar {
+  background: #26211c; height: 38px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+}
+.urlbar .dots { display: flex; gap: 5px; }
+.urlbar .dot { width: 9px; height: 9px; border-radius: 50%; background: #4a4038; }
+.urlbar .url {
+  flex: 1; max-width: 380px; background: #171310; border-radius: 100px; padding: 4px 14px;
+  color: #8a7f70; font-size: 0.68rem;
+}
+
+/* navbar */
+.navbar {
+  background: var(--ink); padding: 0 2rem; height: 60px; display: flex;
+  align-items: center; justify-content: space-between;
+}
+.wordmark { display: flex; align-items: center; gap: 8px; }
+.wordmark .diya { font-size: 1.05rem; }
+.wordmark .name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem; color: #fff; letter-spacing: -0.02em; }
+.wordmark .name span { color: var(--saffron-500); }
+.nav-tabs { display: flex; gap: 1.6rem; }
+.nav-tab { font-family: 'Syne', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: rgba(255,255,255,0.45); padding: 6px 0; border-bottom: 2px solid transparent; }
+.nav-tab.on { color: var(--saffron-400); border-bottom-color: var(--saffron-400); }
+.nav-right { display: flex; align-items: center; gap: 0.9rem; }
+.streak-pill {
+  display: flex; align-items: center; gap: 4px; background: rgba(255,153,51,0.12);
+  border: 1px solid rgba(255,153,51,0.35); border-radius: 100px; padding: 3px 11px;
+  font-weight: 700; font-size: 0.76rem; color: var(--saffron-400);
+}
+.nav-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.72rem; color: #fff;
+}
+.nav-logout { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: 100px; font-size: 0.72rem; cursor: pointer; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+
+.main { max-width: 860px; margin: 0 auto; padding: 2.2rem 1.5rem 3rem; }
+
+/* shared bits */
+.eyebrow { font-size: 0.72rem; color: #999; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'Syne', sans-serif; }
+.page-title { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 3px; color: var(--ink); }
+.page-sub { color: #8a7f70; font-size: 0.82rem; margin-top: 3px; font-weight: 300; }
+
+.profile-switch { display: flex; gap: 7px; margin-top: 1rem; }
+.ps-chip {
+  display: flex; align-items: center; gap: 6px; padding: 5px 13px 5px 5px;
+  border-radius: 100px; background: #fff; border: 1.5px solid var(--cream);
+  font-size: 0.72rem; font-weight: 700; color: #8a7f70;
+}
+.ps-chip .ps-av {
+  width: 23px; height: 23px; border-radius: 50%; font-size: 0.56rem; color: #fff;
+  background: linear-gradient(135deg, var(--warm), #b8a888);
+  display: flex; align-items: center; justify-content: center; font-weight: 700;
+}
+.ps-chip.on { border-color: var(--saffron-400); background: var(--saffron-50); color: var(--ink); }
+.ps-chip.on .ps-av { background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600)); }
+
+.today-card {
+  background: linear-gradient(135deg, var(--saffron-500), var(--saffron-600));
+  border-radius: 16px; padding: 1.2rem 1.5rem; margin: 1.3rem 0; color: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 8px 24px rgba(243,124,2,0.22);
+}
+.tc-label { font-family: 'Syne', sans-serif; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; }
+.tc-big { font-size: 1.6rem; font-weight: 700; margin-top: 3px; }
+.tc-hint { font-size: 0.76rem; opacity: 0.9; margin-top: 2px; font-weight: 300; }
+.progress-ring {
+  width: 78px; height: 78px; border-radius: 50%;
+  background: conic-gradient(#fff 0% 67%, rgba(255,255,255,0.25) 67% 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.pr-core {
+  width: 60px; height: 60px; border-radius: 50%; background: var(--saffron-600);
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem;
+}
+
+.section-h { font-family: 'Syne', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: #999; margin: 1.4rem 0 0.8rem; }
+
+.practice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.practice-card {
+  background: #fff; border-radius: 14px; padding: 1rem 1.1rem;
+  display: flex; align-items: center; gap: 0.9rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04);
+  border: 1.5px solid transparent;
+}
+.practice-card.done { border-color: #bbe3c8; background: #f4fbf6; }
+.p-icon {
+  width: 44px; height: 44px; border-radius: 12px; background: var(--saffron-100);
+  display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;
+}
+.practice-card.done .p-icon { background: #d9f2e1; }
+.p-body { flex: 1; min-width: 0; }
+.p-name { font-weight: 700; font-size: 0.88rem; color: var(--ink); }
+.p-meta { font-size: 0.72rem; color: #a89a85; margin-top: 2px; font-weight: 300; }
+.p-meta .mini-flame { color: var(--saffron-600); font-weight: 700; }
+.btn-done {
+  font-weight: 700; font-size: 0.72rem; color: #fff; background: var(--saffron-600);
+  border: none; border-radius: 100px; padding: 9px 17px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.done-check {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--success); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700;
+}
+.add-select {
+  background: #fff; border: 1.5px dashed var(--warm); border-radius: 14px; margin-top: 0.8rem;
+  padding: 0.9rem 1.1rem; display: flex; align-items: center; justify-content: space-between;
+  color: #8a7f70; font-size: 0.82rem; cursor: pointer;
+}
+.add-select .plus { color: var(--saffron-600); font-weight: 700; }
+
+/* leaderboard */
+.seg-toggle { display: flex; background: var(--cream); border-radius: 100px; padding: 4px; margin: 1.2rem 0 1.2rem; max-width: 420px; }
+.seg { flex: 1; text-align: center; font-size: 0.72rem; font-weight: 700; padding: 8px 0; border-radius: 100px; color: #8a7f70; }
+.seg.on { background: #fff; color: var(--ink); box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+.hall-banner {
+  background: linear-gradient(135deg, #2a1c05, #5c3a08); border-radius: 16px; color: #fff;
+  padding: 1.1rem 1.4rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;
+}
+.hall-avatar {
+  width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--gold);
+  background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; font-size: 0.9rem; flex-shrink: 0;
+}
+.hall-label { font-family: 'Syne', sans-serif; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.hall-name { font-weight: 700; font-size: 1rem; margin-top: 2px; }
+.hall-stat { font-size: 0.72rem; color: #d9c9a8; margin-top: 2px; font-weight: 300; }
+.lb-row {
+  background: #fff; border-radius: 13px; padding: 0.8rem 1.1rem; margin-bottom: 0.55rem;
+  display: flex; align-items: center; gap: 1rem; box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.lb-row.me { border: 1.5px solid var(--saffron-400); background: var(--saffron-50); }
+.lb-rank { font-weight: 700; font-size: 0.85rem; width: 24px; color: #8a7f70; }
+.lb-rank.r1 { color: var(--gold); } .lb-rank.r2 { color: var(--silver); } .lb-rank.r3 { color: var(--bronze); }
+.lb-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.68rem; color: #fff; flex-shrink: 0;
+}
+.lb-body { flex: 1; }
+.lb-name { font-weight: 700; font-size: 0.82rem; color: var(--ink); }
+.tier-badge {
+  display: inline-block; font-family: 'Syne', sans-serif; font-size: 0.54rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em; padding: 2px 8px; border-radius: 100px; margin-top: 3px;
+}
+.tier-rishi { background: #f3e8ff; color: #7c3aed; }
+.tier-tapasvi { background: var(--saffron-100); color: var(--saffron-700); }
+.tier-sadhaka { background: #dbeafe; color: #1d4ed8; }
+.tier-jijnasu { background: var(--cream); color: #8a7f70; }
+.lb-score { font-weight: 700; font-size: 0.85rem; color: var(--ink); text-align: right; }
+.lb-score .u { display: block; font-family: 'Syne', sans-serif; font-size: 0.54rem; color: #a89a85; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* profile */
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.3rem; align-items: start; }
+.card { background: #fff; border-radius: 16px; padding: 1.2rem 1.3rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04); }
+.card-h { font-family: 'Syne', sans-serif; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #a89a85; margin-bottom: 0.9rem; }
+.field-label { font-family: 'Syne', sans-serif; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #8a7f70; display: block; margin-bottom: 6px; }
+.field-input {
+  width: 100%; background: #f6f2ea; border: 1.5px solid var(--warm); border-radius: 10px;
+  padding: 0.65rem 0.9rem; font-size: 0.82rem; color: var(--ink); font-family: 'DM Sans', sans-serif;
+}
+.btn-save {
+  margin-top: 0.8rem; background: var(--saffron-600); color: #fff; border: none; border-radius: 100px;
+  padding: 9px 20px; font-weight: 700; font-size: 0.72rem; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.fam-row {
+  display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0;
+  border-bottom: 1px solid #f6f2ea; font-size: 0.8rem;
+}
+.fam-row:last-of-type { border-bottom: none; }
+.fam-av {
+  width: 30px; height: 30px; border-radius: 50%; font-size: 0.58rem; color: #fff;
+  background: linear-gradient(135deg, var(--warm), #b8a888);
+  display: flex; align-items: center; justify-content: center; font-weight: 700;
+}
+.fam-name { flex: 1; font-weight: 500; color: var(--ink); }
+.fam-meta { font-size: 0.64rem; color: #a89a85; font-weight: 300; }
+.fam-remove { color: var(--danger); font-size: 0.72rem; font-weight: 700; background: none; border: none; cursor: pointer; }
+.btn-add-fam {
+  margin-top: 0.8rem; background: none; border: 1.5px dashed var(--warm); color: #8a7f70;
+  border-radius: 100px; padding: 8px 18px; font-weight: 700; font-size: 0.7rem; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.tp-bar { height: 8px; background: var(--cream); border-radius: 100px; margin-top: 8px; overflow: hidden; }
+.tp-fill { height: 100%; width: 64%; border-radius: 100px; background: linear-gradient(90deg, var(--saffron-400), var(--saffron-600)); }
+.tp-row { display: flex; justify-content: space-between; font-size: 0.74rem; font-weight: 700; }
+.tp-row .next { color: #a89a85; }
+.tp-hint { font-size: 0.68rem; color: #a89a85; margin-top: 6px; font-weight: 300; }
+.stat-row { display: flex; gap: 0.7rem; margin-top: 1rem; }
+.stat-tile { flex: 1; background: #f6f2ea; border-radius: 12px; padding: 0.75rem; text-align: center; }
+.stat-num { font-weight: 700; font-size: 1rem; color: var(--ink); }
+.stat-lbl { font-family: 'Syne', sans-serif; font-size: 0.52rem; color: #a89a85; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; margin-top: 2px; }
+.referral-card {
+  background: linear-gradient(135deg, #0d3b26, #16613f); border-radius: 16px; color: #fff;
+  padding: 1.1rem 1.3rem; margin-top: 1rem;
+}
+.ref-title { font-weight: 700; font-size: 0.9rem; }
+.ref-sub { font-size: 0.74rem; color: #bfe6d2; margin-top: 3px; line-height: 1.45; font-weight: 300; }
+.btn-ref { margin-top: 0.7rem; background: #25D366; border: none; color: #fff; border-radius: 100px; padding: 9px 18px; font-weight: 700; font-size: 0.7rem; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+.danger-zone { border: 1.5px solid #f3caca; background: #fdf6f6; border-radius: 16px; padding: 1.2rem 1.3rem; margin-top: 1rem; grid-column: 1 / -1; }
+.dz-title { font-weight: 700; font-size: 0.84rem; color: var(--danger); }
+.dz-sub { font-size: 0.74rem; color: #9b6a6a; margin-top: 3px; font-weight: 300; line-height: 1.5; }
+.btn-danger {
+  margin-top: 0.8rem; background: #fff; color: var(--danger); border: 1.5px solid var(--danger);
+  border-radius: 100px; padding: 9px 18px; font-weight: 700; font-size: 0.7rem; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+
+/* celebration modal */
+.modal-stage { position: relative; min-height: 620px; background: var(--paper); }
+.modal-dim { position: absolute; inset: 0; background: rgba(13,13,13,0.55); display: flex; align-items: center; justify-content: center; }
+.modal {
+  width: 400px; background: var(--paper); border-radius: 20px; padding: 1.8rem 1.6rem;
+  text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+}
+.confetti-row { font-size: 1.05rem; letter-spacing: 0.4em; }
+.big-flame { font-size: 3rem; margin: 0.5rem 0 0.1rem; filter: drop-shadow(0 6px 18px rgba(243,124,2,0.3)); }
+.cel-streak { font-size: 1.5rem; font-weight: 700; color: var(--ink); }
+.cel-streak span { color: var(--saffron-600); }
+.cel-sub { font-size: 0.78rem; color: #8a7f70; margin-top: 4px; font-weight: 300; }
+.share-card {
+  margin: 1.1rem auto 0; width: 280px; border-radius: 16px;
+  background: linear-gradient(160deg, #1a1208, #3b2408 55%, #7a4a10);
+  color: #fff; text-align: left; padding: 1.1rem 1.1rem 0.9rem; position: relative; overflow: hidden;
+}
+.share-card .sc-om { position: absolute; right: -6px; top: -10px; font-size: 4.5rem; opacity: 0.08; }
+.sc-brand { font-family: 'Syne', sans-serif; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--saffron-400); }
+.sc-days { font-size: 2rem; font-weight: 700; margin-top: 0.5rem; line-height: 1; }
+.sc-days span { font-size: 0.9rem; color: var(--saffron-300); font-weight: 500; }
+.sc-practice { font-size: 0.74rem; color: #e8d9be; margin-top: 6px; font-weight: 300; }
+.sc-foot { display: flex; justify-content: space-between; margin-top: 0.9rem; font-size: 0.6rem; color: #b9a684; }
+.btn-whatsapp {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 1rem;
+  background: #25D366; color: #fff; border: none; border-radius: 100px; padding: 11px 22px;
+  font-weight: 700; font-size: 0.76rem; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.ad-slot {
+  margin: 1.2rem auto 0; border: 2px dashed var(--warm); border-radius: 14px;
+  padding: 1.1rem 1rem; text-align: center; color: #a89a85; background: #faf7f1;
+}
+.ad-slot .ad-tag { font-family: 'Syne', sans-serif; font-size: 0.56rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; }
+.ad-slot .ad-note { font-size: 0.66rem; margin-top: 4px; font-weight: 300; }
+</style>
+</head>
+<body>
+
+<h1 class="gallery-title">Nithyakarma Tracker &nbsp;🪔&nbsp; Web App Design v1</h1>
+<p class="gallery-sub">Responsive web app for iPhone (and desktop) users - same features as the Android app. On phones it collapses to the mobile layout from app-design.html.</p>
+
+<!-- ============ 1. DASHBOARD ============ -->
+<div class="frame-label">1 &middot; Dashboard / Today</div>
+<div class="browser">
+  <div class="urlbar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="url">nithyakarma.app/dashboard</div></div>
+  <div class="navbar">
+    <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
+    <div class="nav-tabs">
+      <div class="nav-tab on">Today</div><div class="nav-tab">History</div><div class="nav-tab">Sabha</div><div class="nav-tab">Profile</div>
+    </div>
+    <div class="nav-right">
+      <div class="streak-pill">🔥 47</div>
+      <div class="nav-avatar">SH</div>
+      <button class="nav-logout">Logout</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="eyebrow">Monday &middot; 07 July 2026</div>
+    <div class="page-title">Namaskaram, Sreeni 🙏</div>
+    <div class="page-sub">2 of 3 anushtanams done. Keep the deepam burning.</div>
+
+    <div class="profile-switch">
+      <div class="ps-chip on"><span class="ps-av">SH</span>Me</div>
+      <div class="ps-chip"><span class="ps-av">AH</span>Adhvaith (son)</div>
+      <div class="ps-chip"><span class="ps-av">+</span>Add child</div>
+    </div>
+
+    <div class="today-card">
+      <div>
+        <div class="tc-label">Current Streak</div>
+        <div class="tc-big">47 days 🔥</div>
+        <div class="tc-hint">Best: 82 days</div>
+      </div>
+      <div class="progress-ring"><div class="pr-core">2/3</div></div>
+    </div>
+
+    <div class="section-h">Today's Anushtanams</div>
+    <div class="practice-grid">
+      <div class="practice-card done">
+        <div class="p-icon">🌅</div>
+        <div class="p-body">
+          <div class="p-name">Sandhyavandhanam</div>
+          <div class="p-meta">3 sandhyas &middot; Gaayatri 108 &middot; <span class="mini-flame">🔥 47</span></div>
+        </div>
+        <div class="done-check">✓</div>
+      </div>
+      <div class="practice-card done">
+        <div class="p-icon">🕉️</div>
+        <div class="p-body">
+          <div class="p-name">Vishnu Sahasranamam</div>
+          <div class="p-meta">Done at 7:05 AM &middot; <span class="mini-flame">🔥 31</span></div>
+        </div>
+        <div class="done-check">✓</div>
+      </div>
+      <div class="practice-card">
+        <div class="p-icon">🐒</div>
+        <div class="p-body">
+          <div class="p-name">Hanuman Chalisa</div>
+          <div class="p-meta">Evening &middot; <span class="mini-flame">🔥 5</span></div>
+        </div>
+        <button class="btn-done">Mark Done</button>
+      </div>
+    </div>
+    <div class="add-select"><span>Add an anushtanam to track...</span><span class="plus">+</span></div>
+  </div>
+</div>
+<p class="frame-note">Same content as the Android Home, laid out for wider screens: practices in a 2-column grid, tabs in the navbar instead of bottom nav. The add-practice dropdown behaves identically.</p>
+
+<!-- ============ 2. SUBMIT / CELEBRATION MODAL ============ -->
+<div class="frame-label">2 &middot; Submit Moment (modal over dashboard)</div>
+<div class="browser">
+  <div class="urlbar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="url">nithyakarma.app/dashboard</div></div>
+  <div class="modal-stage">
+    <div class="modal-dim">
+      <div class="modal">
+        <div class="confetti-row">✨ 🎉 ✨</div>
+        <div class="big-flame">🔥</div>
+        <div class="cel-streak"><span>48 Day</span> Streak!</div>
+        <div class="cel-sub">Hanuman Chalisa completed. Punyam grows daily.</div>
+        <div class="share-card">
+          <div class="sc-om">🕉</div>
+          <div class="sc-brand">🪔 Nithyakarma</div>
+          <div class="sc-days">48 <span>day streak</span></div>
+          <div class="sc-practice">Hanuman Chalisa &middot; daily<br/>Sreeni H &middot; Tapasvi tier</div>
+          <div class="sc-foot"><span>Join me on Nithyakarma</span><span>nithyakarma.app/r/SREENI48</span></div>
+        </div>
+        <button class="btn-whatsapp">Share to WhatsApp</button>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="frame-note">No ads on web - AdMob interstitials are native-only, so ads exist only in the Android app. The modal stays because the WhatsApp share card is the referral engine and iPhone users share via wa.me links. Web flow: save &rarr; verify &rarr; celebrate &rarr; share.</p>
+
+<!-- ============ 3. SABHA ============ -->
+<div class="frame-label">3 &middot; Sabha (Leaderboard)</div>
+<div class="browser">
+  <div class="urlbar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="url">nithyakarma.app/sabha</div></div>
+  <div class="navbar">
+    <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
+    <div class="nav-tabs">
+      <div class="nav-tab">Today</div><div class="nav-tab">History</div><div class="nav-tab on">Sabha</div><div class="nav-tab">Profile</div>
+    </div>
+    <div class="nav-right">
+      <div class="streak-pill">🔥 47</div>
+      <div class="nav-avatar">SH</div>
+      <button class="nav-logout">Logout</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="page-title" style="font-size:1.4rem;">Sabha Leaderboard</div>
+    <div class="page-sub">Week of 06 - 12 July &middot; resets Sunday night</div>
+
+    <div class="seg-toggle" style="max-width:520px;"><div class="seg on">This Week</div><div class="seg">This Month</div><div class="seg">Friends</div><div class="seg">Bala Sabha 🧒</div></div>
+
+    <div class="hall-banner">
+      <div class="hall-avatar">RK</div>
+      <div>
+        <div class="hall-label">🏅 Hall of the Week</div>
+        <div class="hall-name">Radhika Krishnan</div>
+        <div class="hall-stat">28 anushtanams &middot; 112-day streak &middot; Rishi tier</div>
+      </div>
+    </div>
+
+    <div class="lb-row"><div class="lb-rank r1">1</div><div class="lb-avatar">RK</div><div class="lb-body"><div class="lb-name">Radhika Krishnan</div><span class="tier-badge tier-rishi">Rishi</span></div><div class="lb-score">28<span class="u">this week</span></div></div>
+    <div class="lb-row"><div class="lb-rank r2">2</div><div class="lb-avatar">VN</div><div class="lb-body"><div class="lb-name">Vishnu Namboothiri</div><span class="tier-badge tier-tapasvi">Tapasvi</span></div><div class="lb-score">26<span class="u">this week</span></div></div>
+    <div class="lb-row"><div class="lb-rank r3">3</div><div class="lb-avatar">LM</div><div class="lb-body"><div class="lb-name">Lakshmi Menon</div><span class="tier-badge tier-tapasvi">Tapasvi</span></div><div class="lb-score">24<span class="u">this week</span></div></div>
+    <div class="lb-row me"><div class="lb-rank">7</div><div class="lb-avatar">SH</div><div class="lb-body"><div class="lb-name">Sreeni H (You)</div><span class="tier-badge tier-tapasvi">Tapasvi</span></div><div class="lb-score">19<span class="u">this week</span></div></div>
+    <div class="lb-row"><div class="lb-rank">8</div><div class="lb-avatar">AI</div><div class="lb-body"><div class="lb-name">Ananthu Iyer</div><span class="tier-badge tier-sadhaka">Sadhaka</span></div><div class="lb-score">17<span class="u">this week</span></div></div>
+    <div class="lb-row"><div class="lb-rank">9</div><div class="lb-avatar">GP</div><div class="lb-body"><div class="lb-name">Gowri Pisharody</div><span class="tier-badge tier-jijnasu">Jijnasu</span></div><div class="lb-score">14<span class="u">this week</span></div></div>
+  </div>
+</div>
+<p class="frame-note">Tiers: Jijnasu &rarr; Sadhaka &rarr; Tapasvi &rarr; Rishi &rarr; Brahmarishi. Bala Sabha is the separate kids leaderboard: family member profiles only, first name shown, parent opt-in, own weekly winner. Same data and rules as the Android app - one shared Supabase backend.</p>
+
+<!-- ============ 4. PROFILE (EDIT + FAMILY + DELETE) ============ -->
+<div class="frame-label">4 &middot; Profile - edit, family, delete account</div>
+<div class="browser">
+  <div class="urlbar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="url">nithyakarma.app/profile</div></div>
+  <div class="navbar">
+    <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
+    <div class="nav-tabs">
+      <div class="nav-tab">Today</div><div class="nav-tab">History</div><div class="nav-tab">Sabha</div><div class="nav-tab on">Profile</div>
+    </div>
+    <div class="nav-right">
+      <div class="streak-pill">🔥 47</div>
+      <div class="nav-avatar">SH</div>
+      <button class="nav-logout">Logout</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="page-title" style="font-size:1.4rem;">Profile</div>
+    <div class="page-sub">Sreeni H &middot; Tapasvi tier</div>
+
+    <div class="profile-grid">
+      <div class="card">
+        <div class="card-h">Edit Profile</div>
+        <label class="field-label">Display name</label>
+        <input class="field-input" value="Sreeni H" readonly />
+        <label class="field-label" style="margin-top:0.9rem;">Sandhya reminders</label>
+        <input class="field-input" value="9:00 AM  ·  12:30 PM  ·  6:30 PM" readonly />
+        <button class="btn-save">Save changes</button>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Family Members (children under 15)</div>
+        <div class="fam-row">
+          <div class="fam-av">AH</div>
+          <div>
+            <div class="fam-name">Adhvaith</div>
+            <div class="fam-meta">Male &middot; upanayanam done &middot; Sandhyavandhanam + Hanuman Chalisa</div>
+          </div>
+          <span style="flex:1"></span>
+          <button class="fam-remove">Remove</button>
+        </div>
+        <div class="fam-row">
+          <div class="fam-av">DH</div>
+          <div>
+            <div class="fam-name">Devika</div>
+            <div class="fam-meta">Female &middot; Lalitha Sahasranamam</div>
+          </div>
+          <span style="flex:1"></span>
+          <button class="fam-remove">Remove</button>
+        </div>
+        <button class="btn-add-fam">+ Add family member</button>
+      </div>
+
+      <div class="card">
+        <div class="card-h">Tier Progress</div>
+        <div class="tp-row"><span>Tapasvi</span><span class="next">Rishi</span></div>
+        <div class="tp-bar"><div class="tp-fill"></div></div>
+        <div class="tp-hint">640 / 1000 punya points &middot; 360 more to reach Rishi</div>
+        <div class="stat-row">
+          <div class="stat-tile"><div class="stat-num">🔥 47</div><div class="stat-lbl">Streak</div></div>
+          <div class="stat-tile"><div class="stat-num">82</div><div class="stat-lbl">Best</div></div>
+          <div class="stat-tile"><div class="stat-num">1,204</div><div class="stat-lbl">Total Done</div></div>
+        </div>
+      </div>
+
+      <div class="referral-card" style="margin-top:0;">
+        <div class="ref-title">Invite from your Sabha 🎁</div>
+        <div class="ref-sub">Every member who joins with your link gives you both 1 month ad-free.</div>
+        <button class="btn-ref">Share invite on WhatsApp</button>
+      </div>
+
+      <div class="danger-zone">
+        <div class="dz-title">Danger zone</div>
+        <div class="dz-sub">Deleting your account removes your profile, all family member profiles, every log, streak, and leaderboard entry - permanently. A confirmation dialog asks you to type DELETE before anything happens.</div>
+        <button class="btn-danger">Delete my account &amp; all data</button>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="frame-note">Edit name + reminder times, manage family members (add shows name, gender, and upanayanam-done toggle for boys - that decides Sandhyavandhanam, not age). Delete follows the existing app's cascade: family_members &rarr; logs &rarr; profile.</p>
+
+</body>
+</html>

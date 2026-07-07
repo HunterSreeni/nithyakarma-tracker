@@ -1,0 +1,37 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './hooks/useAuth'
+import AuthPage from './components/AuthPage'
+import Onboarding from './components/Onboarding'
+import Layout from './components/Layout'
+import TodayPage from './components/TodayPage'
+import HistoryPage from './components/HistoryPage'
+import SabhaPage from './components/SabhaPage'
+import ProfilePage from './components/ProfilePage'
+
+function Gate() {
+  const { session, profile, loading } = useAuth()
+  if (loading) return <div className="spinner-wrap">Loading...</div>
+  if (!session) return <AuthPage />
+  if (!profile) return <Onboarding />
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<TodayPage />} />
+        <Route path="/history" element={<HistoryPage />} />
+        <Route path="/sabha" element={<SabhaPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Layout>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Gate />
+      </AuthProvider>
+    </BrowserRouter>
+  )
+}
