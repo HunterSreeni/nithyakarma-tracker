@@ -82,12 +82,20 @@ function PracticeCard({ item, busy, onMark }) {
   const { practice, up, logs } = item
   const done = isDoneToday(practice, logs)
   const slotsDone = new Set(logs.map(l => l.slot))
+  const [showInfo, setShowInfo] = useState(false)
 
   return (
     <div className={`practice-card ${done ? 'done' : ''}`}>
       <div className="p-icon">{practice.icon}</div>
       <div className="p-body">
-        <div className="p-name">{practice.name}</div>
+        <div className="p-name">
+          {practice.name}
+          {practice.is_sandhyavandhanam && (
+            <button type="button" className="info-btn" aria-expanded={showInfo}
+              aria-label="Why does Sandhyavandhanam need three marks?"
+              onClick={() => setShowInfo(v => !v)}>!</button>
+          )}
+        </div>
         <div className="p-meta">
           {practice.cadence === 'sequence' && up.sequence_position > 0
             ? `${up.sequence_position}${practice.sequence_length ? `/${practice.sequence_length}` : ''} · `
@@ -95,15 +103,27 @@ function PracticeCard({ item, busy, onMark }) {
           {cadenceLabel(practice)} · <span className="mini-flame">🔥 {up.current_streak}</span>
         </div>
         {practice.is_sandhyavandhanam && (
-          <div className="slot-row">
-            {SANDHYA_SLOTS.map(s => (
-              <button key={s.key} disabled={slotsDone.has(s.key) || busy}
-                className={`slot-btn ${slotsDone.has(s.key) ? 'done' : ''}`}
-                onClick={() => onMark(item, s.key)}>
-                {slotsDone.has(s.key) ? '✓ ' : ''}{s.short}
-              </button>
-            ))}
-          </div>
+          <>
+            {showInfo && (
+              <div className="sandhya-info" role="note">
+                Sandhyavandhanam is performed 3 times a day - <b>Prathakala</b> (morning),
+                <b> Madhyanika</b> (noon) and <b>Saayamkala</b> (evening). Mark all three to
+                complete the day and grow your streak.
+              </div>
+            )}
+            <div className="sandhya-progress">
+              {done ? 'All 3 sandhyas done 🎉' : `${slotsDone.size} of 3 sandhyas done`}
+            </div>
+            <div className="slot-row">
+              {SANDHYA_SLOTS.map(s => (
+                <button key={s.key} disabled={slotsDone.has(s.key) || busy}
+                  className={`slot-btn ${slotsDone.has(s.key) ? 'done' : ''}`}
+                  onClick={() => onMark(item, s.key)}>
+                  {slotsDone.has(s.key) ? '✓ ' : ''}{s.short}
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
       {done ? <div className="done-check">✓</div>

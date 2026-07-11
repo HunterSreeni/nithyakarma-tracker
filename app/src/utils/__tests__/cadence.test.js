@@ -27,6 +27,10 @@ describe('isDoneToday', () => {
     expect(isDoneToday(sandhya, [{ slot: 'morning' }, { slot: 'afternoon' }])).toBe(false)
     expect(isDoneToday(sandhya, [{ slot: 'morning' }, { slot: 'afternoon' }, { slot: 'evening' }])).toBe(true)
   })
+  it('a single sandhya slot is NOT done (the reported 0-not-1 case is correct)', () => {
+    expect(isDoneToday(sandhya, [])).toBe(false)
+    expect(isDoneToday(sandhya, [{ slot: 'morning' }])).toBe(false)
+  })
   it('general practice done with a single log', () => {
     expect(isDoneToday({ is_sandhyavandhanam: false }, [])).toBe(false)
     expect(isDoneToday({ is_sandhyavandhanam: false }, [{}])).toBe(true)

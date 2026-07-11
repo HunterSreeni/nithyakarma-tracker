@@ -85,6 +85,24 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .slot-btn.done { background: #d9f2e1; border-color: #bbe3c8; color: var(--success); }
 .slot-btn:disabled { cursor: default; }
 
+/* Sandhya 3-slot explainer + progress */
+.info-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; border-radius: 50%; border: 1.3px solid var(--saffron-400);
+  background: var(--saffron-50); color: var(--saffron-600); font-family: 'Syne', sans-serif;
+  font-size: 0.62rem; font-weight: 800; line-height: 1; margin-left: 6px; cursor: pointer;
+  vertical-align: middle; padding: 0;
+}
+.info-btn:hover { background: var(--saffron-100); }
+.sandhya-info {
+  background: var(--saffron-50); border: 1px solid var(--saffron-200); border-radius: 10px;
+  padding: 0.55rem 0.7rem; font-size: 0.72rem; color: #7a5a2a; margin: 0.5rem 0 0.3rem; line-height: 1.5;
+}
+.sandhya-progress {
+  font-family: 'Syne', sans-serif; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.03em;
+  text-transform: uppercase; color: var(--saffron-600); margin: 0.45rem 0 0.1rem;
+}
+
 /* add-practice dropdown */
 .add-select { background: #fff; border: 1.5px dashed var(--warm); border-radius: 14px; padding: 0.8rem 1rem; display: flex; align-items: center; justify-content: space-between; color: #8a7f70; font-size: 0.8rem; width: 100%; margin-top: 0.3rem; }
 .add-select .plus { color: var(--saffron-600); font-weight: 700; }
@@ -206,17 +224,17 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .auth-hero {
   position: relative; overflow: hidden; text-align: center;
   display: flex; align-items: center; justify-content: center; padding: 2.5rem;
-  background: linear-gradient(160deg, var(--ink), #1a1512);
+  background: linear-gradient(160deg, #1a1208, #3b2408 55%, #7a4a10);
 }
 .auth-hero::before {
   content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 30% 20%, rgba(200,68,26,0.28) 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 85%, rgba(243,124,2,0.18) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 30% 15%, rgba(243,124,2,0.20) 0%, transparent 55%),
+              radial-gradient(ellipse at 80% 90%, rgba(255,153,51,0.14) 0%, transparent 55%);
 }
 .auth-hero-inner { position: relative; }
-.auth-peryava { width: 175px; height: auto; border-radius: 16px; border: 2px solid rgba(255,255,255,0.15); display: block; margin: 0 auto 1.5rem; }
+.auth-peryava { width: 175px; height: auto; border-radius: 16px; border: 2px solid rgba(255,255,255,0.18); box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: block; margin: 0 auto 1.5rem; }
 .auth-hero-title { font-family: 'Syne', sans-serif; color: #fff; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
-.auth-hero-sub { color: var(--saffron-400); font-size: 0.98rem; font-weight: 500; font-style: italic; letter-spacing: 0.02em; margin-top: 0.85rem; }
+.auth-hero-sub { color: var(--saffron-400); font-size: 0.98rem; font-weight: 600; font-style: italic; letter-spacing: 0.02em; margin-top: 0.85rem; }
 .auth-panel { display: flex; align-items: center; justify-content: center; padding: 2.5rem 1.5rem; background: var(--paper); }
 .auth-formwrap { width: 100%; max-width: 340px; }
 .auth-welcome { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); margin-top: 0.5rem; }
