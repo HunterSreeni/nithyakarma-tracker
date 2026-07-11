@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   const loadProfile = useCallback(async (uid) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', uid).single()
+    const { data } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle()
     setProfile(data ?? null)
     const { data: fam } = await supabase.from('family_members')
       .select('*').eq('parent_id', uid).order('name')
@@ -97,10 +97,11 @@ export function AuthProvider({ children }) {
     await loadProfile(session.user.id)
   }
 
-  // Cascade: profile delete removes family_members, user_practices, logs,
-  // referrals via ON DELETE CASCADE. Then sign out.
+  // Deletes the auth user, which cascades to the profile and all owned rows
+  // (family_members, user_practices, logs, referrals). Removes the identity
+  // itself, not just the profile row. Then sign out.
   const deleteAccount = async () => {
-    const { error } = await supabase.from('profiles').delete().eq('id', session.user.id)
+    const { error } = await supabase.rpc('delete_account')
     if (error) throw error
     await signOut()
   }

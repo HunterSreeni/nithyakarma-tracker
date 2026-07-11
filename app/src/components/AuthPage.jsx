@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { useAuth } from '../hooks/useAuth'
 
 export default function AuthPage() {
@@ -29,10 +30,17 @@ export default function AuthPage() {
       <div className="auth-logo">🪔 Nithya<span>karma</span></div>
       <div className="auth-sub">Your daily anushtanam companion</div>
       <div className="auth-card">
-        <button className="btn-google" onClick={signInGoogle}>
-          <span>G</span> Continue with Google
-        </button>
-        <div className="auth-or">or with email</div>
+        {/* Google OAuth returns to https://localhost, which the native shell has
+            no deep-link handler for, so the button dead-ends on Android. Show it
+            only on web until native OAuth return is wired. */}
+        {!Capacitor.isNativePlatform() && (
+          <>
+            <button className="btn-google" onClick={signInGoogle}>
+              <span>G</span> Continue with Google
+            </button>
+            <div className="auth-or">or with email</div>
+          </>
+        )}
         <form onSubmit={submit}>
           <label className="field-label" htmlFor="auth-email">Email</label>
           <input id="auth-email" className="field-input" type="email" value={email}

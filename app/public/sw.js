@@ -8,8 +8,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Nithyakarma Reminder'
   const options = {
     body: data.body || 'Time for your anushtanam',
-    icon: '/vite.svg',
-    badge: '/vite.svg',
+    icon: '/favicon.svg',
+    badge: '/favicon.svg',
     data: { url: data.url || '/' },
   }
   event.waitUntil(self.registration.showNotification(title, options))

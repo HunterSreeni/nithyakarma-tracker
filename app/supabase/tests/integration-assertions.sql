@@ -62,6 +62,27 @@ begin
     raise exception 'FAIL: tier boundaries drifted from client';
   end if;
 
+  -- 6. notification_deliveries dedup: the edge function relies on a unique
+  -- (user_id, reminder_date, slot, endpoint) to avoid double-sending a slot.
+  insert into notification_deliveries (user_id, reminder_date, slot, endpoint)
+    values (v_uid, current_date, 'morning', 'https://push.test/endpoint-1');
+  v_failed := false;
+  begin
+    insert into notification_deliveries (user_id, reminder_date, slot, endpoint)
+      values (v_uid, current_date, 'morning', 'https://push.test/endpoint-1');
+  exception when unique_violation then v_failed := true;
+  end;
+  if not v_failed then raise exception 'FAIL: duplicate notification delivery accepted (dedup broken)'; end if;
+
+  -- 7. delete_account RPC exists, is SECURITY DEFINER, and anon cannot run it
+  if not exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'delete_account' and p.prosecdef
+  ) then raise exception 'FAIL: delete_account RPC missing or not SECURITY DEFINER'; end if;
+  if has_function_privilege('anon', 'public.delete_account()', 'execute') then
+    raise exception 'FAIL: anon can execute delete_account';
+  end if;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;
