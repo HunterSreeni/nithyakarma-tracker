@@ -1,0 +1,16 @@
+insert into public.practices (slug, name, icon, cadence, weekday, target_count, sequence_length, is_sandhyavandhanam) values
+  ('sandhyavandhanam',      'Sandhyavandhanam',           '🌅', 'daily',       null, 108,  null, true),
+  ('vishnu-sahasranamam',   'Vishnu Sahasranamam',        '🕉️', 'daily',       null, null, null, false),
+  ('lalitha-sahasranamam',  'Lalitha Sahasranamam',       '🌺', 'daily',       null, null, null, false),
+  ('hanuman-chalisa',       'Hanuman Chalisa',            '🐒', 'daily',       null, null, null, false),
+  ('narayaneeyam',          'Narayaneeyam',               '📖', 'sequence',    null, null, 100,  false),
+  ('bhagavad-gita',         'Bhagavad Gita Parayanam',    '🪷', 'sequence',    null, null, 18,   false),
+  ('aditya-hrudayam',       'Aditya Hrudayam',            '☀️', 'weekly',      0,    null, null, false),
+  ('sri-rudram',            'Sri Rudram (Namakam-Chamakam)', '🔱', 'weekly',   1,    null, null, false),
+  ('shiva-panchakshari',    'Shiva Panchakshari Japam',   '📿', 'daily_count', null, 108,  null, false),
+  ('devi-mahatmyam',        'Devi Mahatmyam (Saptashati)','🗡️', 'weekly',      5,    null, null, false),
+  ('soundarya-lahari',      'Soundarya Lahari',           '🌊', 'daily',       null, null, null, false),
+  ('mukundamala',           'Mukundamala',                '🪈', 'daily',       null, null, null, false),
+  ('subrahmanya-bhujangam', 'Subrahmanya Bhujangam',      '🦚', 'weekly',      2,    null, null, false),
+  ('dakshinamurthy-stotram','Dakshinamurthy Stotram',     '🌳', 'weekly',      4,    null, null, false),
+  ('bhagavatam',            'Bhagavatam Parayanam',       '📚', 'sequence',    null, null, null, false);
