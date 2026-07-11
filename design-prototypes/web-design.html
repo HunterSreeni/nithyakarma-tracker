@@ -282,8 +282,49 @@ body {
 <h1 class="gallery-title">Nithyakarma Tracker &nbsp;🪔&nbsp; Web App Design v1</h1>
 <p class="gallery-sub">Responsive web app for iPhone (and desktop) users - same features as the Android app. On phones it collapses to the mobile layout from app-design.html.</p>
 
-<!-- ============ 1. DASHBOARD ============ -->
-<div class="frame-label">1 &middot; Dashboard / Today</div>
+<!-- ============ 1. SIGN IN / AUTH ============ -->
+<div class="frame-label">1 &middot; Sign In / Auth</div>
+<div class="browser">
+  <div class="urlbar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="url">nithyakarma.app/auth</div></div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; min-height: 540px;">
+    <!-- left: Periyava hero -->
+    <div style="background: linear-gradient(160deg, var(--ink), #1a1512); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem; text-align: center; position: relative; overflow: hidden;">
+      <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 20%, rgba(200,68,26,0.28) 0%, transparent 60%), radial-gradient(ellipse at 80% 85%, rgba(243,124,2,0.18) 0%, transparent 60%);"></div>
+      <div style="position: relative;">
+        <img src="periyava.jpg" alt="Periyava" style="width: 175px; height: auto; border-radius: 16px; border: 2px solid rgba(255,255,255,0.15); margin: 0 auto 1.5rem; display: block;" />
+        <div style="color: #fff; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2;">Nithya Karma<br>Anushtanam</div>
+        <div style="color: var(--saffron-400); font-size: 0.98rem; margin-top: 0.85rem; font-weight: 500; font-style: italic; letter-spacing: 0.02em;">Anudinam anushtanam</div>
+      </div>
+    </div>
+    <!-- right: form -->
+    <div style="background: var(--paper); display: flex; flex-direction: column; justify-content: center; padding: 2.5rem;">
+      <div style="max-width: 340px; margin: 0 auto; width: 100%;">
+        <div class="wordmark" style="margin-bottom: 1.6rem;"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
+        <div style="font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink);">Welcome back</div>
+        <div style="color: #8a7f70; font-size: 0.82rem; margin-top: 0.25rem; margin-bottom: 1.4rem; font-weight: 300;">Sign in to continue your practice.</div>
+        <button style="width: 100%; padding: 0.8rem; border: 1.5px solid var(--warm); border-radius: 12px; background: #fff; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.6rem; cursor: pointer; color: var(--ink);">
+          <svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+        <div style="display: flex; align-items: center; gap: 0.7rem; margin: 1.1rem 0;">
+          <div style="flex: 1; height: 1px; background: var(--warm);"></div>
+          <span class="label-syne" style="font-size: 0.6rem; color: #999; letter-spacing: 0.14em; text-transform: uppercase;">or with email</span>
+          <div style="flex: 1; height: 1px; background: var(--warm);"></div>
+        </div>
+        <div class="label-syne" style="font-size: 0.6rem; color: #8a7f70; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.35rem;">Email</div>
+        <div style="background: #fff; border: 1.5px solid var(--warm); border-radius: 10px; padding: 0.75rem 0.9rem; font-size: 0.85rem; color: #b6ab99; margin-bottom: 0.9rem;">you@example.com</div>
+        <div class="label-syne" style="font-size: 0.6rem; color: #8a7f70; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.35rem;">Password</div>
+        <div style="background: #fff; border: 1.5px solid var(--warm); border-radius: 10px; padding: 0.75rem 0.9rem; font-size: 0.85rem; color: #b6ab99;">••••••••</div>
+        <button style="width: 100%; padding: 0.85rem; background: var(--saffron-500); color: #fff; border: none; border-radius: 100px; font-weight: 700; font-size: 0.92rem; margin-top: 1.2rem; cursor: pointer;">Sign In</button>
+        <div style="text-align: center; font-size: 0.8rem; color: #8a7f70; margin-top: 1.1rem;">New here? <span style="color: var(--saffron-600); font-weight: 700;">Create account</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="frame-note">Two-panel sign-in: Periyava on the left, a minimal form on the right - the same layout the app uses (image on top when collapsed to mobile). Copy is ours: heading "Nithya Karma Anushtanam", subtitle "Anudinam anushtanam" (the practice, day after day). Only the image is shared with the Sandhyavandhanam app.</p>
+
+<!-- ============ 2. DASHBOARD ============ -->
+<div class="frame-label">2 &middot; Dashboard / Today</div>
 <div class="browser">
   <div class="urlbar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="url">nithyakarma.app/dashboard</div></div>
   <div class="navbar">
@@ -350,7 +391,7 @@ body {
 <p class="frame-note">Same content as the Android Home, laid out for wider screens: practices in a 2-column grid, tabs in the navbar instead of bottom nav. The add-practice dropdown behaves identically.</p>
 
 <!-- ============ 2. SUBMIT / CELEBRATION MODAL ============ -->
-<div class="frame-label">2 &middot; Submit Moment (modal over dashboard)</div>
+<div class="frame-label">3 &middot; Submit Moment (modal over dashboard)</div>
 <div class="browser">
   <div class="urlbar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="url">nithyakarma.app/dashboard</div></div>
   <div class="modal-stage">
@@ -375,7 +416,7 @@ body {
 <p class="frame-note">No ads on web - AdMob interstitials are native-only, so ads exist only in the Android app. The modal stays because the WhatsApp share card is the referral engine and iPhone users share via wa.me links. Web flow: save &rarr; verify &rarr; celebrate &rarr; share.</p>
 
 <!-- ============ 3. SABHA ============ -->
-<div class="frame-label">3 &middot; Sabha (Leaderboard)</div>
+<div class="frame-label">4 &middot; Sabha (Leaderboard)</div>
 <div class="browser">
   <div class="urlbar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="url">nithyakarma.app/sabha</div></div>
   <div class="navbar">
@@ -415,7 +456,7 @@ body {
 <p class="frame-note">Tiers: Jijnasu &rarr; Sadhaka &rarr; Tapasvi &rarr; Rishi &rarr; Brahmarishi. Bala Sabha is the separate kids leaderboard: family member profiles only, first name shown, parent opt-in, own weekly winner. Same data and rules as the Android app - one shared Supabase backend.</p>
 
 <!-- ============ 4. PROFILE (EDIT + FAMILY + DELETE) ============ -->
-<div class="frame-label">4 &middot; Profile - edit, family, delete account</div>
+<div class="frame-label">5 &middot; Profile - edit, family, delete account</div>
 <div class="browser">
   <div class="urlbar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="url">nithyakarma.app/profile</div></div>
   <div class="navbar">

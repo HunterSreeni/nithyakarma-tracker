@@ -200,6 +200,36 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .auth-switch button { background: none; border: none; color: var(--saffron-600); font-weight: 700; font-size: 0.74rem; }
 .auth-error { background: #fee2e2; color: var(--danger); border: 1px solid #f87171; border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.74rem; margin-top: 0.9rem; }
 .auth-notice { background: #d1fae5; color: #047857; border: 1px solid #34d399; border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.74rem; margin-top: 0.9rem; }
+
+/* Two-panel auth: Periyava hero + form (image on top when stacked on mobile) */
+.auth-split { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
+.auth-hero {
+  position: relative; overflow: hidden; text-align: center;
+  display: flex; align-items: center; justify-content: center; padding: 2.5rem;
+  background: linear-gradient(160deg, var(--ink), #1a1512);
+}
+.auth-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 20%, rgba(200,68,26,0.28) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 85%, rgba(243,124,2,0.18) 0%, transparent 60%);
+}
+.auth-hero-inner { position: relative; }
+.auth-peryava { width: 175px; height: auto; border-radius: 16px; border: 2px solid rgba(255,255,255,0.15); display: block; margin: 0 auto 1.5rem; }
+.auth-hero-title { font-family: 'Syne', sans-serif; color: #fff; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+.auth-hero-sub { color: var(--saffron-400); font-size: 0.98rem; font-weight: 500; font-style: italic; letter-spacing: 0.02em; margin-top: 0.85rem; }
+.auth-panel { display: flex; align-items: center; justify-content: center; padding: 2.5rem 1.5rem; background: var(--paper); }
+.auth-formwrap { width: 100%; max-width: 340px; }
+.auth-welcome { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); margin-top: 0.5rem; }
+.auth-welcome + .auth-sub { margin-bottom: 1.3rem; }
+
+@media (max-width: 768px) {
+  .auth-split { grid-template-columns: 1fr; }
+  .auth-hero { padding: 2rem 1.4rem 1.6rem; }
+  .auth-peryava { width: 120px; margin-bottom: 1rem; }
+  .auth-hero-title { font-size: 1.2rem; }
+  .auth-hero-sub { font-size: 0.82rem; margin-top: 0.5rem; }
+  .auth-panel { padding: 1.4rem 1.2rem 2rem; }
+}
 .radio-row { display: flex; gap: 0.6rem; }
 .radio-chip { flex: 1; text-align: center; padding: 10px; border-radius: 12px; border: 1.5px solid var(--warm); background: #f6f2ea; font-size: 0.78rem; font-weight: 700; color: #8a7f70; }
 .radio-chip.on { border-color: var(--saffron-400); background: var(--saffron-50); color: var(--ink); }

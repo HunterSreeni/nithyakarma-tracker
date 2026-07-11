@@ -26,40 +26,58 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="auth-wrap">
-      <div className="auth-logo">🪔 Nithya<span>karma</span></div>
-      <div className="auth-sub">Your daily anushtanam companion</div>
-      <div className="auth-card">
-        {/* Google OAuth returns to https://localhost, which the native shell has
-            no deep-link handler for, so the button dead-ends on Android. Show it
-            only on web until native OAuth return is wired. */}
-        {!Capacitor.isNativePlatform() && (
-          <>
-            <button className="btn-google" onClick={signInGoogle}>
-              <span>G</span> Continue with Google
+    <div className="auth-split">
+      {/* Periyava hero - left panel on web, top on mobile */}
+      <div className="auth-hero">
+        <div className="auth-hero-inner">
+          <img className="auth-peryava" src="/periyava.jpg" alt="Periyava" />
+          <div className="auth-hero-title">Nithya Karma Anushtanam</div>
+          <div className="auth-hero-sub">Anudinam anushtanam</div>
+        </div>
+      </div>
+
+      {/* Form panel */}
+      <div className="auth-panel">
+        <div className="auth-formwrap">
+          <div className="auth-logo">🪔 Nithya<span>karma</span></div>
+          <div className="auth-welcome">{mode === 'login' ? 'Welcome back' : 'Get started'}</div>
+          <div className="auth-sub">
+            {mode === 'login' ? 'Sign in to continue your practice.' : 'Create your account to begin.'}
+          </div>
+
+          {/* Google OAuth returns to https://localhost, which the native shell has
+              no deep-link handler for, so the button dead-ends on Android. Show it
+              only on web until native OAuth return is wired. */}
+          {!Capacitor.isNativePlatform() && (
+            <>
+              <button className="btn-google" onClick={signInGoogle}>
+                <span>G</span> Continue with Google
+              </button>
+              <div className="auth-or">or with email</div>
+            </>
+          )}
+
+          <form onSubmit={submit}>
+            <label className="field-label" htmlFor="auth-email">Email</label>
+            <input id="auth-email" className="field-input" type="email" value={email}
+              onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+            <label className="field-label" htmlFor="auth-password">Password</label>
+            <input id="auth-password" className="field-input" type="password" value={password}
+              onChange={e => setPassword(e.target.value)} required minLength={6}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+            {error && <div className="auth-error">{error}</div>}
+            {notice && <div className="auth-notice">{notice}</div>}
+            <button className="btn-auth" type="submit" disabled={busy}>
+              {mode === 'login' ? 'Sign In' : 'Create Account'}
             </button>
-            <div className="auth-or">or with email</div>
-          </>
-        )}
-        <form onSubmit={submit}>
-          <label className="field-label" htmlFor="auth-email">Email</label>
-          <input id="auth-email" className="field-input" type="email" value={email}
-            onChange={e => setEmail(e.target.value)} required autoComplete="email" />
-          <label className="field-label" htmlFor="auth-password">Password</label>
-          <input id="auth-password" className="field-input" type="password" value={password}
-            onChange={e => setPassword(e.target.value)} required minLength={6}
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
-          {error && <div className="auth-error">{error}</div>}
-          {notice && <div className="auth-notice">{notice}</div>}
-          <button className="btn-auth" type="submit" disabled={busy}>
-            {mode === 'login' ? 'Sign In' : 'Create Account'}
-          </button>
-        </form>
-        <div className="auth-switch">
-          {mode === 'login' ? 'New here?' : 'Already have an account?'}{' '}
-          <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null) }}>
-            {mode === 'login' ? 'Create account' : 'Sign in'}
-          </button>
+          </form>
+
+          <div className="auth-switch">
+            {mode === 'login' ? 'New here?' : 'Already have an account?'}{' '}
+            <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null) }}>
+              {mode === 'login' ? 'Create account' : 'Sign in'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

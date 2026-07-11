@@ -322,13 +322,47 @@ body {
 <body>
 
 <h1 class="gallery-title">Nithyakarma Tracker &nbsp;🪔&nbsp; UI/UX Design v2</h1>
-<p class="gallery-sub">Saffron palette + subtle typography matching the Sandhyavandhanam app &middot; scroll right for all 6 screens &rarr;</p>
+<p class="gallery-sub">Saffron palette + subtle typography matching the Sandhyavandhanam app &middot; scroll right for all 7 screens &rarr;</p>
 
 <div class="gallery">
 
-  <!-- ============ 1. HOME / TODAY ============ -->
+  <!-- ============ 1. SIGN IN / AUTH ============ -->
   <div class="frame-wrap">
-    <div class="frame-label">1 &middot; Home / Today</div>
+    <div class="frame-label">1 &middot; Sign In / Auth</div>
+    <div class="phone">
+      <div style="background: linear-gradient(180deg, var(--ink), #1a1a1a); padding: 2.3rem 1.4rem 1.9rem; text-align: center; position: relative; overflow: hidden; flex-shrink: 0;">
+        <div style="position: absolute; top: -50px; left: 50%; transform: translateX(-50%); width: 270px; height: 270px; border-radius: 50%; background: radial-gradient(circle, rgba(243,124,2,0.22) 0%, transparent 70%);"></div>
+        <div style="position: relative;">
+          <div class="wordmark" style="justify-content: center; margin-bottom: 1.3rem;"><span class="diya" style="font-size: 1.1rem;">🪔</span><span class="name" style="font-size: 1.1rem;">Nithya<span>karma</span></span></div>
+          <img src="periyava.jpg" alt="Periyava" style="width: 120px; height: auto; border-radius: 14px; border: 2px solid rgba(255,255,255,0.15); margin: 0 auto 1.1rem; display: block;" />
+          <div style="color: #fff; font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25;">Nithya Karma Anushtanam</div>
+          <div style="color: var(--saffron-400); font-size: 0.82rem; margin-top: 0.45rem; font-weight: 500; font-style: italic;">Anudinam anushtanam</div>
+        </div>
+      </div>
+      <div style="padding: 1.4rem 1.3rem 2rem; flex: 1; background: var(--paper); display: flex; flex-direction: column;">
+        <button style="width: 100%; padding: 0.8rem; border: 1.5px solid var(--warm); border-radius: 12px; background: #fff; font-weight: 700; font-size: 0.82rem; display: flex; align-items: center; justify-content: center; gap: 0.55rem; cursor: pointer; color: var(--ink);">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+        <div style="display: flex; align-items: center; gap: 0.7rem; margin: 1rem 0;">
+          <div style="flex: 1; height: 1px; background: var(--warm);"></div>
+          <span class="label-syne" style="font-size: 0.58rem; color: #999; letter-spacing: 0.14em;">or with email</span>
+          <div style="flex: 1; height: 1px; background: var(--warm);"></div>
+        </div>
+        <div class="label-syne" style="font-size: 0.58rem; color: #8a7f70; letter-spacing: 0.1em; margin-bottom: 0.35rem;">Email</div>
+        <div style="background: #fff; border: 1.5px solid var(--warm); border-radius: 10px; padding: 0.72rem 0.85rem; font-size: 0.82rem; color: #b6ab99; margin-bottom: 0.85rem;">you@example.com</div>
+        <div class="label-syne" style="font-size: 0.58rem; color: #8a7f70; letter-spacing: 0.1em; margin-bottom: 0.35rem;">Password</div>
+        <div style="background: #fff; border: 1.5px solid var(--warm); border-radius: 10px; padding: 0.72rem 0.85rem; font-size: 0.82rem; color: #b6ab99;">••••••••</div>
+        <button style="width: 100%; padding: 0.85rem; background: var(--saffron-500); color: #fff; border: none; border-radius: 100px; font-weight: 700; font-size: 0.9rem; margin-top: 1.1rem; cursor: pointer;">Sign In</button>
+        <div style="text-align: center; font-size: 0.78rem; color: #8a7f70; margin-top: 1rem;">New here? <span style="color: var(--saffron-600); font-weight: 700;">Create account</span></div>
+      </div>
+    </div>
+    <p class="frame-note">First screen. Periyava's blessing anchors the sign-in; the form stays minimal. On mobile the image sits on top; on the web it becomes the left panel (see web-design.html). "Continue with Google" shows on web only - it is hidden inside the Android shell. Copy: heading "Nithya Karma Anushtanam", subtitle "Anudinam anushtanam".</p>
+  </div>
+
+  <!-- ============ 2. HOME / TODAY ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">2 &middot; Home / Today</div>
     <div class="phone">
       <div class="topbar">
         <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
@@ -403,7 +437,7 @@ body {
 
   <!-- ============ 2. ADD PRACTICE (DROPDOWN OPEN) ============ -->
   <div class="frame-wrap">
-    <div class="frame-label">2 &middot; Add Practice (dropdown open)</div>
+    <div class="frame-label">3 &middot; Add Practice (dropdown open)</div>
     <div class="phone">
       <div class="topbar">
         <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
@@ -469,7 +503,7 @@ body {
 
   <!-- ============ 3. SUBMIT / CELEBRATION ============ -->
   <div class="frame-wrap">
-    <div class="frame-label">3 &middot; Submit Moment + Share + Ad Slot</div>
+    <div class="frame-label">4 &middot; Submit Moment + Share + Ad Slot</div>
     <div class="phone">
       <div class="topbar">
         <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
@@ -504,7 +538,7 @@ body {
 
   <!-- ============ 4. LEADERBOARD / SABHA ============ -->
   <div class="frame-wrap">
-    <div class="frame-label">4 &middot; Sabha (Leaderboard)</div>
+    <div class="frame-label">5 &middot; Sabha (Leaderboard)</div>
     <div class="phone">
       <div class="topbar">
         <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
@@ -573,7 +607,7 @@ body {
 
   <!-- ============ 5. PROFILE ============ -->
   <div class="frame-wrap">
-    <div class="frame-label">5 &middot; Profile</div>
+    <div class="frame-label">6 &middot; Profile</div>
     <div class="phone">
       <div class="topbar">
         <div class="wordmark"><span class="diya">🪔</span><span class="name">Nithya<span>karma</span></span></div>
@@ -631,7 +665,7 @@ body {
 
   <!-- ============ 6. REMINDER NOTIFICATION ============ -->
   <div class="frame-wrap">
-    <div class="frame-label">6 &middot; Streak Reminder (Push)</div>
+    <div class="frame-label">7 &middot; Streak Reminder (Push)</div>
     <div class="phone lock">
       <div class="lock-time">6:31</div>
       <div class="lock-date">Monday, 07 July</div>
