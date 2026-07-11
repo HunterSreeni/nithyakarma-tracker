@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import NotificationSettings from './NotificationSettings'
 import { tierProgress, tierClass, tierFor } from '../utils/tiers'
@@ -137,6 +138,11 @@ export default function ProfilePage() {
           Delete my account &amp; all data
         </button>
         {error && <div className="auth-error">{error}</div>}
+      </div>
+
+      <div className="profile-legal">
+        <Link to="/terms">Terms &amp; Conditions</Link>
+        <Link to="/privacy">Privacy Policy</Link>
       </div>
     </>
   )

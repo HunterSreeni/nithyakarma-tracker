@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'
 import { useAuth } from '../hooks/useAuth'
 
@@ -77,6 +78,11 @@ export default function AuthPage() {
             <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null) }}>
               {mode === 'login' ? 'Create account' : 'Sign in'}
             </button>
+          </div>
+
+          <div className="auth-agree">
+            By continuing you agree to our <Link to="/terms">Terms</Link> and{' '}
+            <Link to="/privacy">Privacy Policy</Link>.
           </div>
         </div>
       </div>

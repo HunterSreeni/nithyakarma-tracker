@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 
 const signInGoogle = vi.fn()
 const signInEmail = vi.fn().mockResolvedValue({ error: null })
@@ -22,13 +23,13 @@ beforeEach(() => {
 
 describe('AuthPage', () => {
   it('offers Google and email sign-in', () => {
-    render(<AuthPage />)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
     expect(screen.getByText(/Continue with Google/)).toBeInTheDocument()
     expect(screen.getByText('Sign In')).toBeInTheDocument()
   })
 
   it('signs in with email and password', async () => {
-    render(<AuthPage />)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret123' } })
     fireEvent.click(screen.getByText('Sign In'))
@@ -36,7 +37,7 @@ describe('AuthPage', () => {
   })
 
   it('switches to signup mode and calls signUpEmail', async () => {
-    render(<AuthPage />)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
     fireEvent.click(screen.getByText('Create account'))
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@b.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret123' } })
@@ -46,7 +47,7 @@ describe('AuthPage', () => {
 
   it('shows auth errors', async () => {
     signInEmail.mockResolvedValueOnce({ error: { message: 'Invalid login credentials' } })
-    render(<AuthPage />)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrongpass' } })
     fireEvent.click(screen.getByText('Sign In'))
@@ -54,14 +55,14 @@ describe('AuthPage', () => {
   })
 
   it('starts Google OAuth on click', () => {
-    render(<AuthPage />)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
     fireEvent.click(screen.getByText(/Continue with Google/))
     expect(signInGoogle).toHaveBeenCalled()
   })
 
   it('hides Google sign-in on native (no deep-link return there)', () => {
     mockNative.mockReturnValue(true)
-    render(<AuthPage />)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
     expect(screen.queryByText(/Continue with Google/)).not.toBeInTheDocument()
     // email/password still available
     expect(screen.getByText('Sign In')).toBeInTheDocument()
@@ -69,7 +70,7 @@ describe('AuthPage', () => {
 
   it('shows the email-verification notice after signup (no session yet)', async () => {
     signUpEmail.mockResolvedValueOnce({ data: { user: { id: 'u1' }, session: null }, error: null })
-    render(<AuthPage />)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
     fireEvent.click(screen.getByText('Create account'))
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@b.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret123' } })
@@ -81,7 +82,7 @@ describe('AuthPage', () => {
 
   it('shows no verification notice when signup returns a live session', async () => {
     signUpEmail.mockResolvedValueOnce({ data: { user: { id: 'u1' }, session: { access_token: 't' } }, error: null })
-    render(<AuthPage />)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
     fireEvent.click(screen.getByText('Create account'))
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@b.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret123' } })

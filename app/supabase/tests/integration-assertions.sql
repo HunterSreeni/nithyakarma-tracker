@@ -1,6 +1,7 @@
 -- SQL integration assertions for the nithyakarma backend.
 -- Run in the Supabase SQL editor (or via MCP execute_sql). Requires the
--- seeded e2e user (e2e@nithyakarma.test) with no existing profile.
+-- dedicated integtest user (integtest@nithyakarma.test) with NO existing profile
+-- (kept separate from the e2e UI account, which does have a profile).
 -- Everything rolls back - safe to run against production.
 begin;
 do $$
@@ -10,8 +11,8 @@ declare
   v_up uuid;
   v_failed boolean;
 begin
-  select id into v_uid from auth.users where email = 'e2e@nithyakarma.test';
-  if v_uid is null then raise exception 'TEST SETUP: e2e user missing'; end if;
+  select id into v_uid from auth.users where email = 'integtest@nithyakarma.test';
+  if v_uid is null then raise exception 'TEST SETUP: integtest user missing'; end if;
 
   -- 1. validate_count clamps garbage
   if validate_count(-5) is not null then raise exception 'FAIL: negative count accepted'; end if;

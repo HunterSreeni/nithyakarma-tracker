@@ -248,6 +248,24 @@ input, select { font-family: 'DM Sans', sans-serif; }
   .auth-hero-sub { font-size: 0.82rem; margin-top: 0.5rem; }
   .auth-panel { padding: 1.4rem 1.2rem 2rem; }
 }
+.auth-agree { text-align: center; font-size: 0.68rem; color: #a89a85; margin-top: 1rem; line-height: 1.5; }
+.auth-agree a { color: var(--saffron-600); font-weight: 700; }
+
+/* Terms & Privacy pages */
+.legal-page { max-width: 720px; margin: 0 auto; padding: 1.2rem 1.2rem 3rem; min-height: 100vh; background: var(--paper); }
+.legal-head { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0 1.2rem; }
+.legal-back { background: none; border: none; color: var(--saffron-600); font-weight: 700; font-size: 0.82rem; cursor: pointer; padding: 4px 0; }
+.legal-title { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.legal-date { color: #8a7f70; font-size: 0.74rem; margin-top: 4px; margin-bottom: 1.4rem; }
+.legal-body p, .legal-body li { font-size: 0.86rem; line-height: 1.65; color: #3f382e; }
+.legal-body p { margin-bottom: 0.9rem; }
+.legal-body h3 { font-family: 'Syne', sans-serif; font-size: 0.92rem; font-weight: 700; color: var(--ink); margin: 1.2rem 0 0.4rem; }
+.legal-body ul { margin: 0 0 0.9rem 1.1rem; }
+.legal-body li { margin-bottom: 0.4rem; }
+.legal-foot { margin-top: 1.6rem; padding-top: 1rem; border-top: 1px solid var(--warm); font-size: 0.8rem; color: #8a7f70; }
+.legal-foot a, .legal-body a { color: var(--saffron-600); font-weight: 700; }
+.profile-legal { display: flex; gap: 1.1rem; justify-content: center; margin: 1.4rem 0 0.5rem; }
+.profile-legal a { color: #8a7f70; font-size: 0.74rem; font-weight: 700; }
 .radio-row { display: flex; gap: 0.6rem; }
 .radio-chip { flex: 1; text-align: center; padding: 10px; border-radius: 12px; border: 1.5px solid var(--warm); background: #f6f2ea; font-size: 0.78rem; font-weight: 700; color: #8a7f70; }
 .radio-chip.on { border-color: var(--saffron-400); background: var(--saffron-50); color: var(--ink); }
