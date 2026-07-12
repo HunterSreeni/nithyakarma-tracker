@@ -233,92 +233,127 @@ checks.
 
 ## Phase 0 - Launch blockers (target release: 1.0.0)
 
-No Play Store upload until every Intent here is done and its gate is green.
+No Play Store upload until every Intent here is done and its gate is green. At
+launch, the manual `Release-As: 1.0.0` commit footer promotes the version to
+`1.0.0` (tag `app-v1.0.0`).
 
-### Intent 0.1 - Real launcher and adaptive icon
+**Recommended execution order** (code-only first for momentum, then the items
+that need your external inputs): 0.4 accessibility -> 0.3 password reset -> 0.6
+onboarding value-prop -> 0.1 icon -> 0.2 AdMob -> 0.5 store assets.
 
-- **Intent:** Replace the default Capacitor blue-X icon with the diya brand mark
-  so the home-screen icon and store listing look finished and trustworthy.
-- **Commit type:** `feat:`
-- **Changes:** all `mipmap-*` densities (`ic_launcher`, `ic_launcher_round`,
-  `ic_launcher_foreground`), adaptive `ic_launcher_background` set to a saffron
-  tone, `favicon.svg` alignment.
-- **Testing Gate:**
-  - Visual check on a device/emulator at every density: no blue X anywhere.
-  - Adaptive icon renders correctly under circle, squircle, and rounded-square
-    masks (Android icon preview).
-  - `vite build` + `npx cap sync android` succeed; debug APK installs and shows
-    the new icon.
+**What I need from you** (external, can't be produced in-repo):
+- **0.2 AdMob:** a real AdMob account, app ID, and interstitial unit ID.
+- **0.5 store:** the release signing keystore (you generate + keep secret), and
+  a decision on where the Privacy Policy is hosted (e.g. Netlify).
+- **0.1 icon:** approval of the diya mark I generate (or supply your own art).
+Everything else I can build and test end to end.
 
-### Intent 0.2 - Production AdMob configuration
-
-- **Intent:** Swap Google's test AdMob IDs for a real account's app ID and
-  interstitial unit, and turn off testing flags, so ads actually earn and the app
-  is not policy-violating.
-- **Commit type:** `fix:` (current state is effectively broken monetization)
-- **Changes:** real `APPLICATION_ID` in `AndroidManifest.xml`; real
-  `INTERSTITIAL_ID` in `utils/ads.js`; remove `isTesting` /
-  `initializeForTesting` for production builds (keep a debug switch).
-- **Testing Gate:**
-  - `utils/__tests__/ads.test.js` extended: no test-ID constant ships in a
-    production build; `isAdFree` still suppresses ads; ad only fires after a
-    verified save.
-  - Manual on a real device with a real (test-mode) AdMob account: interstitial
-    shows after submit, and never before a verified save.
-  - Confirm the ad-free referral reward suppresses the real interstitial.
-
-### Intent 0.3 - Password reset / recovery
-
-- **Intent:** Give email users a recovery path so a forgotten password is not a
-  dead account, especially on Android where email is the only auth.
-- **Commit type:** `feat:`
-- **Changes:** "Forgot password?" link on `AuthPage`; Supabase
-  `resetPasswordForEmail` flow; a reset-handling route.
-- **Testing Gate:**
-  - Component test: link visible in login mode; submitting triggers the reset
-    call and shows the confirmation notice.
-  - e2e: request reset for the `e2e@nithyakarma.test` account and assert the
-    "email sent" state.
-  - Manual: complete a real reset round-trip on web and Android.
+**Standard full-round gate** (applies to every code Intent below, in addition to
+its specifics): `lint` clean; `vitest` green; `npm run build` succeeds; web
+Playwright e2e 14/14; Android debug APK rebuilt, installed, and the change
+verified on the emulator; ships through CI (verify + e2e) and auto-tags.
 
 ### Intent 0.4 - Accessibility pass (contrast + type scale)
 
 - **Intent:** Fix the failing contrast and tiny fonts so the older target
-  audience can actually read and tap the app.
-- **Commit type:** `fix:`
-- **Changes:** darken primary button surface / adjust text color to reach >=4.5:1;
-  darken muted meta text; raise base font sizes; honor OS Dynamic Type.
+  audience can actually read and tap the app. (Measured: white-on-`#F37C02`
+  button ~2.7:1 and muted meta `#a89a85` ~2.75:1 both fail WCAG AA.)
+- **Commit type:** `fix:` -> patch bump.
+- **Changes:** darken the primary action color and/or text to reach >=4.5:1;
+  darken muted meta text; raise base font sizes (meta up from ~0.7rem); ensure
+  layouts survive OS Dynamic Type / large font scale.
 - **Testing Gate:**
-  - `axe-core` a11y suite extended with color-contrast assertions on the primary
-    button and meta text; must pass.
-  - Automated contrast check confirms button and meta text >=4.5:1 (large text
-    >=3:1).
-  - Manual: readable at 200% OS font size without clipping.
+  - Extend the `axe-core` a11y suite with color-contrast assertions on the
+    primary button and meta text - must pass with zero violations.
+  - A unit contrast check asserts button + meta text >=4.5:1 (>=3:1 for large).
+  - **Android device:** readable at 200% OS font size with no clipping or
+    overlap on Today, Sabha, Profile, Auth.
+
+### Intent 0.3 - Password reset / recovery
+
+- **Intent:** Give email users a recovery path so a forgotten password is not a
+  dead account (Android has email-only auth).
+- **Commit type:** `feat:` -> minor bump.
+- **Changes:** "Forgot password?" link on `AuthPage`; `supabase.auth
+  .resetPasswordForEmail` flow; a `/reset` route that sets the new password from
+  the recovery link.
+- **Dependency:** add the reset redirect URL to the Supabase Auth allow-list
+  (via Supabase MCP / dashboard).
+- **Testing Gate:**
+  - Component test: link visible only in login mode; submit triggers the reset
+    call and shows the confirmation notice; `/reset` renders the set-password form.
+  - e2e: request a reset for `e2e@nithyakarma.test` and assert the "email sent"
+    state (no inbox dependency).
+  - **Manual round-trip on web and Android:** real recovery email -> set new
+    password -> sign in.
+
+### Intent 0.6 - Onboarding value-prop screen
+
+- **Intent:** Show *why* before asking for gender, so first-run activation
+  doesn't drop at a cold form.
+- **Commit type:** `feat:` -> minor bump.
+- **Changes:** a one-screen intro (track daily anushtanams, streaks + freezes,
+  the Sabha) before the `Onboarding` form; "Begin" advances to the form.
+- **Testing Gate:**
+  - Component test: intro renders; advancing reaches the form; the `/r/:code`
+    referral code still flows through to `createProfile`; `onboarding_complete`
+    analytics still fires once.
+  - e2e: fresh signup passes intro -> form -> reaches an actionable Today.
+  - **Android device:** fresh signup shows the intro then the form.
+
+### Intent 0.1 - Real launcher and adaptive icon
+
+- **Intent:** Replace the default Capacitor blue-X placeholder with the diya
+  brand mark so the home-screen icon and store listing look finished.
+- **Commit type:** `feat:` -> minor bump.
+- **Changes:** all `mipmap-*` densities (`ic_launcher`, `ic_launcher_round`,
+  `ic_launcher_foreground`), adaptive `ic_launcher_background` (saffron), the
+  512x512 Play Store icon, and `favicon.svg` alignment.
+- **Dependency:** your approval of the generated diya mark (or supply art).
+- **Testing Gate:**
+  - **Android device:** launcher icon shows the diya at every density - no blue
+    X anywhere on the home screen or app drawer.
+  - Adaptive icon renders correctly under circle, squircle, and rounded-square
+    masks (Android Studio icon preview or on-device launcher shapes).
+  - `npm run build` + `npx cap sync android` succeed; debug APK installs and
+    displays the new icon.
+
+### Intent 0.2 - Production AdMob configuration
+
+- **Intent:** Swap Google's TEST AdMob IDs for a real account's app ID +
+  interstitial unit and drop the testing flags, so ads earn and the app is not
+  policy-violating.
+- **Commit type:** `fix:` -> patch bump (current monetization is effectively
+  broken/non-compliant).
+- **Dependency:** your real AdMob app ID + interstitial unit ID (provided as
+  build-time config / secrets, not hard-coded test values).
+- **Changes:** real `APPLICATION_ID` in `AndroidManifest.xml`; real
+  `INTERSTITIAL_ID` in `utils/ads.js`; remove `isTesting` /
+  `initializeForTesting` from production builds (keep a debug switch).
+- **Testing Gate:**
+  - Extend `utils/__tests__/ads.test.js`: the Google test-ID constant must not
+    ship in a production build; `isAdFree` still suppresses ads; the ad still
+    fires only after a verified save.
+  - **Android device (AdMob test mode):** interstitial shows after a submit,
+    never before a verified save; the ad-free referral reward suppresses it.
+  - Confirm no ad on web (native-only) is unchanged.
 
 ### Intent 0.5 - Store readiness assets and compliance
 
 - **Intent:** Everything Google requires to approve and rank the listing.
-- **Commit type:** `docs:` / `chore:` (no app code, no release bump)
-- **Changes:** feature graphic (1024x500), phone screenshots, short + full
-  description, a **hosted** Privacy Policy URL, Data Safety form answers, content
-  rating, release signing keystore, verified `applicationId`.
+- **Commit type:** `docs:` / `chore:` -> no release bump (assets/config, not app
+  code).
+- **Changes:** feature graphic (1024x500), phone screenshots (captured from the
+  polished build), short + full description (drafted in-repo), a **hosted**
+  Privacy Policy URL, Data Safety answers (from `docs/DATA-SAFETY.md`), content
+  rating, release signing keystore, verified `applicationId`
+  (`in.co.sreeniverse.nithyakarma`), and an incrementing `versionCode` strategy.
 - **Testing Gate:**
+  - Signed release AAB builds, installs, and launches on a clean device/emulator.
   - Play Console pre-launch report passes with no policy violations.
-  - Data Safety answers reconciled against actual data collected (auth email,
-    referral, leaderboard visibility).
-  - Signed release AAB installs and launches on a clean device.
-
-### Intent 0.6 - Onboarding value-prop screen
-
-- **Intent:** Show why before asking for gender, so first-run activation does not
-  drop at a cold form.
-- **Commit type:** `feat:`
-- **Changes:** a one-screen intro (what the app does, the Sabha, streaks) before
-  the `Onboarding` form.
-- **Testing Gate:**
-  - Component test: intro renders, "Begin" advances to the form, referral code
-    from `/r/:code` still flows through.
-  - e2e: fresh signup reaches Today with a tracked practice.
+  - Data Safety answers reconciled line-by-line against `docs/DATA-SAFETY.md`
+    (email, analytics = first-party, crash = Sentry, push = FCM).
+  - `versionCode` increments on each upload (Play rejects duplicates).
 
 ---
 
