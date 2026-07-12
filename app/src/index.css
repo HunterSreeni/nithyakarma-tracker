@@ -231,6 +231,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .auth-or { text-align: center; color: #c4b8a4; font-size: 0.68rem; margin: 1rem 0; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'Syne', sans-serif; }
 .btn-auth { width: 100%; margin-top: 0.9rem; background: var(--action); color: #fff; border: none; border-radius: 100px; padding: 11px; font-weight: 700; font-size: 0.8rem; }
 .auth-switch { text-align: center; font-size: 0.74rem; color: var(--text-2); margin-top: 1rem; }
+.auth-forgot { display: block; margin: 0.5rem 0 0 auto; background: none; border: none; color: var(--action); font-size: 0.74rem; font-weight: 700; text-align: right; }
 .auth-switch button { background: none; border: none; color: var(--action); font-weight: 700; font-size: 0.74rem; }
 .auth-error { background: #fee2e2; color: var(--danger); border: 1px solid #f87171; border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.74rem; margin-top: 0.9rem; }
 .auth-notice { background: #d1fae5; color: #047857; border: 1px solid #34d399; border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.74rem; margin-top: 0.9rem; }

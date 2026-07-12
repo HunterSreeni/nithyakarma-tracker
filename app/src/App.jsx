@@ -8,6 +8,7 @@ import HistoryPage from './components/HistoryPage'
 import SabhaPage from './components/SabhaPage'
 import ProfilePage from './components/ProfilePage'
 import { TermsPage, PrivacyPage } from './components/LegalPages'
+import ResetPassword from './components/ResetPassword'
 
 function Gate() {
   const { session, profile, loading } = useAuth()
@@ -16,6 +17,8 @@ function Gate() {
   // Legal pages are reachable standalone whether signed in or not (Play Store requirement)
   if (pathname === '/terms') return <TermsPage />
   if (pathname === '/privacy') return <PrivacyPage />
+  // Reachable during the recovery session so it isn't skipped into the app.
+  if (pathname === '/reset') return <ResetPassword />
   if (!session) return <AuthPage />
   if (!profile) return <Onboarding />
   return (
