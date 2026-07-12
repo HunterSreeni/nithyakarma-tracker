@@ -13,6 +13,7 @@ const shareToWhatsApp = vi.fn()
 vi.mock('../../utils/share', () => ({
   shareToWhatsApp: (...a) => shareToWhatsApp(...a),
 }))
+vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
 
 import CelebrationModal from '../CelebrationModal'
 
