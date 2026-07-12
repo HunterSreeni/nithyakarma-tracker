@@ -1,27 +1,15 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { shareToWhatsApp } from '../utils/share'
-import { showInterstitial } from '../utils/ads'
 import { track } from '../utils/analytics'
-import { isMilestone, maybeRequestReview } from '../utils/review'
 
-// Shown ONLY from a verified submit_practice_log response.
-// Flow: celebrate -> share (optional) -> on close, interstitial (Android, non-ad-free).
+// Shown ONLY from a verified submit_practice_log response, and now AFTER the
+// interstitial has already fired (Intent 0.2 moved the ad into TodayPage.mark,
+// before this reward). Closing just dismisses.
 export default function CelebrationModal({ data, onClose }) {
   const { profile } = useAuth()
-  const adFired = useRef(false)
 
-  const close = async () => {
-    if (!adFired.current) {
-      adFired.current = true
-      // At a streak milestone, ask for a review instead of an ad (never both).
-      // Falls back to the ad if a review wasn't requested (web, or rate-limited).
-      const milestone = data.day_complete && isMilestone(data.overall_streak ?? 0)
-      const reviewed = milestone ? await maybeRequestReview() : false
-      if (!reviewed) await showInterstitial(profile)
-    }
-    onClose()
-  }
+  const close = () => onClose()
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') close() }

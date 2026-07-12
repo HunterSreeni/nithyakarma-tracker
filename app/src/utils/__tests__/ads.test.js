@@ -8,13 +8,13 @@ vi.mock('@capacitor/core', () => ({
 const admob = {
   initialize: vi.fn(), prepareInterstitial: vi.fn(), showInterstitial: vi.fn(),
 }
-vi.mock('@capacitor-community/admob', () => ({ AdMob: admob }))
+vi.mock('@capacitor-community/admob', () => ({ AdMob: admob, MaxAdContentRating: { General: 'General' } }))
 
 vi.mock('../analytics', () => ({ track: vi.fn() }))
 
-import { isAdFree, showInterstitial, adsAvailable } from '../ads'
+import { isAdFree, showInterstitial, adsAvailable, _resetAdSession } from '../ads'
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => { vi.clearAllMocks(); _resetAdSession() })
 
 describe('isAdFree', () => {
   const today = new Date('2026-07-07T12:00:00')
@@ -57,6 +57,21 @@ describe('showInterstitial', () => {
     admob.showInterstitial.mockRejectedValueOnce(new Error('no fill'))
     const shown = await showInterstitial({ ad_free_until: null })
     expect(shown).toBe(false)
+  })
+
+  it('caps at one interstitial per app session (launch is light)', async () => {
+    mockNative.mockReturnValue(true)
+    expect(await showInterstitial({ ad_free_until: null })).toBe(true)
+    expect(await showInterstitial({ ad_free_until: null })).toBe(false)
+    expect(admob.showInterstitial).toHaveBeenCalledTimes(1)
+  })
+
+  it('requests only G-rated ads (family / devotional audience)', async () => {
+    mockNative.mockReturnValue(true)
+    await showInterstitial({ ad_free_until: null })
+    expect(admob.initialize).toHaveBeenCalledWith(
+      expect.objectContaining({ maxAdContentRating: 'General' }),
+    )
   })
 })
 
