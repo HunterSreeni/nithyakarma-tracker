@@ -28,10 +28,11 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await page.fill('#auth-email', EMAIL)
     await page.fill('#auth-password', PASSWORD)
     await page.getByRole('button', { name: 'Sign In' }).click()
-    await expect(page.getByText('A few details to set up your anushtanams')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('button', { name: /Get started/ })).toBeVisible({ timeout: 15000 })
   })
 
   test('onboarding: male user gets Sandhyavandhanam, then the guided tour runs', async () => {
+    await page.getByRole('button', { name: /Get started/ }).click() // value-prop intro -> form
     await page.getByLabel('Your name').fill('E2E Sreeni')
     await page.getByRole('button', { name: 'Male', exact: true }).click()
     await expect(page.getByText(/Sandhyavandhanam .* will be added/)).toBeVisible()
