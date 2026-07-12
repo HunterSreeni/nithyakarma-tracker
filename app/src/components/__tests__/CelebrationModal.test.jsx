@@ -5,20 +5,11 @@ const profile = { referral_code: 'ref123', ad_free_until: null }
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ profile }),
 }))
-const showInterstitial = vi.fn().mockResolvedValue(true)
-vi.mock('../../utils/ads', () => ({
-  showInterstitial: (...a) => showInterstitial(...a),
-}))
 const shareToWhatsApp = vi.fn()
 vi.mock('../../utils/share', () => ({
   shareToWhatsApp: (...a) => shareToWhatsApp(...a),
 }))
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
-const maybeRequestReview = vi.fn().mockResolvedValue(false)
-vi.mock('../../utils/review', () => ({
-  isMilestone: (s) => [3, 7, 30, 100, 365].includes(s),
-  maybeRequestReview: (...a) => maybeRequestReview(...a),
-}))
 
 import CelebrationModal from '../CelebrationModal'
 
@@ -42,24 +33,11 @@ describe('CelebrationModal', () => {
     expect(screen.getByText('Completed!')).toBeInTheDocument()
   })
 
-  it('fires the interstitial only on close, exactly once (celebrate -> share -> ad)', async () => {
+  it('Continue dismisses the modal (the ad already fired before this, in TodayPage)', async () => {
     const onClose = vi.fn()
     render(<CelebrationModal data={data} onClose={onClose} />)
-    expect(showInterstitial).not.toHaveBeenCalled() // never before/during celebration
     fireEvent.click(screen.getByText('Continue'))
     await waitFor(() => expect(onClose).toHaveBeenCalled())
-    expect(showInterstitial).toHaveBeenCalledTimes(1)
-    expect(showInterstitial).toHaveBeenCalledWith(profile)
-  })
-
-  it('at a streak milestone, requests a review instead of an ad (never both)', async () => {
-    const onClose = vi.fn()
-    maybeRequestReview.mockResolvedValueOnce(true)
-    render(<CelebrationModal data={{ ...data, overall_streak: 7 }} onClose={onClose} />)
-    fireEvent.click(screen.getByText('Continue'))
-    await waitFor(() => expect(onClose).toHaveBeenCalled())
-    expect(maybeRequestReview).toHaveBeenCalledTimes(1)
-    expect(showInterstitial).not.toHaveBeenCalled()
   })
 
   it('shares to WhatsApp with streak, practice, and referral code', () => {
@@ -68,7 +46,6 @@ describe('CelebrationModal', () => {
     expect(shareToWhatsApp).toHaveBeenCalledWith(expect.objectContaining({
       streak: 48, practiceName: 'Hanuman Chalisa', referralCode: 'ref123',
     }))
-    expect(showInterstitial).not.toHaveBeenCalled() // sharing does not trigger the ad
   })
 
   it('shows the freeze message only when a freeze was used', () => {

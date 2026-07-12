@@ -6,10 +6,15 @@ vi.mock('../ProfileSwitcher', () => ({ default: () => null }))
 vi.mock('../CelebrationModal', () => ({ default: () => null }))
 vi.mock('../GuidedTour', () => ({ default: () => null }))
 
-const h = vi.hoisted(() => ({ items: [], catalog: [], addPractice: vi.fn() }))
-vi.mock('../../hooks/useToday', () => ({
-  useToday: () => ({ items: h.items, loading: false, submit: vi.fn(), addPractice: h.addPractice }),
+const h = vi.hoisted(() => ({
+  items: [], catalog: [], addPractice: vi.fn(),
+  submit: vi.fn(), showInterstitial: vi.fn().mockResolvedValue(false),
 }))
+vi.mock('../../hooks/useToday', () => ({
+  useToday: () => ({ items: h.items, loading: false, submit: h.submit, addPractice: h.addPractice }),
+}))
+vi.mock('../../utils/ads', () => ({ showInterstitial: (...a) => h.showInterstitial(...a) }))
+vi.mock('../../utils/review', () => ({ isMilestone: () => false, maybeRequestReview: vi.fn().mockResolvedValue(false) }))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
     session: { user: { id: 'u1' } },
@@ -35,7 +40,10 @@ const sandhyaItem = (slots) => ({
   logs: slots.map(s => ({ slot: s })),
 })
 
-beforeEach(() => { h.items = []; h.catalog = []; h.addPractice.mockClear() })
+beforeEach(() => {
+  h.items = []; h.catalog = []
+  h.addPractice.mockClear(); h.submit.mockReset(); h.showInterstitial.mockClear()
+})
 
 describe('TodayPage - Sandhyavandhanam UX', () => {
   it('shows "1 of 3 sandhyas done" after a single slot (the reported 0-not-1 case, surfaced clearly)', () => {
@@ -98,5 +106,19 @@ describe('TodayPage - empty-day activation (female / non-sandhya)', () => {
     const addBtn = (await screen.findAllByText('+ Add'))[0]
     fireEvent.click(addBtn)
     await waitFor(() => expect(h.addPractice).toHaveBeenCalledWith(2))
+  })
+})
+
+describe('TodayPage - ad timing (Intent 0.2 reorder)', () => {
+  it('fires the interstitial after a verified save, before the celebration', async () => {
+    h.items = [{
+      up: { id: 'up1', current_streak: 0, sequence_position: 0 },
+      practice: { id: 5, name: 'Vishnu', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
+      logs: [],
+    }]
+    h.submit.mockResolvedValue({ saved: true, day_complete: false, overall_streak: 1, practice_name: 'Vishnu' })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
   })
 })

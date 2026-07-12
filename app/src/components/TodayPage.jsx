@@ -7,6 +7,8 @@ import CelebrationModal from './CelebrationModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import GuidedTour from './GuidedTour'
 import { track } from '../utils/analytics'
+import { showInterstitial } from '../utils/ads'
+import { isMilestone, maybeRequestReview } from '../utils/review'
 
 export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
@@ -34,6 +36,12 @@ export default function TodayPage() {
         overall_streak: result.overall_streak ?? 0,
         is_sandhya: !!item.practice.is_sandhyavandhanam,
       })
+      // Ad fires here - after the verified save, BEFORE the celebration reward
+      // (Intent 0.2). At a streak milestone, ask for a review instead (Intent 1.4);
+      // never both, and never on a failed save (we are past submit()).
+      const milestone = result.day_complete && isMilestone(result.overall_streak ?? 0)
+      const reviewed = milestone ? await maybeRequestReview() : false
+      if (!reviewed) await showInterstitial(profile)
       setCelebration({ ...result, subjectName })
     } catch (err) {
       setError(err.message)

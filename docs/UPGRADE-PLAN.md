@@ -318,25 +318,38 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
   - `npm run build` + `npx cap sync android` succeed; debug APK installs and
     displays the new icon.
 
-### Intent 0.2 - Production AdMob configuration
+### Intent 0.2 - Production AdMob (launch: light, respectful ads)
 
-- **Intent:** Swap Google's TEST AdMob IDs for a real account's app ID +
-  interstitial unit and drop the testing flags, so ads earn and the app is not
-  policy-violating.
-- **Commit type:** `fix:` -> patch bump (current monetization is effectively
-  broken/non-compliant).
-- **Dependency:** your real AdMob app ID + interstitial unit ID (provided as
-  build-time config / secrets, not hard-coded test values).
-- **Changes:** real `APPLICATION_ID` in `AndroidManifest.xml`; real
-  `INTERSTITIAL_ID` in `utils/ads.js`; remove `isTesting` /
-  `initializeForTesting` from production builds (keep a debug switch).
+- **Intent:** Ship real ads at launch, but **light and respectful** - the
+  celebration is the reward *after* the ad, ads are **capped** (not every tap),
+  and content is **strictly filtered**. Heavy ad friction + the paid escape come
+  later (Intent 2.6), so launch never traps users behind ads with no way out.
+- **Commit type:** `feat:` (ad UX) then `fix:` (real IDs) -> minor/patch.
+- **Dependency (you):** real AdMob app ID + interstitial unit ID (build-time
+  config, never committed).
+- **Changes:**
+  - **Reorder (code, doable now):** fire the interstitial after a *verified
+    save*, **before** the celebration - move it out of `CelebrationModal`'s close
+    into `TodayPage.mark`; the Intent 1.4 milestone-review branch moves with it.
+    Hard rule unchanged: **never on a failed save**. The celebration becomes the
+    payoff after the ad, not a dead-end the ad tacks onto.
+  - **Frequency cap (code, "lighter"):** at most one interstitial per app session
+    (and/or only when a day completes) - **not** on every mark. Tune later from
+    the `ad_shown` + retention data.
+  - **Content filtering (MANDATORY):** max ad content rating = **G**; block
+    sensitive categories (gambling, dating, alcohol, etc.) via the AdMob console +
+    SDK request config. A gambling/dating ad beside Periyava during Sandhyavandhanam
+    would be a brand disaster - this protects the sacred positioning.
+  - **Real IDs (needs you):** real `APPLICATION_ID` (`AndroidManifest.xml`) +
+    `INTERSTITIAL_ID` (`utils/ads.js`); drop `isTesting` / `initializeForTesting`
+    in prod (keep a debug switch).
 - **Testing Gate:**
-  - Extend `utils/__tests__/ads.test.js`: the Google test-ID constant must not
-    ship in a production build; `isAdFree` still suppresses ads; the ad still
-    fires only after a verified save.
-  - **Android device (AdMob test mode):** interstitial shows after a submit,
-    never before a verified save; the ad-free referral reward suppresses it.
-  - Confirm no ad on web (native-only) is unchanged.
+  - `utils/__tests__/ads.test.js` extended: no Google test-ID in a prod build;
+    ad only after a verified save; **frequency cap respected** (not fired again
+    within the cap window); `isAdFree` (referral / future subscription) suppresses.
+  - **Android device:** ad fires *before* the celebration, once per cap window,
+    never on a failed save; the G content-rating filter is set in the AdMob console.
+  - Web unchanged (native-only).
 
 ### Intent 0.5 - Store readiness assets and compliance
 
@@ -496,6 +509,36 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
   - Unit: each tier/referral event grants exactly the configured perks (no
     double-grant); caps respected.
   - Manual: perks visible and applied after a tier-up / referral.
+
+### Intent 2.6 - Ad-free upgrade (₹99/year) + friction dial (post-launch)
+
+> Post-launch monetization. Ships the **paid escape first**, then turns up ad
+> friction - never friction without an escape (launch stays light, per 0.2).
+
+- **Intent:** Convert ad-annoyed users with a cheap, values-framed upgrade:
+  **₹99/year ad-free** - "you already pay for Netflix and distractions; ₹99 for
+  your daily good karma." Once the upgrade is live, raise interstitial frequency
+  (the friction that drives conversion). This is the fastest post-launch revenue
+  path and simpler than the karaoke/AV premium (2.1). The existing `ad_free_until`
+  column already gates ads (referral uses it), so a subscription plugs straight in.
+- **Commit type:** `feat:`
+- **Dependency:** Google Play Billing (or RevenueCat) + a Play Console
+  subscription product; server-side purchase validation.
+- **Changes:**
+  - ₹99/year subscription via Play Billing; on purchase, set the ad-free flag /
+    extend `ad_free_until` (server-validated, not client-only).
+  - Raise interstitial frequency now that the escape exists (data-tuned against
+    the `ad_shown` + retention analytics).
+  - **"Go ad-free for ₹99/year 🪔"** CTA (values pitch), surfaced right after an
+    ad and on Profile; the referral's existing 1-month ad-free is the free taste
+    that primes the upgrade.
+  - Restore purchases; expiry re-enables ads.
+- **Testing Gate:**
+  - Play Billing **sandbox**: purchase grants ad-free; ads suppressed; restore
+    works; expiry re-enables ads.
+  - `upgrade_cta_shown` / `upgrade_purchased` analytics fire; conversion is
+    measurable against ad frequency.
+  - Server validates the purchase (no client-only unlock).
 
 ### Intent 2.2 - Rewarding celebration (sound / haptic / motion)
 
