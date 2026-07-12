@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { isDoneToday, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
 import CelebrationModal from './CelebrationModal'
 import ProfileSwitcher from './ProfileSwitcher'
+import GuidedTour from './GuidedTour'
 
 export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
@@ -74,6 +75,8 @@ export default function TodayPage() {
       {celebration && (
         <CelebrationModal data={celebration} onClose={() => setCelebration(null)} />
       )}
+
+      <GuidedTour showSandhya={profile.gender === 'male'} />
     </>
   )
 }
