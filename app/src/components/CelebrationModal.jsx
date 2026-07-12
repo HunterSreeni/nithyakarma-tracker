@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { shareToWhatsApp } from '../utils/share'
 import { showInterstitial } from '../utils/ads'
 import { track } from '../utils/analytics'
+import { isMilestone, maybeRequestReview } from '../utils/review'
 
 // Shown ONLY from a verified submit_practice_log response.
 // Flow: celebrate -> share (optional) -> on close, interstitial (Android, non-ad-free).
@@ -13,7 +14,11 @@ export default function CelebrationModal({ data, onClose }) {
   const close = async () => {
     if (!adFired.current) {
       adFired.current = true
-      await showInterstitial(profile)
+      // At a streak milestone, ask for a review instead of an ad (never both).
+      // Falls back to the ad if a review wasn't requested (web, or rate-limited).
+      const milestone = data.day_complete && isMilestone(data.overall_streak ?? 0)
+      const reviewed = milestone ? await maybeRequestReview() : false
+      if (!reviewed) await showInterstitial(profile)
     }
     onClose()
   }
