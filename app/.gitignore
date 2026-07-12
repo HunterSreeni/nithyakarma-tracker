@@ -1,3 +1,8 @@
+# Local test artifacts (manual test screenshots, playwright-cli snapshots)
+day1-*.png
+.playwright-cli/
+test-results/
+
 # Logs
 logs
 *.log
