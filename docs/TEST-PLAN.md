@@ -69,11 +69,11 @@ Legend: ✅ exists · ⬜ to add.
 
 ### Today / mark & Sandhya 3-slot  ← the reported area
 | Mark general practice → streak 1, celebration | E2E(W) | ✅ |
-| **Sandhya 1 slot → streak 0, "progressing", 1/3** | Unit(cadence) + Integration(RPC) + E2E | ⬜ |
-| **Sandhya 3 slots → done, streak 1, punya 15** | Integration(RPC) + E2E(W) + E2E(A) | ⬜ |
-| isDoneToday: sandhya needs all 3; general needs 1 | Unit | ✅ (partial - verify thresholds) |
+| **Sandhya 1 slot → streak 0, "progressing", 1/3** | Unit(cadence) + Integration(RPC) + E2E(W) | ✅ |
+| **Sandhya 3 slots → done, streak 1, punya 15** | Integration(RPC) + E2E(W) | ✅ / E2E(A) ⬜ |
+| isDoneToday: sandhya needs all 3; general needs 1 | Unit | ✅ |
 | Duplicate same-slot rejected | Integration | ✅ |
-| Progress ring & doneCount reflect partial sandhya | Unit(TodayPage) | ⬜ |
+| Progress ring & doneCount reflect partial sandhya | Unit(TodayPage) | ✅ |
 | Celebration only from verified RPC response | Unit | ⬜ |
 | Streak continuity (day N→N+1) and reset (gap) | Integration | ⬜ |
 

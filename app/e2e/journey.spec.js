@@ -30,16 +30,30 @@ test.describe.serial('Nithyakarma full journey', () => {
     await expect(page.getByText(/Sandhyavandhanam .* will be added/)).toBeVisible()
     await page.getByRole('button', { name: /Begin/ }).click()
     await expect(page.getByText(/Namaskaram, E2E/)).toBeVisible({ timeout: 15000 })
+    // First-run guided tour overlays the Today page - dismiss it before interacting.
+    const skip = page.getByRole('button', { name: 'Skip' })
+    if (await skip.isVisible().catch(() => false)) await skip.click()
     await expect(page.getByText('Sandhyavandhanam', { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: /Morning/ })).toBeVisible()
   })
 
-  test('mark a sandhya slot: save verified, celebration shows, no ad on web', async () => {
+  test('sandhya 3-slot: 1-2 slots progress, 3rd completes the day', async () => {
+    // Slot 1 - verified save + share card, no ad on web
     await page.getByRole('button', { name: 'Morning' }).click()
     await expect(page.getByText('Punyam grows daily', { exact: false })).toBeVisible({ timeout: 15000 })
     await expect(page.getByText('Join me on Nithyakarma')).toBeVisible()
     await page.getByRole('button', { name: 'Continue' }).click()
-    await expect(page.getByRole('button', { name: /✓ Morning/ })).toBeVisible()
+    await expect(page.getByText('1 of 3 sandhyas done')).toBeVisible()
+
+    // Slot 2 - still progressing
+    await page.getByRole('button', { name: 'Noon' }).click()
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await expect(page.getByText('2 of 3 sandhyas done')).toBeVisible()
+
+    // Slot 3 - day complete
+    await page.getByRole('button', { name: 'Evening' }).click()
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await expect(page.getByText('All 3 sandhyas done 🎉')).toBeVisible()
   })
 
   test('add a practice from the dropdown', async () => {
