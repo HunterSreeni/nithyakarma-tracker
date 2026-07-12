@@ -54,4 +54,11 @@ describe('CelebrationModal', () => {
     }))
     expect(showInterstitial).not.toHaveBeenCalled() // sharing does not trigger the ad
   })
+
+  it('shows the freeze message only when a freeze was used', () => {
+    const { rerender } = render(<CelebrationModal data={data} onClose={() => {}} />)
+    expect(screen.queryByText(/A freeze saved your streak/)).not.toBeInTheDocument()
+    rerender(<CelebrationModal data={{ ...data, freeze_used: true }} onClose={() => {}} />)
+    expect(screen.getByText(/A freeze saved your streak/)).toBeInTheDocument()
+  })
 })

@@ -13,7 +13,7 @@ vi.mock('../../hooks/useToday', () => ({
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
     session: { user: { id: 'u1' } },
-    profile: { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0 },
+    profile: { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 },
     selectedMember: null,
     refresh: vi.fn(),
   }),
@@ -62,5 +62,13 @@ describe('TodayPage - Sandhyavandhanam UX', () => {
     fireEvent.click(info)
     expect(info).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText(/performed 3 times a day/)).toBeInTheDocument()
+  })
+
+  it('shows the streak freeze count on the Today card', () => {
+    h.items = [sandhyaItem([])]
+    render(<TodayPage />)
+    expect(screen.getByText(
+      (_, el) => el?.className === 'tc-hint' && el.textContent.includes('🧊 2 freezes'),
+    )).toBeInTheDocument()
   })
 })

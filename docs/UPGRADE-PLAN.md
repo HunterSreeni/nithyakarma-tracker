@@ -320,18 +320,35 @@ No Play Store upload until every Intent here is done and its gate is green.
 
 ## Phase 1 - Retention and growth (target: 1.1.0 - 1.4.0)
 
-### Intent 1.1 - Streak freeze / grace day
+### Intent 1.1 - Streak freeze (tied to tier + referrals)
 
-- **Intent:** Stop a single miss from resetting a long streak to 0, the biggest
-  churn risk for a daily obligation app.
+- **Intent:** Stop a single missed day from resetting a long streak to 0 (the
+  biggest churn risk for a daily-obligation app), and make freezes a
+  **progression reward** so climbing tiers and inviting others feels earned -
+  the more you level up, the more grace you get. This matches the audience's
+  psychology (reward scales with devotion/rank).
 - **Commit type:** `feat:`
-- **Changes:** grace/freeze state on the streak calc in the submit RPC + client;
-  earned or referral-granted freezes; UI on the Today streak card.
+- **Economy:**
+  - `freeze_credits` on `profiles` and `family_members`, **auto-consumed** on a
+    single missed day. Gaps of 2+ missed days still reset (one freeze = one day).
+  - **Cap scales with tier:** Jijnasu 1, Sadhaka 2, Tapasvi 3, Rishi 4,
+    Brahmarishi 5 (`freeze_cap_for(punya)`).
+  - **Levelling up tops credits up** to the new cap.
+  - **Each successful referral grants +1 credit.**
+  - Kids' profiles earn tier-based freezes too (they have punya); referrals are
+    parent-account only.
+- **Changes:** one Supabase migration (new columns + `freeze_cap_for` + updated
+  `submit_practice_log` streak/consume/top-up logic + referral-grant hook);
+  freeze count on the Today streak card; "a freeze saved your streak 🧊" message
+  in `CelebrationModal` (driven by a `freeze_used` flag in the RPC response).
 - **Testing Gate:**
-  - Unit tests for the streak state machine: miss-with-freeze preserves streak,
-    miss-without-freeze resets, freeze is consumed once.
-  - Integration test through `submit_practice_log` across a simulated missed day.
-  - e2e: streak survives a mocked missed day when a freeze is available.
+  - SQL state-machine assertions in `supabase/tests/integration-assertions.sql`:
+    consecutive day `+1`; 1-day gap **with** credit continues **and** decrements;
+    1-day gap **without** credit resets; 2-day gap resets; tier-up tops up
+    credits; referral grants `+1`.
+  - Component tests: Today card renders the freeze count; `CelebrationModal`
+    shows the freeze message when `freeze_used`.
+  - e2e + CI green; manual check of a simulated missed-day-with-credit.
 
 ### Intent 1.2 - Streak-miss reminder notification (hardcoded)
 
@@ -404,18 +421,42 @@ No Play Store upload until every Intent here is done and its gate is green.
 
 ## Phase 2 - Depth and premium (target: 1.5.0+)
 
-### Intent 2.1 - Bundled stotram content (lyrics + audio)
+### Intent 2.1 - Bundled stotram content: karaoke lyrics + audio/video (premium)
+
+> Much later - only after Phase A live feedback. This is the paid upgrade.
 
 - **Intent:** Turn the pure tracker into a place users also practice from -
-  romanized lyrics and audio for tracked stotrams - the strongest stickiness and
-  premium lever.
+  **karaoke-style synced lyrics** with **audio/video** for tracked stotrams -
+  the strongest stickiness and the core premium lever. Applies to all practices
+  **except Sandhyavandhanam** (never audio/video for sandhya).
 - **Commit type:** `feat:`
-- **Changes:** content model + reader/player UI; romanized text (never
-  Devanagari, per app convention); premium gating hook.
+- **Changes:** content model + synced-lyrics/AV player; romanized text (never
+  Devanagari, per app convention); **premium "upgrade by tier"** gating.
+- **Monetization tie-in:** referral **discounts on the tier upgrade** (see the
+  reward ladder, Intent 2.5) - invites lower the upgrade price. Design this once
+  we introduce the paid upgrade.
 - **Testing Gate:**
-  - Unit test: content loads for a practice; premium gate blocks/allows correctly.
-  - Component test: reader renders, audio controls work.
-  - Manual: audio plays and pauses cleanly on web and Android.
+  - Unit: content loads per practice; Sandhyavandhanam is excluded from AV;
+    premium gate blocks/allows correctly.
+  - Component: lyrics sync + audio/video controls work.
+  - Manual: playback clean on web and Android; discount math correct.
+
+### Intent 2.5 - Tier + referral reward ladder (perks)
+
+> Post-Phase-A. Tune the ladder to real behaviour before building it.
+
+- **Intent:** Escalating perks as users climb tiers and refer others, beyond the
+  Intent 1.1 freezes - the reward grows with rank. Example ladder: each tier adds
+  freezes (built in 1.1) **plus** ad-free days (e.g., Sadhaka = 1 ad-free day,
+  higher tiers = more), and later, upgrade discounts. Referrals grant freezes now
+  and, once the paid upgrade exists (2.1), **referral discounts** on it.
+- **Commit type:** `feat:`
+- **Changes:** a declarative tier/referral -> perks table driving grants
+  (ad-free days, discounts); surfaced on Profile.
+- **Testing Gate:**
+  - Unit: each tier/referral event grants exactly the configured perks (no
+    double-grant); caps respected.
+  - Manual: perks visible and applied after a tier-up / referral.
 
 ### Intent 2.2 - Rewarding celebration (sound / haptic / motion)
 
