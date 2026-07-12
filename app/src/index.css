@@ -139,6 +139,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .cel-streak { font-size: 1.5rem; font-weight: 700; }
 .cel-streak span { color: var(--saffron-600); }
 .cel-sub { font-size: 0.78rem; color: #8a7f70; margin-top: 4px; font-weight: 300; }
+.cel-freeze { margin-top: 0.7rem; font-size: 0.76rem; font-weight: 700; color: var(--saffron-700); background: var(--saffron-50); border: 1px solid var(--saffron-200); border-radius: 100px; padding: 6px 14px; display: inline-block; }
 .share-card { margin: 1.1rem auto 0; width: 280px; border-radius: 16px; background: linear-gradient(160deg, #1a1208, #3b2408 55%, #7a4a10); color: #fff; text-align: left; padding: 1.1rem 1.1rem 0.9rem; position: relative; overflow: hidden; }
 .share-card .sc-om { position: absolute; right: -6px; top: -10px; font-size: 4.5rem; opacity: 0.08; }
 .sc-brand { font-family: 'Syne', sans-serif; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--saffron-400); }

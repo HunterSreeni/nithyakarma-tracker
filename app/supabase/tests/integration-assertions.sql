@@ -145,9 +145,13 @@ begin
     exception when others then v_failed := true; end;
     if not v_failed then raise exception 'FAIL: invalid referral code accepted'; end if;
 
+    update profiles set freeze_credits = 0 where id = v_uid;
     perform apply_referral(v_code);
     if (select ad_free_until from profiles where id = v_uid) is distinct from (current_date + 30) then
       raise exception 'FAIL: valid referral did not grant 30 ad-free days';
+    end if;
+    if (select freeze_credits from profiles where id = v_uid) <> 1 then
+      raise exception 'FAIL: valid referral did not grant +1 freeze credit';
     end if;
   end if;
 
@@ -185,6 +189,45 @@ begin
   delete from family_members where id = v_kid;
   if exists (select 1 from user_practices where id = v_up2) then raise exception 'FAIL: user_practice not cascaded on family delete'; end if;
   if exists (select 1 from practice_logs where user_practice_id = v_up2) then raise exception 'FAIL: logs not cascaded on family delete'; end if;
+
+  -- 14. Streak freeze (Intent 1.1): caps by tier, the pure state machine, and the
+  -- full path (tier-up top-up + freeze consume in one submit) via a kid subject.
+  if freeze_cap_for(99) <> 1 or freeze_cap_for(100) <> 2 or freeze_cap_for(400) <> 3
+     or freeze_cap_for(1000) <> 4 or freeze_cap_for(2500) <> 5 then
+    raise exception 'FAIL: freeze_cap_for tiers wrong';
+  end if;
+  if (select new_streak from streak_after_completion(5,5,current_date-1,current_date,0)) <> 6
+     or (select freeze_used from streak_after_completion(5,5,current_date-1,current_date,0)) then
+    raise exception 'FAIL: freeze gap-0 (consecutive) wrong';
+  end if;
+  if (select new_streak from streak_after_completion(5,5,current_date-2,current_date,1)) <> 6
+     or (select new_freeze from streak_after_completion(5,5,current_date-2,current_date,1)) <> 0
+     or not (select freeze_used from streak_after_completion(5,5,current_date-2,current_date,1)) then
+    raise exception 'FAIL: freeze gap-1-with-credit should continue and consume';
+  end if;
+  if (select new_streak from streak_after_completion(5,5,current_date-2,current_date,0)) <> 1
+     or (select freeze_used from streak_after_completion(5,5,current_date-2,current_date,0)) then
+    raise exception 'FAIL: freeze gap-1-no-credit should reset';
+  end if;
+  if (select new_streak from streak_after_completion(5,5,current_date-3,current_date,1)) <> 1
+     or (select new_freeze from streak_after_completion(5,5,current_date-3,current_date,1)) <> 1
+     or (select freeze_used from streak_after_completion(5,5,current_date-3,current_date,1)) then
+    raise exception 'FAIL: freeze gap-2 should reset without consuming';
+  end if;
+  declare v_kid2 uuid; v_kup uuid;
+  begin
+    -- punya 95 + 1 practice log crosses to Sadhaka (100) -> cap 1->2 tops credits up;
+    -- last complete 2 days ago (1-day gap) with a credit -> streak continues and consumes.
+    insert into family_members (parent_id, name, gender, punya, current_streak, last_complete_date, freeze_credits)
+      values (v_uid, 'Freeze Kid', 'female', 95, 5, current_date - 2, 1) returning id into v_kid2;
+    insert into user_practices (owner_id, family_member_id, practice_id) values (v_uid, v_kid2, 2) returning id into v_kup;
+    r := submit_practice_log(v_kup);
+    if (r->>'overall_streak')::int <> 6 then raise exception 'FAIL: freeze did not continue kid streak (expected 6, got %)', r->>'overall_streak'; end if;
+    if not (r->>'freeze_used')::boolean then raise exception 'FAIL: freeze_used not reported true'; end if;
+    if (r->>'punya')::int <> 100 then raise exception 'FAIL: kid punya not 100 after tier-up'; end if;
+    -- started 1 credit, tier-up tops to 2, consume 1 -> 1 remaining
+    if (r->>'freeze_credits')::int <> 1 then raise exception 'FAIL: freeze credits wrong after tier-up+consume (expected 1, got %)', r->>'freeze_credits'; end if;
+  end;
 
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;

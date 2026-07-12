@@ -16,6 +16,7 @@ export default function TodayPage() {
 
   const subjectName = selectedMember?.name ?? profile.display_name
   const subjectStreak = selectedMember?.current_streak ?? profile.current_streak
+  const subjectFreezes = selectedMember?.freeze_credits ?? profile.freeze_credits ?? 0
   const doneCount = items.filter(i => isDoneToday(i.practice, i.logs)).length
   const dateLine = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
@@ -49,7 +50,10 @@ export default function TodayPage() {
         <div>
           <div className="tc-label">Current Streak</div>
           <div className="tc-big">{subjectStreak} days 🔥</div>
-          <div className="tc-hint">Best: {selectedMember?.best_streak ?? profile.best_streak} days</div>
+          <div className="tc-hint">
+            Best: {selectedMember?.best_streak ?? profile.best_streak} days
+            {' · '}🧊 {subjectFreezes} freeze{subjectFreezes === 1 ? '' : 's'}
+          </div>
         </div>
         <div className="progress-ring" style={{
           background: `conic-gradient(#fff 0% ${items.length ? (doneCount / items.length) * 100 : 0}%, rgba(255,255,255,0.25) 0% 100%)`,

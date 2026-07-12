@@ -38,6 +38,10 @@ export default function CelebrationModal({ data, onClose }) {
           {data.practice_name} {data.practice_done_today ? 'completed' : 'progressing'}. Punyam grows daily.
         </div>
 
+        {data.freeze_used && (
+          <div className="cel-freeze">🧊 A freeze saved your streak</div>
+        )}
+
         <div className="share-card">
           <div className="sc-om">🕉</div>
           <div className="sc-brand">🪔 Nithyakarma</div>
