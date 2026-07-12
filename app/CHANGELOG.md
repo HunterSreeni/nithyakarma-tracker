@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.6.0...app-v0.7.0) (2026-07-12)
+
+
+### Features
+
+* invite CTA on Friends tab (Intent 1.6) ([c539fe2](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c539fe2d469651fd6e772c5f14ab1cdaf9f556d2))
+* invite CTA on the Friends tab when you have no connections (Intent 1.6) ([09c15cd](https://github.com/HunterSreeni/nithyakarma-tracker/commit/09c15cdfdc61a5bd43094ce42b9a4557102b5302))
+
 ## [0.6.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.5.0...app-v0.6.0) (2026-07-12)
 
 
