@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import NotificationSettings from './NotificationSettings'
 import { tierProgress, tierClass, tierFor } from '../utils/tiers'
 import { shareUrl } from '../utils/share'
+import { track } from '../utils/analytics'
 import { APP_VERSION } from '../version'
 
 export default function ProfilePage() {
@@ -37,6 +38,7 @@ export default function ProfilePage() {
   }
 
   const inviteWhatsApp = () => {
+    track('share_clicked', { from: 'profile' })
     const text = `🪔 Join me on Nithyakarma - track your daily anushtanams with the Sabha!\n${shareUrl(profile.referral_code)}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
   }

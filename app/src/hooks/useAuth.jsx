@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { track } from '../utils/analytics'
 
 const AuthContext = createContext(null)
 
@@ -60,6 +61,7 @@ export function AuthProvider({ children }) {
         })
       }
     }
+    track('onboarding_complete', { gender, referred: !!referralCode })
     await loadProfile(session.user.id)
   }
 

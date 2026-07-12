@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core'
+import { track } from './analytics'
 
 // Google's public TEST interstitial ad unit. Replace with the real AdMob
 // unit id once the AdMob account is created. Never ship test id to Play Store.
@@ -27,6 +28,7 @@ export async function showInterstitial(profile) {
     }
     await AdMob.prepareInterstitial({ adId: INTERSTITIAL_ID, isTesting: true })
     await AdMob.showInterstitial()
+    track('ad_shown', {})
     return true
   } catch (err) {
     console.warn('[ads] interstitial failed', err)
