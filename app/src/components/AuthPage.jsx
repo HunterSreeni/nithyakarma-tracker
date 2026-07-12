@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core'
 import { useAuth } from '../hooks/useAuth'
 
 export default function AuthPage() {
-  const { signInGoogle, signInEmail, signUpEmail } = useAuth()
+  const { signInGoogle, signInEmail, signUpEmail, resetPassword } = useAuth()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,6 +15,13 @@ export default function AuthPage() {
   const submit = async (e) => {
     e.preventDefault()
     setError(null); setNotice(null); setBusy(true)
+    if (mode === 'forgot') {
+      const { error } = await resetPassword(email)
+      setBusy(false)
+      if (error) { setError(error.message); return }
+      setNotice(`If an account exists for ${email}, a reset link is on its way. Check your inbox and spam.`)
+      return
+    }
     const fn = mode === 'login' ? signInEmail : signUpEmail
     const { data, error } = await fn(email, password)
     setBusy(false)
@@ -41,15 +48,19 @@ export default function AuthPage() {
       <div className="auth-panel">
         <div className="auth-formwrap">
           <div className="auth-logo">🪔 Nithya<span>karma</span></div>
-          <div className="auth-welcome">{mode === 'login' ? 'Welcome back' : 'Get started'}</div>
+          <div className="auth-welcome">
+            {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Get started' : 'Reset password'}
+          </div>
           <div className="auth-sub">
-            {mode === 'login' ? 'Sign in to continue your practice.' : 'Create your account to begin.'}
+            {mode === 'login' ? 'Sign in to continue your practice.'
+              : mode === 'signup' ? 'Create your account to begin.'
+              : 'Enter your email and we will send you a reset link.'}
           </div>
 
           {/* Google OAuth returns to https://localhost, which the native shell has
               no deep-link handler for, so the button dead-ends on Android. Show it
               only on web until native OAuth return is wired. */}
-          {!Capacitor.isNativePlatform() && (
+          {!Capacitor.isNativePlatform() && mode !== 'forgot' && (
             <>
               <button className="btn-google" onClick={signInGoogle}>
                 <span>G</span> Continue with Google
@@ -62,22 +73,38 @@ export default function AuthPage() {
             <label className="field-label" htmlFor="auth-email">Email</label>
             <input id="auth-email" className="field-input" type="email" value={email}
               onChange={e => setEmail(e.target.value)} required autoComplete="email" />
-            <label className="field-label" htmlFor="auth-password">Password</label>
-            <input id="auth-password" className="field-input" type="password" value={password}
-              onChange={e => setPassword(e.target.value)} required minLength={6}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+            {mode !== 'forgot' && (
+              <>
+                <label className="field-label" htmlFor="auth-password">Password</label>
+                <input id="auth-password" className="field-input" type="password" value={password}
+                  onChange={e => setPassword(e.target.value)} required minLength={6}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+              </>
+            )}
+            {mode === 'login' && (
+              <button type="button" className="auth-forgot"
+                onClick={() => { setMode('forgot'); setError(null); setNotice(null) }}>
+                Forgot password?
+              </button>
+            )}
             {error && <div className="auth-error">{error}</div>}
             {notice && <div className="auth-notice">{notice}</div>}
             <button className="btn-auth" type="submit" disabled={busy}>
-              {mode === 'login' ? 'Sign In' : 'Create Account'}
+              {mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send reset link'}
             </button>
           </form>
 
           <div className="auth-switch">
-            {mode === 'login' ? 'New here?' : 'Already have an account?'}{' '}
-            <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null) }}>
-              {mode === 'login' ? 'Create account' : 'Sign in'}
-            </button>
+            {mode === 'forgot' ? (
+              <button onClick={() => { setMode('login'); setError(null); setNotice(null) }}>Back to sign in</button>
+            ) : (
+              <>
+                {mode === 'login' ? 'New here?' : 'Already have an account?'}{' '}
+                <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null) }}>
+                  {mode === 'login' ? 'Create account' : 'Sign in'}
+                </button>
+              </>
+            )}
           </div>
 
           <div className="auth-agree">

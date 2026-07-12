@@ -41,6 +41,13 @@ export function AuthProvider({ children }) {
   const signUpEmail = (email, password) => supabase.auth.signUp({ email, password })
   const signOut = () => supabase.auth.signOut()
 
+  // Recovery: email a reset link that returns to /reset, then set the new password.
+  const resetPassword = (email) =>
+    supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${import.meta.env.VITE_APP_URL ?? window.location.origin}/reset`,
+    })
+  const updatePassword = (password) => supabase.auth.updateUser({ password })
+
   // Onboarding: create the profile row (RLS: id must equal auth.uid()).
   const createProfile = async ({ displayName, gender, referralCode }) => {
     const { error } = await supabase.from('profiles').insert({
@@ -110,7 +117,7 @@ export function AuthProvider({ children }) {
 
   const value = {
     session, profile, familyMembers, selectedMember, setSelectedMember, loading,
-    signInGoogle, signInEmail, signUpEmail, signOut,
+    signInGoogle, signInEmail, signUpEmail, signOut, resetPassword, updatePassword,
     createProfile, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount,
     refresh: () => session && loadProfile(session.user.id),
   }

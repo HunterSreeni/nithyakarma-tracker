@@ -5,8 +5,9 @@ import { MemoryRouter } from 'react-router-dom'
 const signInGoogle = vi.fn()
 const signInEmail = vi.fn().mockResolvedValue({ error: null })
 const signUpEmail = vi.fn().mockResolvedValue({ error: null })
+const resetPassword = vi.fn().mockResolvedValue({ error: null })
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ signInGoogle, signInEmail, signUpEmail }),
+  useAuth: () => ({ signInGoogle, signInEmail, signUpEmail, resetPassword }),
 }))
 
 const mockNative = vi.fn().mockReturnValue(false)
@@ -89,5 +90,16 @@ describe('AuthPage', () => {
     fireEvent.click(screen.getByText('Create Account'))
     await waitFor(() => expect(signUpEmail).toHaveBeenCalled())
     expect(screen.queryByText(/Verification email sent/)).not.toBeInTheDocument()
+  })
+
+  it('offers a password reset flow from the login form', async () => {
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    fireEvent.click(screen.getByText('Forgot password?'))
+    // reset mode drops the password field and swaps the CTA
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } })
+    fireEvent.click(screen.getByText('Send reset link'))
+    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith('a@b.com'))
+    expect(await screen.findByText(/reset link is on its way/)).toBeInTheDocument()
   })
 })
