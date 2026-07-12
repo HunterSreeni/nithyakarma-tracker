@@ -26,14 +26,23 @@ test.describe.serial('Nithyakarma full journey', () => {
     await expect(page.getByText('A few details to set up your anushtanams')).toBeVisible({ timeout: 15000 })
   })
 
-  test('onboarding: male user gets Sandhyavandhanam automatically', async () => {
+  test('onboarding: male user gets Sandhyavandhanam, then the guided tour runs', async () => {
     await page.getByLabel('Your name').fill('E2E Sreeni')
     await page.getByRole('button', { name: 'Male', exact: true }).click()
     await expect(page.getByText(/Sandhyavandhanam .* will be added/)).toBeVisible()
     await page.getByRole('button', { name: /Begin/ }).click()
     await expect(page.getByText(/Namaskaram, E2E/)).toBeVisible({ timeout: 15000 })
-    // First-run guided tour overlays the Today page on a fresh context - dismiss it.
-    await page.getByRole('button', { name: 'Skip' }).click({ timeout: 10000 })
+
+    // driver.js first-run tour auto-runs: welcome -> sandhya slots -> add-practice.
+    // Stepping through it both exercises the tour and dismisses it.
+    await expect(page.locator('.driver-popover')).toBeVisible({ timeout: 10000 })
+    await page.locator('.driver-popover-next-btn').click()
+    await expect(page.getByText('Sandhyavandhanam is three sandhyas')).toBeVisible()
+    await page.locator('.driver-popover-next-btn').click()
+    await expect(page.getByText("You're all set")).toBeVisible()
+    await page.locator('.driver-popover-next-btn').click() // "Begin" done button
+    await expect(page.locator('.driver-popover')).toBeHidden()
+
     await expect(page.locator('.practice-card', { hasText: 'Sandhyavandhanam' })).toBeVisible()
     await expect(page.getByRole('button', { name: /Morning/ })).toBeVisible()
   })

@@ -53,6 +53,10 @@ export default function GuidedTour({ ready, showSandhya }) {
     // Only anchor the sandhya step if the card is actually on the page.
     const hasSlots = !!document.querySelector('[data-tour="sandhya-slots"]')
     const d = driver({
+      // No fade: the animated overlay removal on destroy can lag behind and keep
+      // intercepting clicks on the page. Synchronous removal keeps the app usable
+      // the instant the tour closes.
+      animate: false,
       showProgress: true,
       progressText: '{{current}} of {{total}}',
       nextBtnText: 'Next',
