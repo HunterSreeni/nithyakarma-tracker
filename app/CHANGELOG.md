@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.4.0...app-v0.5.0) (2026-07-12)
+
+
+### Features
+
+* in-app review prompt at streak milestones (Intent 1.4) ([82f0040](https://github.com/HunterSreeni/nithyakarma-tracker/commit/82f004063bbd89d71b32ada5f3e41ccdf90b4e79))
+* in-app review prompt at streak milestones (Intent 1.4) ([4692c11](https://github.com/HunterSreeni/nithyakarma-tracker/commit/4692c11b171020af08f41bf26fe729bababf79f3))
+
 ## [0.4.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.3.0...app-v0.4.0) (2026-07-12)
 
 
