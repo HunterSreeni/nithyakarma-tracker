@@ -1,5 +1,6 @@
 # Local test artifacts (manual test screenshots, playwright-cli snapshots)
 day1-*.png
+tour-*.png
 .playwright-cli/
 test-results/
 

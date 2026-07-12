@@ -40,7 +40,7 @@ export default function TodayPage() {
       <div className="greet">Namaskaram, {subjectName.split(' ')[0]} 🙏</div>
       <div className="greet-sub">
         {items.length === 0 ? 'Add your first anushtanam below.'
-          : `${doneCount} of ${items.length} anushtanams done. Keep the deepam burning.`}
+          : `${doneCount} of ${items.length} anushtanams done.`}
       </div>
 
       <ProfileSwitcher />
@@ -76,7 +76,7 @@ export default function TodayPage() {
         <CelebrationModal data={celebration} onClose={() => setCelebration(null)} />
       )}
 
-      <GuidedTour showSandhya={profile.gender === 'male'} />
+      <GuidedTour ready={!loading} showSandhya={profile.gender === 'male'} />
     </>
   )
 }
@@ -117,7 +117,7 @@ function PracticeCard({ item, busy, onMark }) {
             <div className="sandhya-progress">
               {done ? 'All 3 sandhyas done 🎉' : `${slotsDone.size} of 3 sandhyas done`}
             </div>
-            <div className="slot-row">
+            <div className="slot-row" data-tour="sandhya-slots">
               {SANDHYA_SLOTS.map(s => (
                 <button key={s.key} disabled={slotsDone.has(s.key) || busy}
                   className={`slot-btn ${slotsDone.has(s.key) ? 'done' : ''}`}
@@ -171,7 +171,7 @@ function AddPracticeDropdown({ existing, onAdd }) {
 
   return (
     <div style={{ marginTop: '0.5rem' }}>
-      <button className={`add-select ${open ? 'open' : ''}`} onClick={() => setOpen(!open)}>
+      <button className={`add-select ${open ? 'open' : ''}`} data-tour="add-practice" onClick={() => setOpen(!open)}>
         <span>Add an anushtanam to track...</span>
         <span className="plus">{open ? '×' : '+'}</span>
       </button>

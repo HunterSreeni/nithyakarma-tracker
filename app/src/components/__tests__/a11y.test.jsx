@@ -10,7 +10,6 @@ vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false }
 
 import AuthPage from '../AuthPage'
 import { TermsPage, PrivacyPage } from '../LegalPages'
-import GuidedTour from '../GuidedTour'
 
 // Color contrast is verified manually (jsdom can't compute it); region/landmark
 // rules don't apply to these standalone fragments. Everything else must pass.
@@ -36,11 +35,6 @@ describe('accessibility (axe-core, WCAG 2.1 AA subset)', () => {
 
   it('Privacy Policy page', async () => {
     const { container } = render(<MemoryRouter><PrivacyPage /></MemoryRouter>)
-    expect(await seriousViolations(container)).toEqual([])
-  })
-
-  it('GuidedTour dialog', async () => {
-    const { container } = render(<GuidedTour showSandhya={true} />)
     expect(await seriousViolations(container)).toEqual([])
   })
 })

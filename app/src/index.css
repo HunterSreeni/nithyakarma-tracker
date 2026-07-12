@@ -119,15 +119,17 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .dd-item.muted:hover { background: none; }
 .dd-check { color: var(--success); font-weight: 700; font-size: 0.8rem; }
 
-/* guided tour */
-.tour-modal { position: relative; max-width: 360px; }
-.tour-skip { position: absolute; top: 0.9rem; right: 1rem; background: none; border: none; color: #8a7f70; font-size: 0.75rem; font-weight: 600; }
-.tour-icon { font-size: 2.6rem; margin: 0.3rem 0 0.5rem; }
-.tour-title { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
-.tour-body { font-size: 0.85rem; line-height: 1.5; color: #6f6558; margin: 0.5rem 0 1rem; }
-.tour-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 1rem; }
-.tour-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warm); transition: background 0.2s; }
-.tour-dot.on { background: var(--saffron-600); }
+/* guided tour (driver.js popover theming) */
+.driver-popover.nk-tour { background: var(--paper); border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.28); max-width: 320px; }
+.driver-popover.nk-tour .driver-popover-title { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.driver-popover.nk-tour .driver-popover-description { font-size: 0.85rem; line-height: 1.5; color: #6f6558; }
+.driver-popover.nk-tour .driver-popover-progress-text { font-size: 0.7rem; color: #8a7f70; font-weight: 600; }
+.driver-popover.nk-tour .driver-popover-navigation-btns button.driver-popover-next-btn {
+  background: var(--saffron-600); color: #fff; text-shadow: none; border: none; border-radius: 100px; padding: 6px 16px; font-weight: 600; font-size: 0.8rem; }
+.driver-popover.nk-tour .driver-popover-navigation-btns button.driver-popover-prev-btn {
+  background: transparent; color: #8a7f70; text-shadow: none; border: none; font-weight: 600; font-size: 0.8rem; }
+.driver-popover.nk-tour .driver-popover-close-btn { color: #8a7f70; }
+.driver-popover.nk-tour .driver-popover-arrow { border-color: var(--paper); }
 
 /* celebration */
 .modal-dim { position: fixed; inset: 0; background: rgba(13,13,13,0.55); display: flex; align-items: center; justify-content: center; z-index: 300; padding: 1rem; }
