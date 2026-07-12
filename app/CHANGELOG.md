@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.7.1...app-v0.8.0) (2026-07-12)
+
+
+### Features
+
+* password reset / recovery (Intent 0.3) ([0a48501](https://github.com/HunterSreeni/nithyakarma-tracker/commit/0a4850127c2546604dad80b692d5041b5756a367))
+* password reset / recovery flow (Intent 0.3) ([af066de](https://github.com/HunterSreeni/nithyakarma-tracker/commit/af066de32fd3165618e28b417e5f136b655d4b41))
+
 ## [0.7.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.7.0...app-v0.7.1) (2026-07-12)
 
 
