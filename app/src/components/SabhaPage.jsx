@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../hooks/useAuth'
 import { tierClass } from '../utils/tiers'
+import { shareUrl } from '../utils/share'
+import { track } from '../utils/analytics'
 
 const SCOPES = [
   { key: 'week', label: 'Week', scope: 'global', period: 'week' },
@@ -13,6 +16,7 @@ export default function SabhaPage() {
   const [tab, setTab] = useState(SCOPES[0])
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
+  const { profile } = useAuth()
 
   useEffect(() => {
     setLoading(true)
@@ -27,6 +31,14 @@ export default function SabhaPage() {
   const myRow = rows.find(r => r.is_me)
   const myRank = myRow ? rows.indexOf(myRow) + 1 : null
   const initials = (n) => n.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+  // "Friends" are your referral connections. With none yet, guide the user to
+  // invite instead of showing a lonely one-person board.
+  const noFriends = tab.key === 'friends' && rows.filter(r => !r.is_me).length === 0
+  const inviteWhatsApp = () => {
+    track('share_clicked', { from: 'sabha_friends' })
+    const text = `🪔 Join me on Nithyakarma - track your daily anushtanams with the Sabha!\n${shareUrl(profile.referral_code)}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
+  }
 
   return (
     <>
@@ -44,7 +56,16 @@ export default function SabhaPage() {
         ))}
       </div>
 
-      {loading ? <div className="spinner-wrap">Loading...</div> : rows.length === 0 ? (
+      {loading ? <div className="spinner-wrap">Loading...</div> : noFriends ? (
+        <div className="referral-card">
+          <div className="ref-title">Your Sabha grows with friends 🎁</div>
+          <div className="ref-sub">
+            Invite friends with your link. When they join, you'll both appear here -
+            and you each get a freeze plus a month ad-free.
+          </div>
+          <button className="btn-ref" onClick={inviteWhatsApp}>Invite on WhatsApp</button>
+        </div>
+      ) : rows.length === 0 ? (
         <div className="empty-note">
           {tab.key === 'kids'
             ? 'No children in Bala Sabha yet. Opt your child in from the Profile page.'
