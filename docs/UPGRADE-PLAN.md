@@ -49,7 +49,11 @@ the last release:
 2. release-please accumulates them and opens/updates a single **Release PR**
    ("chore: release 0.2.0") with the computed version + generated `CHANGELOG.md`.
 3. Merging that Release PR bumps `app/package.json`, updates the Android
-   `versionName`, writes the changelog, tags `vX.Y.Z`, and cuts a GitHub Release.
+   `versionName`, writes the changelog, tags `app-vX.Y.Z`, and cuts a GitHub
+   Release. The `app-` prefix is on the internal git tag only (a release-please
+   nested-package requirement for reliable auto-tagging); every **user-facing**
+   version stays clean `X.Y.Z` (app Profile, Android `versionName`,
+   `package.json`).
 4. The app reads its version from `package.json` at build time and shows it on
    the Profile screen (see Intent R3).
 
@@ -127,7 +131,7 @@ gate is enforced by CI.
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "include-component-in-tag": false,
+  "include-component-in-tag": true,
   "separate-pull-requests": false,
   "packages": {
     "app": {
