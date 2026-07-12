@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import NotificationSettings from './NotificationSettings'
 import { tierProgress, tierClass, tierFor } from '../utils/tiers'
 import { shareUrl } from '../utils/share'
+import { APP_VERSION } from '../version'
 
 export default function ProfilePage() {
   const { profile, familyMembers, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount, signOut } = useAuth()
@@ -144,6 +145,8 @@ export default function ProfilePage() {
         <Link to="/terms">Terms &amp; Conditions</Link>
         <Link to="/privacy">Privacy Policy</Link>
       </div>
+
+      <div className="app-version">v{APP_VERSION}</div>
     </>
   )
 }

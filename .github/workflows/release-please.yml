@@ -1,0 +1,23 @@
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          # Use a fine-grained PAT (secret RELEASE_PLEASE_TOKEN), NOT the default
+          # GITHUB_TOKEN. PRs opened by the default token do NOT trigger CI, so
+          # the Release PR would be mergeable without its gate ever running.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
