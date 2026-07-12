@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.7.0...app-v0.7.1) (2026-07-12)
+
+
+### Bug Fixes
+
+* accessibility - WCAG AA contrast + larger text (Intent 0.4) ([83d6148](https://github.com/HunterSreeni/nithyakarma-tracker/commit/83d6148236acc30574c78a562a1164bc2c4416be))
+* accessibility pass - WCAG AA contrast + larger text (Intent 0.4) ([0e6cba0](https://github.com/HunterSreeni/nithyakarma-tracker/commit/0e6cba08284d5098e60ec3fe396649266a1a10c8))
+
 ## [0.7.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.6.0...app-v0.7.0) (2026-07-12)
 
 
