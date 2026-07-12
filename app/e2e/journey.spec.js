@@ -2,14 +2,17 @@ import { test, expect } from '@playwright/test'
 
 // Full user journey against the production build + live Supabase backend.
 // Runs against the dedicated DESTRUCTIVE account e2efull - the final step
-// deletes it (cascade) and onboarding recreates it, so the suite is rerunnable
-// WITHOUT touching the preserved e2e account. See memory: e2efull-account.
+// deletes it (auth user cascade), so the account MUST be re-seeded before each
+// run via supabase/tests/seed-e2efull.sql (through the Supabase MCP). Because it
+// mutates/destroys a shared live account, it is tagged @destructive and EXCLUDED
+// from CI (see .github/workflows/ci.yml). It is a manual pre-release gate; CI
+// runs only the non-destructive specs. See memory: e2efull-account.
 // CI injects these via the E2E_EMAIL / E2E_PASSWORD secrets; the committed
 // defaults keep local runs working without any env setup.
 const EMAIL = process.env.E2E_EMAIL ?? 'e2efull@nithyakarma.test'
 const PASSWORD = process.env.E2E_PASSWORD ?? 'E2eFull#2026'
 
-test.describe.serial('Nithyakarma full journey', () => {
+test.describe.serial('Nithyakarma full journey @destructive', () => {
   let page
 
   test.beforeAll(async ({ browser }) => {

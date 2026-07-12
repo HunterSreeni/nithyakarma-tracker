@@ -42,7 +42,11 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
-      - run: npx playwright test
+      # Non-destructive specs only. The full journey (@destructive) deletes a
+      # shared live account and must be re-seeded first, so it is a manual
+      # pre-release gate, not a CI gate. E2E_* secrets are passed for when
+      # destructive specs are run in a dedicated, seeded workflow later.
+      - run: npx playwright test --grep-invert "@destructive"
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}

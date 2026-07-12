@@ -76,9 +76,13 @@ gate is enforced by CI.
   - `oxlint` passes with zero errors.
   - `vitest run` green (unit + integration + `axe-core` a11y suite).
   - `vite build` succeeds and produces `dist/`.
-  - Playwright e2e job green against the preserved `e2e@nithyakarma.test`
-    account (test creds injected as GitHub secrets, never committed).
-  - All four checks are marked **required** in branch protection.
+  - Playwright **non-destructive** e2e specs green in CI (deterministic, no
+    shared mutable account). The full destructive journey (`@destructive`,
+    account `e2efull`) is a **manual pre-release gate**: re-seed via
+    `supabase/tests/seed-e2efull.sql` (Supabase MCP) then run locally. It is
+    excluded from CI because `delete_account` removes the auth user, so the
+    account self-destructs and cannot be a repeatable CI gate.
+  - The CI checks are marked **required** in branch protection.
 
 ### Intent R2 - Automated SemVer releases (release-please)
 
