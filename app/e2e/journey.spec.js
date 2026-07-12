@@ -4,8 +4,10 @@ import { test, expect } from '@playwright/test'
 // Runs against the dedicated DESTRUCTIVE account e2efull - the final step
 // deletes it (cascade) and onboarding recreates it, so the suite is rerunnable
 // WITHOUT touching the preserved e2e account. See memory: e2efull-account.
-const EMAIL = 'e2efull@nithyakarma.test'
-const PASSWORD = 'E2eFull#2026'
+// CI injects these via the E2E_EMAIL / E2E_PASSWORD secrets; the committed
+// defaults keep local runs working without any env setup.
+const EMAIL = process.env.E2E_EMAIL ?? 'e2efull@nithyakarma.test'
+const PASSWORD = process.env.E2E_PASSWORD ?? 'E2eFull#2026'
 
 test.describe.serial('Nithyakarma full journey', () => {
   let page
