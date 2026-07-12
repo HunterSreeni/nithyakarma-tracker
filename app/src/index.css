@@ -278,6 +278,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .legal-foot a, .legal-body a { color: var(--saffron-600); font-weight: 700; }
 .profile-legal { display: flex; gap: 1.1rem; justify-content: center; margin: 1.4rem 0 0.5rem; }
 .profile-legal a { color: #8a7f70; font-size: 0.74rem; font-weight: 700; }
+.app-version { text-align: center; color: #c4b8a4; font-size: 0.66rem; font-weight: 600; margin-top: 0.6rem; }
 .radio-row { display: flex; gap: 0.6rem; }
 .radio-chip { flex: 1; text-align: center; padding: 10px; border-radius: 12px; border: 1.5px solid var(--warm); background: #f6f2ea; font-size: 0.78rem; font-weight: 700; color: #8a7f70; }
 .radio-chip.on { border-color: var(--saffron-400); background: var(--saffron-50); color: var(--ink); }
