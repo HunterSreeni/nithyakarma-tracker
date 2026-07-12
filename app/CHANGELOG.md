@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/v0.2.0...v0.3.0) (2026-07-12)
+
+
+### Features
+
+* streak freeze tied to tier + referrals (Intent 1.1) ([ab10ded](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ab10ded140b4b90fff7ec2b72b90903a23b7e19c))
+* streak freeze tied to tier and referrals ([4bba27c](https://github.com/HunterSreeni/nithyakarma-tracker/commit/4bba27ce16f9cde33f091f7f9f79640626a16a8a))
+
 ## [0.2.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/v0.1.0...v0.2.0) (2026-07-12)
 
 
