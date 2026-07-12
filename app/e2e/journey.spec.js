@@ -32,10 +32,9 @@ test.describe.serial('Nithyakarma full journey', () => {
     await expect(page.getByText(/Sandhyavandhanam .* will be added/)).toBeVisible()
     await page.getByRole('button', { name: /Begin/ }).click()
     await expect(page.getByText(/Namaskaram, E2E/)).toBeVisible({ timeout: 15000 })
-    // First-run guided tour overlays the Today page - dismiss it before interacting.
-    const skip = page.getByRole('button', { name: 'Skip' })
-    if (await skip.isVisible().catch(() => false)) await skip.click()
-    await expect(page.getByText('Sandhyavandhanam', { exact: true })).toBeVisible()
+    // First-run guided tour overlays the Today page on a fresh context - dismiss it.
+    await page.getByRole('button', { name: 'Skip' }).click({ timeout: 10000 })
+    await expect(page.locator('.practice-card', { hasText: 'Sandhyavandhanam' })).toBeVisible()
     await expect(page.getByRole('button', { name: /Morning/ })).toBeVisible()
   })
 

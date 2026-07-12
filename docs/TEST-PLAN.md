@@ -18,7 +18,11 @@ runtime surfaces. Backs the 2-day manual test window.
 - **UI/UX** - loading / empty / error / success states, responsiveness, celebration.
 - **A11y** - labels, contrast, keyboard, screen reader, focus, touch targets, motion.
 
-Test account: `e2e@nithyakarma.test` (kept until Play Store prod release - see memory).
+Test accounts: `e2e@nithyakarma.test` (preserved UI account, kept until Play Store
+prod release), `integtest@nithyakarma.test` (profile-less, for the rolled-back SQL
+assertions), and `e2efull@nithyakarma.test` (disposable - the destructive Playwright
+journey onboards then deletes it; reseed with `supabase/tests/seed-e2efull.sql`
+before each run). See memory.
 
 ---
 
