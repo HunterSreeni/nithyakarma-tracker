@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test'
 
 // Full user journey against the production build + live Supabase backend.
-// The final step deletes the account (cascade), so the suite is rerunnable.
-const EMAIL = 'e2e@nithyakarma.test'
-const PASSWORD = 'E2eTest#2026'
+// Runs against the dedicated DESTRUCTIVE account e2efull - the final step
+// deletes it (cascade) and onboarding recreates it, so the suite is rerunnable
+// WITHOUT touching the preserved e2e account. See memory: e2efull-account.
+const EMAIL = 'e2efull@nithyakarma.test'
+const PASSWORD = 'E2eFull#2026'
 
 test.describe.serial('Nithyakarma full journey', () => {
   let page

@@ -11,6 +11,12 @@ declare
   v_up uuid;
   v_girl uuid;
   v_sup uuid;
+  v_upc uuid;
+  v_ups uuid;
+  v_ups2 uuid;
+  v_kid uuid;
+  v_up2 uuid;
+  v_code text;
   r jsonb;
   v_failed boolean;
 begin
@@ -121,6 +127,64 @@ begin
   exception when others then v_failed := true;
   end;
   if not v_failed then raise exception 'FAIL: duplicate sandhya slot accepted'; end if;
+
+  -- 9. apply_referral: self/invalid rejected; a valid code grants +30 ad-free days.
+  -- Referrer = any other existing profile (the e2e account). integtest is referred.
+  select referral_code into v_code from profiles where id <> v_uid and referral_code is not null
+    order by created_at limit 1;
+  if v_code is null then
+    raise notice 'SKIP referral test: no other profile to refer from';
+  else
+    v_failed := false;
+    begin perform apply_referral((select referral_code from profiles where id = v_uid));
+    exception when others then v_failed := true; end;
+    if not v_failed then raise exception 'FAIL: self-referral accepted'; end if;
+
+    v_failed := false;
+    begin perform apply_referral('zzzz9999');
+    exception when others then v_failed := true; end;
+    if not v_failed then raise exception 'FAIL: invalid referral code accepted'; end if;
+
+    perform apply_referral(v_code);
+    if (select ad_free_until from profiles where id = v_uid) is distinct from (current_date + 30) then
+      raise exception 'FAIL: valid referral did not grant 30 ad-free days';
+    end if;
+  end if;
+
+  -- 10. daily_count practice: the target count is stored on the log verbatim.
+  insert into user_practices (owner_id, practice_id) values (v_uid, 9) returning id into v_upc; -- shiva-panchakshari (108)
+  perform submit_practice_log(v_upc, null, 108);
+  if (select count from practice_logs where user_practice_id = v_upc and log_date = current_date) <> 108 then
+    raise exception 'FAIL: daily_count target not stored on log';
+  end if;
+
+  -- 11. sequence practice: position increments, then cycles back to 1 at length.
+  insert into user_practices (owner_id, practice_id, sequence_position, last_log_date)
+    values (v_uid, 6, 5, current_date - 1) returning id into v_ups; -- bhagavad-gita, length 18
+  r := submit_practice_log(v_ups);
+  if (r->>'sequence_position')::int <> 6 then raise exception 'FAIL: sequence position did not increment (5->6)'; end if;
+  insert into user_practices (owner_id, practice_id, sequence_position)
+    values (v_uid, 5, 100) returning id into v_ups2; -- narayaneeyam, length 100 -> cycles
+  r := submit_practice_log(v_ups2);
+  if (r->>'sequence_position')::int <> 1 then raise exception 'FAIL: sequence did not cycle to 1 at length'; end if;
+
+  -- 12. per-practice streak: consecutive-day continuity increments; a gap resets to 1.
+  insert into user_practices (owner_id, practice_id, current_streak, last_log_date)
+    values (v_uid, 2, 3, current_date - 1) returning id into v_up2; -- vishnu, logged yesterday
+  r := submit_practice_log(v_up2);
+  if (r->>'practice_streak')::int <> 4 then raise exception 'FAIL: streak did not continue (3->4) on consecutive day'; end if;
+  insert into user_practices (owner_id, practice_id, current_streak, last_log_date)
+    values (v_uid, 3, 3, current_date - 3) returning id into v_ups; -- lalitha, 2-day gap
+  r := submit_practice_log(v_ups);
+  if (r->>'practice_streak')::int <> 1 then raise exception 'FAIL: streak did not reset to 1 after a gap'; end if;
+
+  -- 13. Removing a family member cascades their user_practices and logs.
+  insert into family_members (parent_id, name, gender) values (v_uid, 'Cascade Kid', 'female') returning id into v_kid;
+  insert into user_practices (owner_id, family_member_id, practice_id) values (v_uid, v_kid, 2) returning id into v_up2;
+  insert into practice_logs (user_practice_id, owner_id, log_date) values (v_up2, v_uid, current_date);
+  delete from family_members where id = v_kid;
+  if exists (select 1 from user_practices where id = v_up2) then raise exception 'FAIL: user_practice not cascaded on family delete'; end if;
+  if exists (select 1 from practice_logs where user_practice_id = v_up2) then raise exception 'FAIL: logs not cascaded on family delete'; end if;
 
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;

@@ -65,7 +65,7 @@ Legend: ✅ exists · ⬜ to add.
 | Male → Sandhyavandhanam auto-added | Integration + E2E(W) | ✅ |
 | Female → no Sandhyavandhanam | Integration (trigger) | ✅ |
 | Sandhya trigger blocks female / boy-no-upanayanam | Integration | ✅ |
-| Referral code applied at signup | Integration + E2E | ⬜ |
+| Referral code applied at signup (self/invalid rejected) | Integration | ✅ / E2E ⬜ |
 
 ### Today / mark & Sandhya 3-slot  ← the reported area
 | Mark general practice → streak 1, celebration | E2E(W) | ✅ |
@@ -75,14 +75,14 @@ Legend: ✅ exists · ⬜ to add.
 | Duplicate same-slot rejected | Integration | ✅ |
 | Progress ring & doneCount reflect partial sandhya | Unit(TodayPage) | ✅ |
 | Celebration only from verified RPC response | Unit | ⬜ |
-| Streak continuity (day N→N+1) and reset (gap) | Integration | ⬜ |
+| Streak continuity (day N→N+1) and reset (gap) | Integration | ✅ (per-practice) |
 
 ### Add practice / cadences
 | Sandhya hidden for female/no-upanayanam in dropdown | Unit(TodayPage) | ⬜ |
 | Already-tracking dimmed & disabled | E2E(W) | ✅ |
 | Weekly scheduled only on weekday; no off-day break | Unit(cadence) + Integration | ✅ (cadence) / ⬜ (streak) |
-| daily_count target passed as count | Integration | ⬜ |
-| Sequence position increments & cycles | Integration | ⬜ |
+| daily_count target passed as count | Integration | ✅ |
+| Sequence position increments & cycles | Integration | ✅ |
 
 ### Leaderboard / Sabha
 | Own row pinned + "(You)" | E2E(W) | ✅ |
@@ -94,7 +94,7 @@ Legend: ✅ exists · ⬜ to add.
 | Edit name persists | E2E(W) | ✅ |
 | Add family member (girl, Bala Sabha) appears | E2E(W) | ✅ |
 | Boy+upanayanam gets sandhya | Integration | ✅ |
-| Remove family member cascades logs | Integration | ⬜ |
+| Remove family member cascades logs | Integration | ✅ |
 | Tier boundaries match client mirror | Integration | ✅ |
 | delete_account removes auth user (not just profile) | Integration | ✅ |
 | Delete flow returns to auth | E2E(W) | ✅ |
@@ -132,7 +132,7 @@ Legend: ✅ exists · ⬜ to add.
 | Touch targets ≥44×44 (sandhya slot buttons, nav items, chips) | mobile | ⬜ audit |
 | `prefers-reduced-motion` respected (confetti, spinners, pulse) | celebration | ⬜ |
 | Android TalkBack pass; web NVDA/VoiceOver spot check | A / W | ⬜ manual |
-| Automated a11y scan (axe-core via Playwright) on each route | W | ⬜ add |
+| Automated a11y scan (axe-core, jsdom) - AuthPage, Terms, Privacy, GuidedTour | Unit | ✅ (no serious/critical) |
 
 ## 5. 2-day manual test window (starts 2026-07-11)
 Daily, on web + Android emulator, signed in as e2e (male) and a female profile:
