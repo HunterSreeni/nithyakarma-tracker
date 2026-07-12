@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.8.0...app-v0.9.0) (2026-07-12)
+
+
+### Features
+
+* onboarding value-prop intro (Intent 0.6) ([23cbb0b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/23cbb0b040fa395c5fd79d5e5fa44d389e0f17cf))
+* onboarding value-prop intro before the form (Intent 0.6) ([68c0ebd](https://github.com/HunterSreeni/nithyakarma-tracker/commit/68c0ebda655ee50edbbf38163fa615b03c0b7d89))
+
 ## [0.8.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.7.1...app-v0.8.0) (2026-07-12)
 
 
