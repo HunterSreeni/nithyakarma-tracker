@@ -47,7 +47,7 @@ export default function TodayPage() {
       <div className="eyebrow">{dateLine}</div>
       <div className="greet">Namaskaram, {subjectName.split(' ')[0]} 🙏</div>
       <div className="greet-sub">
-        {items.length === 0 ? 'Add your first anushtanam below.'
+        {items.length === 0 ? 'Start with a suggested anushtanam below 🪔'
           : `${doneCount} of ${items.length} anushtanams done.`}
       </div>
 
@@ -72,7 +72,9 @@ export default function TodayPage() {
       {error && <div className="auth-error">{error}</div>}
 
       <div className="section-h">Today's Anushtanams</div>
-      {loading ? <div className="spinner-wrap">Loading...</div> : (
+      {loading ? <div className="spinner-wrap">Loading...</div> : items.length === 0 ? (
+        <SuggestedPractices onAdd={addPractice} />
+      ) : (
         <div className="practice-list">
           {items.map(item => (
             <PracticeCard key={item.up.id} item={item}
@@ -88,6 +90,47 @@ export default function TodayPage() {
       )}
 
       <GuidedTour ready={!loading} showSandhya={profile.gender === 'male'} />
+    </>
+  )
+}
+
+// Curated one-tap starters shown when the day is empty (e.g. female profiles and
+// non-upanayanam boys who don't get Sandhyavandhanam) so onboarding lands on an
+// actionable screen instead of a blank list.
+const SUGGESTED_SLUGS = ['vishnu-sahasranamam', 'lalitha-sahasranamam', 'hanuman-chalisa']
+
+function SuggestedPractices({ onAdd }) {
+  const [suggestions, setSuggestions] = useState([])
+  const [busy, setBusy] = useState(null)
+
+  useEffect(() => {
+    supabase.from('practices').select('*').in('slug', SUGGESTED_SLUGS).eq('active', true).order('id')
+      .then(({ data }) => setSuggestions(data ?? []))
+  }, [])
+
+  const add = async (id) => {
+    setBusy(id)
+    try { await onAdd(id) } finally { setBusy(null) }
+  }
+
+  if (!suggestions.length) return null
+  return (
+    <>
+      <div className="section-h">Suggested to start 🪔</div>
+      <div className="practice-list">
+        {suggestions.map(p => (
+          <div key={p.id} className="practice-card">
+            <div className="p-icon">{p.icon}</div>
+            <div className="p-body">
+              <div className="p-name">{p.name}</div>
+              <div className="p-meta">{cadenceLabel(p)}</div>
+            </div>
+            <button className="btn-done" disabled={busy === p.id} onClick={() => add(p.id)}>
+              {busy === p.id ? 'Adding...' : '+ Add'}
+            </button>
+          </div>
+        ))}
+      </div>
     </>
   )
 }

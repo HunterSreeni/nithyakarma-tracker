@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 // Child components pull in ads/router/localStorage - not under test here.
 vi.mock('../ProfileSwitcher', () => ({ default: () => null }))
 vi.mock('../CelebrationModal', () => ({ default: () => null }))
 vi.mock('../GuidedTour', () => ({ default: () => null }))
 
-const h = vi.hoisted(() => ({ items: [] }))
+const h = vi.hoisted(() => ({ items: [], catalog: [], addPractice: vi.fn() }))
 vi.mock('../../hooks/useToday', () => ({
-  useToday: () => ({ items: h.items, loading: false, submit: vi.fn(), addPractice: vi.fn() }),
+  useToday: () => ({ items: h.items, loading: false, submit: vi.fn(), addPractice: h.addPractice }),
 }))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
@@ -18,10 +18,14 @@ vi.mock('../../hooks/useAuth', () => ({
     refresh: vi.fn(),
   }),
 }))
-// AddPracticeDropdown fetches the catalog on mount.
-vi.mock('../../lib/supabase', () => ({
-  supabase: { from: () => ({ select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }) }) },
-}))
+// AddPracticeDropdown + SuggestedPractices fetch practices on mount.
+vi.mock('../../lib/supabase', () => {
+  const chain = () => {
+    const c = { select: () => c, eq: () => c, in: () => c, order: () => Promise.resolve({ data: h.catalog }) }
+    return c
+  }
+  return { supabase: { from: () => chain() } }
+})
 
 import TodayPage from '../TodayPage'
 
@@ -31,7 +35,7 @@ const sandhyaItem = (slots) => ({
   logs: slots.map(s => ({ slot: s })),
 })
 
-beforeEach(() => { h.items = [] })
+beforeEach(() => { h.items = []; h.catalog = []; h.addPractice.mockClear() })
 
 describe('TodayPage - Sandhyavandhanam UX', () => {
   it('shows "1 of 3 sandhyas done" after a single slot (the reported 0-not-1 case, surfaced clearly)', () => {
@@ -70,5 +74,29 @@ describe('TodayPage - Sandhyavandhanam UX', () => {
     expect(screen.getByText(
       (_, el) => el?.className === 'tc-hint' && el.textContent.includes('🧊 2 freezes'),
     )).toBeInTheDocument()
+  })
+})
+
+describe('TodayPage - empty-day activation (female / non-sandhya)', () => {
+  const suggestions = [
+    { id: 2, slug: 'vishnu-sahasranamam', name: 'Vishnu Sahasranamam', icon: '🕉️', cadence: 'daily' },
+    { id: 3, slug: 'lalitha-sahasranamam', name: 'Lalitha Sahasranamam', icon: '🌺', cadence: 'daily' },
+  ]
+
+  it('shows one-tap suggestions instead of an empty screen', async () => {
+    h.items = []; h.catalog = suggestions
+    render(<TodayPage />)
+    expect(await screen.findByText('Suggested to start 🪔')).toBeInTheDocument()
+    expect(screen.getByText('Vishnu Sahasranamam')).toBeInTheDocument()
+    expect(screen.getByText('Lalitha Sahasranamam')).toBeInTheDocument()
+    expect(screen.getByText('Start with a suggested anushtanam below 🪔')).toBeInTheDocument()
+  })
+
+  it('adding a suggestion calls addPractice with its id', async () => {
+    h.items = []; h.catalog = suggestions
+    render(<TodayPage />)
+    const addBtn = (await screen.findAllByText('+ Add'))[0]
+    fireEvent.click(addBtn)
+    await waitFor(() => expect(h.addPractice).toHaveBeenCalledWith(2))
   })
 })
