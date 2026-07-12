@@ -8,6 +8,7 @@ export default function Onboarding() {
   const [referral, setReferral] = useState(getReferralFromUrl())
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [step, setStep] = useState('intro')
 
   const submit = async (e) => {
     e.preventDefault()
@@ -19,6 +20,33 @@ export default function Onboarding() {
       setError(err.message)
       setBusy(false)
     }
+  }
+
+  if (step === 'intro') {
+    return (
+      <div className="auth-wrap">
+        <div className="onboard-intro">
+          <div className="auth-logo" style={{ textAlign: 'center', marginBottom: '0.2rem' }}>🪔 Nithya<span>karma</span></div>
+          <div className="oi-title">Namaskaram 🙏</div>
+          <div className="oi-sub">A simple way to keep up your daily anushtanams.</div>
+          <div className="oi-points">
+            <div className="oi-point">
+              <span className="oi-ic">🪔</span>
+              <div><b>Track every day</b><p>Sandhyavandhanam, parayanams, japam - marked in seconds.</p></div>
+            </div>
+            <div className="oi-point">
+              <span className="oi-ic">🔥</span>
+              <div><b>Build a streak</b><p>Earn freezes as you climb tiers, so one missed day won't break it.</p></div>
+            </div>
+            <div className="oi-point">
+              <span className="oi-ic">🏆</span>
+              <div><b>Join the Sabha</b><p>A gentle community leaderboard with your friends and family.</p></div>
+            </div>
+          </div>
+          <button className="btn-auth" onClick={() => setStep('form')}>Get started 🪔</button>
+        </div>
+      </div>
+    )
   }
 
   return (

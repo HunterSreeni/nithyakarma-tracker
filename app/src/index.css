@@ -232,6 +232,17 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .btn-auth { width: 100%; margin-top: 0.9rem; background: var(--action); color: #fff; border: none; border-radius: 100px; padding: 11px; font-weight: 700; font-size: 0.8rem; }
 .auth-switch { text-align: center; font-size: 0.74rem; color: var(--text-2); margin-top: 1rem; }
 .auth-forgot { display: block; margin: 0.5rem 0 0 auto; background: none; border: none; color: var(--action); font-size: 0.74rem; font-weight: 700; text-align: right; }
+
+/* Onboarding value-prop intro */
+.onboard-intro { width: 100%; max-width: 380px; }
+.oi-title { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; text-align: center; color: var(--ink); }
+.oi-sub { color: var(--text-2); text-align: center; font-size: 0.86rem; margin: 0.4rem 0 1.3rem; }
+.oi-points { display: flex; flex-direction: column; gap: 0.8rem; }
+.oi-point { display: flex; gap: 0.9rem; align-items: flex-start; background: #fff; border-radius: 14px; padding: 0.9rem 1rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04); }
+.oi-ic { font-size: 1.4rem; line-height: 1.4; }
+.oi-point b { font-size: 0.9rem; font-weight: 700; }
+.oi-point p { font-size: 0.8rem; color: var(--text-2); margin-top: 3px; line-height: 1.4; }
+.onboard-intro .btn-auth { margin-top: 1.4rem; }
 .auth-switch button { background: none; border: none; color: var(--action); font-weight: 700; font-size: 0.74rem; }
 .auth-error { background: #fee2e2; color: var(--danger); border: 1px solid #f87171; border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.74rem; margin-top: 0.9rem; }
 .auth-notice { background: #d1fae5; color: #047857; border: 1px solid #34d399; border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.74rem; margin-top: 0.9rem; }
