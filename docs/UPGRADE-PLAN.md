@@ -132,7 +132,7 @@ gate is enforced by CI.
   "packages": {
     "app": {
       "release-type": "node",
-      "component": "",
+      "component": "app",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         { "type": "generic", "path": "android/app/build.gradle" }
