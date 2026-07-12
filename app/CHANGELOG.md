@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.5.0...app-v0.6.0) (2026-07-12)
+
+
+### Features
+
+* one-tap suggested practices on empty Today (Intent 1.5) ([c752423](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c75242396627ba4a7e1708de02ec27be12d73d19))
+* one-tap suggested practices on the empty Today screen (Intent 1.5) ([b6698bc](https://github.com/HunterSreeni/nithyakarma-tracker/commit/b6698bcbc63cd3a114793dc4493104ab4ce5c1e6))
+
 ## [0.5.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.4.0...app-v0.5.0) (2026-07-12)
 
 
