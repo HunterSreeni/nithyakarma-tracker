@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { shareToWhatsApp } from '../utils/share'
 import { showInterstitial } from '../utils/ads'
+import { track } from '../utils/analytics'
 
 // Shown ONLY from a verified submit_practice_log response.
 // Flow: celebrate -> share (optional) -> on close, interstitial (Android, non-ad-free).
@@ -56,11 +57,14 @@ export default function CelebrationModal({ data, onClose }) {
           </div>
         </div>
 
-        <button className="btn-whatsapp" onClick={() => shareToWhatsApp({
-          streak, practiceName: data.practice_name,
-          displayName: data.subjectName, tier: data.tier,
-          referralCode: profile.referral_code,
-        })}>
+        <button className="btn-whatsapp" onClick={() => {
+          track('share_clicked', { from: 'celebration' })
+          shareToWhatsApp({
+            streak, practiceName: data.practice_name,
+            displayName: data.subjectName, tier: data.tier,
+            referralCode: profile.referral_code,
+          })
+        }}>
           Share to WhatsApp
         </button>
         <button className="btn-plain" onClick={close}>Continue</button>

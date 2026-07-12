@@ -10,6 +10,8 @@ const admob = {
 }
 vi.mock('@capacitor-community/admob', () => ({ AdMob: admob }))
 
+vi.mock('../analytics', () => ({ track: vi.fn() }))
+
 import { isAdFree, showInterstitial, adsAvailable } from '../ads'
 
 beforeEach(() => vi.clearAllMocks())

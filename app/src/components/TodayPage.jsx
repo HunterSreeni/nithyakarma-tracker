@@ -6,6 +6,7 @@ import { isDoneToday, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
 import CelebrationModal from './CelebrationModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import GuidedTour from './GuidedTour'
+import { track } from '../utils/analytics'
 
 export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
@@ -27,6 +28,12 @@ export default function TodayPage() {
     try {
       const result = await submit(item.up.id, { slot, count: item.practice.target_count ?? null })
       await refresh() // streaks in topbar / switcher
+      track('practice_marked', {
+        day_complete: !!result.day_complete,
+        freeze_used: !!result.freeze_used,
+        overall_streak: result.overall_streak ?? 0,
+        is_sandhya: !!item.practice.is_sandhyavandhanam,
+      })
       setCelebration({ ...result, subjectName })
     } catch (err) {
       setError(err.message)
