@@ -114,29 +114,29 @@ Legend: ✅ exists · ⬜ to add.
 | Invalid credentials shows server error | Unit + E2E(W) | ✅ |
 | Password minLength blocks submit | E2E(W) | ✅ |
 | Mode toggle login↔signup | E2E(W) | ✅ |
-| Sign out returns to auth | E2E(W) | ⬜ |
+| Sign out returns to auth | E2E(W) | ✅ (`e2e/auth-signout.spec.js`) |
 | Google native return (deep link) | E2E(A) | ⬜ (feature not wired; test the hidden state) ✅ |
 
 ### Onboarding
 | Male → Sandhyavandhanam auto-added | Integration + E2E(W) | ✅ |
 | Female → no Sandhyavandhanam | Integration (trigger) | ✅ |
 | Sandhya trigger blocks female / boy-no-upanayanam | Integration | ✅ |
-| Referral code applied at signup (self/invalid rejected) | Integration | ✅ / E2E ⬜ |
+| Referral code applied at signup (self/invalid rejected) | Integration | ✅ / E2E ✅ (`e2e/referral.spec.js`; also fixed a real crash - `apply_referral(...).catch()` isn't valid on the rpc() builder, useAuth.jsx:86) |
 
 ### Today / mark & Sandhya 3-slot  ← the reported area
 | Mark general practice → streak 1, celebration | E2E(W) | ✅ |
 | **Sandhya 1 slot → streak 0, "progressing", 1/3** | Unit(cadence) + Integration(RPC) + E2E(W) | ✅ |
-| **Sandhya 3 slots → done, streak 1, punya 15** | Integration(RPC) + E2E(W) | ✅ / E2E(A) ⬜ |
+| **Sandhya 3 slots → done, streak 1, punya 15** | Integration(RPC) + E2E(W) | ✅ / E2E(A) ✅ (`e2e/android-sandhya.sh`) |
 | isDoneToday: sandhya needs all 3; general needs 1 | Unit | ✅ |
 | Duplicate same-slot rejected | Integration | ✅ |
 | Progress ring & doneCount reflect partial sandhya | Unit(TodayPage) | ✅ |
-| Celebration only from verified RPC response | Unit | ⬜ |
+| Celebration only from verified RPC response | Unit | ✅ |
 | Streak continuity (day N→N+1) and reset (gap) | Integration | ✅ (per-practice) |
 
 ### Add practice / cadences
-| Sandhya hidden for female/no-upanayanam in dropdown | Unit(TodayPage) | ⬜ |
+| Sandhya hidden for female/no-upanayanam in dropdown | Unit(TodayPage) | ✅ |
 | Already-tracking dimmed & disabled | E2E(W) | ✅ |
-| Weekly scheduled only on weekday; no off-day break | Unit(cadence) + Integration | ✅ (cadence) / ⬜ (streak) |
+| Weekly scheduled only on weekday; no off-day break | Unit(cadence) + Integration | ✅ |
 | daily_count target passed as count | Integration | ✅ |
 | Sequence position increments & cycles | Integration | ✅ |
 
@@ -144,7 +144,7 @@ Legend: ✅ exists · ⬜ to add.
 | Own row pinned + "(You)" | E2E(W) | ✅ |
 | Kids tab separate (Bala Sabha) | E2E(W) | ✅ |
 | Opt-out hides from others, self still sees own row | Integration + E2E(W) | ✅ |
-| Score = completed practice-days (sandhya once/3) | Integration | ⬜ |
+| Score = completed practice-days (sandhya once/3) | Integration | ✅ |
 
 ### Profile / family / referrals / delete
 | Edit name persists | E2E(W) | ✅ |
@@ -166,8 +166,8 @@ Legend: ✅ exists · ⬜ to add.
 | Permission denied blocks toggle-on with guidance, DB untouched (web + Android) | Unit | ✅ |
 | Self-heal on mount: re-subscribes silently if enabled+granted+subscription lost; shows guidance if enabled+denied (web + Android) | Unit | ✅ |
 | "Send test notification" button sends via `send-test-notification` edge fn and reports device count / no-subscription error | Unit | ✅ |
-| **Manual round-trip:** toggle off → on → click "Send test notification" → confirm a real push arrives immediately (no waiting for a scheduled window) | Manual | ✅ (A, 2026-07-14 emulator run) / ⬜ (W) |
-| **Manual (W + A):** revoke notification permission in browser/OS settings, confirm the app shows blocked guidance and cannot silently claim success; re-grant permission and confirm the checkbox/test button work again without a full reload (web, via the Permissions API listener) | Manual | ⬜ |
+| **Manual round-trip:** toggle off → on → click "Send test notification" → confirm a real push arrives immediately (no waiting for a scheduled window) | Manual | ✅ (A + W, 2026-07-14) |
+| **Manual (W + A):** revoke notification permission in browser/OS settings, confirm the app shows blocked guidance and cannot silently claim success; re-grant permission and confirm the checkbox/test button work again without a full reload (web, via the Permissions API listener) | Manual | ✅ (A + W, 2026-07-14) |
 
 ---
 

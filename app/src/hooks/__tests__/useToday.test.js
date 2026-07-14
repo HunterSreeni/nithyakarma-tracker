@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
-const h = vi.hoisted(() => ({ ups: [], logs: [], failNext: false }))
+const h = vi.hoisted(() => ({ ups: [], logs: [], failNext: false, rpcResult: null }))
 
 function chain(resolveValue, shouldFail) {
   const b = {
@@ -21,13 +21,14 @@ vi.mock('../../lib/supabase', () => ({
       if (table === 'practice_logs') return chain({ data: h.logs }, false)
       return chain({ data: [] }, false)
     }),
+    rpc: vi.fn(() => Promise.resolve(h.rpcResult)),
   },
 }))
 
 import { useToday } from '../useToday'
 
 beforeEach(() => {
-  h.ups = []; h.logs = []; h.failNext = false
+  h.ups = []; h.logs = []; h.failNext = false; h.rpcResult = null
 })
 
 describe('useToday loading', () => {
@@ -53,5 +54,32 @@ describe('useToday loading', () => {
     h.failNext = false
     await result.current.reload()
     await waitFor(() => expect(result.current.error).toBe(''))
+  })
+})
+
+describe('useToday submit - celebration only from a verified RPC response', () => {
+  it('resolves with the server data when the RPC confirms saved:true', async () => {
+    const { result } = renderHook(() => useToday('owner1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    h.rpcResult = { data: { saved: true, practice_streak: 1, punya: 15 }, error: null }
+    const data = await result.current.submit('up1', { slot: 'morning' })
+    expect(data).toEqual({ saved: true, practice_streak: 1, punya: 15 })
+  })
+
+  it('rejects and never returns data when the RPC call errors', async () => {
+    const { result } = renderHook(() => useToday('owner1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    h.rpcResult = { data: null, error: new Error('rpc failed') }
+    await expect(result.current.submit('up1', { slot: 'morning' })).rejects.toThrow('rpc failed')
+  })
+
+  it('rejects when the RPC resolves without error but saved is not true', async () => {
+    const { result } = renderHook(() => useToday('owner1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    h.rpcResult = { data: { saved: false }, error: null }
+    await expect(result.current.submit('up1', { slot: 'morning' })).rejects.toThrow('Save could not be verified')
   })
 })

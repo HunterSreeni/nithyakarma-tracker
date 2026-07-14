@@ -3,12 +3,16 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 // Child components pull in ads/router/localStorage - not under test here.
 vi.mock('../ProfileSwitcher', () => ({ default: () => null }))
-vi.mock('../CelebrationModal', () => ({ default: () => null }))
+vi.mock('../CelebrationModal', () => ({
+  default: ({ data }) => (data ? <div data-testid="celebration">{data.practice_streak}</div> : null),
+}))
 vi.mock('../GuidedTour', () => ({ default: () => null }))
 
 const h = vi.hoisted(() => ({
   items: [], catalog: [], addPractice: vi.fn(),
   submit: vi.fn(), showInterstitial: vi.fn().mockResolvedValue(false),
+  profile: { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 },
+  selectedMember: null,
 }))
 vi.mock('../../hooks/useToday', () => ({
   useToday: () => ({ items: h.items, loading: false, submit: h.submit, addPractice: h.addPractice }),
@@ -18,8 +22,8 @@ vi.mock('../../utils/review', () => ({ isMilestone: () => false, maybeRequestRev
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
     session: { user: { id: 'u1' } },
-    profile: { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 },
-    selectedMember: null,
+    profile: h.profile,
+    selectedMember: h.selectedMember,
     refresh: vi.fn(),
   }),
 }))
@@ -43,6 +47,8 @@ const sandhyaItem = (slots) => ({
 beforeEach(() => {
   h.items = []; h.catalog = []
   h.addPractice.mockClear(); h.submit.mockReset(); h.showInterstitial.mockClear()
+  h.profile = { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 }
+  h.selectedMember = null
 })
 
 describe('TodayPage - Sandhyavandhanam UX', () => {
@@ -120,5 +126,78 @@ describe('TodayPage - ad timing (Intent 0.2 reorder)', () => {
     render(<TodayPage />)
     fireEvent.click(screen.getByText('Mark Done'))
     await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+  })
+})
+
+describe('TodayPage - celebration only from a verified RPC response', () => {
+  const singleItem = {
+    up: { id: 'up1', current_streak: 0, sequence_position: 0 },
+    practice: { id: 5, name: 'Vishnu', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
+    logs: [],
+  }
+
+  it('shows the celebration modal when submit() resolves with verified data', async () => {
+    h.items = [singleItem]
+    h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 1, practice_streak: 1 })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(screen.getByTestId('celebration')).toBeInTheDocument())
+  })
+
+  it('never shows the celebration modal when submit() rejects (unverified/failed save)', async () => {
+    h.items = [singleItem]
+    h.submit.mockRejectedValue(new Error('Save could not be verified'))
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(screen.getByText('Save could not be verified')).toBeInTheDocument())
+    expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
+    expect(h.showInterstitial).not.toHaveBeenCalled()
+  })
+})
+
+describe('TodayPage - Sandhyavandhanam hidden from Add dropdown', () => {
+  const sandhyaPractice = { id: 1, name: 'Sandhyavandhanam', icon: '🕉', is_sandhyavandhanam: true, cadence: 'daily' }
+  // A non-empty item list keeps the empty-day SuggestedPractices section (which
+  // reads from the same mocked catalog) from also rendering "Sandhyavandhanam".
+  const openDropdown = () => {
+    h.items = [{
+      up: { id: 'up-other', current_streak: 0, sequence_position: 0 },
+      practice: { id: 9, name: 'Vishnu Sahasranamam', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
+      logs: [],
+    }]
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Add an anushtanam to track...'))
+  }
+
+  it('shows Sandhyavandhanam for a male self-profile (no family member selected)', async () => {
+    h.catalog = [sandhyaPractice]
+    h.profile = { ...h.profile, gender: 'male' }
+    h.selectedMember = null
+    openDropdown()
+    expect(await screen.findByText('Sandhyavandhanam')).toBeInTheDocument()
+  })
+
+  it('hides Sandhyavandhanam for a female profile', async () => {
+    h.catalog = [sandhyaPractice]
+    h.profile = { ...h.profile, gender: 'female' }
+    h.selectedMember = null
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Sandhyavandhanam')).not.toBeInTheDocument()
+  })
+
+  it('hides Sandhyavandhanam for a family member boy without upanayanam', async () => {
+    h.catalog = [sandhyaPractice]
+    h.selectedMember = { id: 'fm1', gender: 'male', upanayanam_done: false }
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Sandhyavandhanam')).not.toBeInTheDocument()
+  })
+
+  it('shows Sandhyavandhanam for a family member boy with upanayanam done', async () => {
+    h.catalog = [sandhyaPractice]
+    h.selectedMember = { id: 'fm1', gender: 'male', upanayanam_done: true }
+    openDropdown()
+    expect(await screen.findByText('Sandhyavandhanam')).toBeInTheDocument()
   })
 })

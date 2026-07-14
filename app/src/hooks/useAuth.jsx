@@ -83,7 +83,11 @@ export function AuthProvider({ children }) {
     if (error) throw error
     if (referralCode) {
       // best-effort: an invalid code must not block signup
-      await supabase.rpc('apply_referral', { p_code: referralCode }).catch(() => {})
+      try {
+        await supabase.rpc('apply_referral', { p_code: referralCode })
+      } catch {
+        // ignore - invalid/self referral, etc.
+      }
     }
     // Sandhyavandhanam is the constant practice for male users
     if (gender === 'male') {

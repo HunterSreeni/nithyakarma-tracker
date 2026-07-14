@@ -19,6 +19,7 @@ declare
   v_code text;
   r jsonb;
   v_failed boolean;
+  v_lb_score bigint;
 begin
   select id into v_uid from auth.users where email = 'integtest@nithyakarma.test';
   if v_uid is null then raise exception 'TEST SETUP: integtest user missing'; end if;
@@ -104,14 +105,23 @@ begin
   insert into user_practices (owner_id, practice_id) values (v_uid, v_sandhya) returning id into v_sup;
   perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
 
+  -- Leaderboard baseline: hanuman-chalisa (section 4) already logged today, so
+  -- score = 1 completed practice-day before any sandhya slot is marked.
+  select score into v_lb_score from get_leaderboard('week', 'global') where subject_id = v_uid;
+  if v_lb_score <> 1 then raise exception 'FAIL: leaderboard baseline score wrong (expected 1, got %)', v_lb_score; end if;
+
   r := submit_practice_log(v_sup, 'morning');
   if (r->>'practice_done_today')::boolean then raise exception 'FAIL: sandhya reported done after 1 slot'; end if;
   if (r->>'practice_streak')::int <> 0 then raise exception 'FAIL: sandhya streak advanced on slot 1 (the reported 0-not-1 case)'; end if;
   if (r->>'day_complete')::boolean then raise exception 'FAIL: day complete after 1 sandhya slot'; end if;
+  select score into v_lb_score from get_leaderboard('week', 'global') where subject_id = v_uid;
+  if v_lb_score <> 1 then raise exception 'FAIL: leaderboard score counted an incomplete (1-slot) sandhya day (got %)', v_lb_score; end if;
 
   r := submit_practice_log(v_sup, 'afternoon');
   if (r->>'practice_done_today')::boolean then raise exception 'FAIL: sandhya reported done after 2 slots'; end if;
   if (r->>'practice_streak')::int <> 0 then raise exception 'FAIL: sandhya streak advanced on slot 2'; end if;
+  select score into v_lb_score from get_leaderboard('week', 'global') where subject_id = v_uid;
+  if v_lb_score <> 1 then raise exception 'FAIL: leaderboard score counted an incomplete (2-slot) sandhya day (got %)', v_lb_score; end if;
 
   r := submit_practice_log(v_sup, 'evening');
   if not (r->>'practice_done_today')::boolean then raise exception 'FAIL: sandhya NOT done after all 3 slots'; end if;
@@ -119,6 +129,10 @@ begin
   if (r->>'punya')::int <> 15 then raise exception 'FAIL: punya not 15 after 3 sandhya logs (got %)', r->>'punya'; end if;
   if not (r->>'day_complete')::boolean then raise exception 'FAIL: day not complete though hanuman + sandhya both done'; end if;
   if (r->>'overall_streak')::int <> 1 then raise exception 'FAIL: overall streak not 1 on first fully complete day'; end if;
+  -- Score = completed practice-days, so the sandhya day collapses to +1 total
+  -- (2 -> not 4) once all 3 slots land on the same day.
+  select score into v_lb_score from get_leaderboard('week', 'global') where subject_id = v_uid;
+  if v_lb_score <> 2 then raise exception 'FAIL: leaderboard score did not collapse a completed sandhya day to +1 (expected 2, got %)', v_lb_score; end if;
 
   -- Re-marking an already-done slot is rejected (unique same-day slot)
   v_failed := false;
@@ -227,6 +241,54 @@ begin
     if (r->>'punya')::int <> 100 then raise exception 'FAIL: kid punya not 100 after tier-up'; end if;
     -- started 1 credit, tier-up tops to 2, consume 1 -> 1 remaining
     if (r->>'freeze_credits')::int <> 1 then raise exception 'FAIL: freeze credits wrong after tier-up+consume (expected 1, got %)', r->>'freeze_credits'; end if;
+  end;
+
+  -- 15. Weekly cadence: prev_scheduled() gives continuity across exactly one
+  -- calendar week (not calendar-yesterday), a missed week resets to 1, and the
+  -- RPC refuses a weekly practice on a non-matching weekday.
+  declare
+    v_wd int := extract(dow from current_date)::int;
+    v_practice_wa int;
+    v_practice_wb int;
+    v_practice_wc int;
+    v_up_wa uuid;
+    v_up_wb uuid;
+    v_up_wc uuid;
+  begin
+    insert into practices (slug, name, icon, cadence, weekday, is_sandhyavandhanam)
+      values ('test-weekly-a-' || v_wd, 'Test Weekly A', '🗓️', 'weekly', v_wd, false)
+      returning id into v_practice_wa;
+    insert into practices (slug, name, icon, cadence, weekday, is_sandhyavandhanam)
+      values ('test-weekly-b-' || v_wd, 'Test Weekly B', '🗓️', 'weekly', v_wd, false)
+      returning id into v_practice_wb;
+    insert into practices (slug, name, icon, cadence, weekday, is_sandhyavandhanam)
+      values ('test-weekly-c-' || v_wd, 'Test Weekly C', '🗓️', 'weekly', (v_wd + 1) % 7, false)
+      returning id into v_practice_wc;
+
+    -- (a) last logged exactly 7 days ago (same weekday) -> streak continues
+    insert into user_practices (owner_id, practice_id, current_streak, last_log_date)
+      values (v_uid, v_practice_wa, 3, current_date - 7) returning id into v_up_wa;
+    r := submit_practice_log(v_up_wa);
+    if (r->>'practice_streak')::int <> 4 then
+      raise exception 'FAIL: weekly streak did not continue across exactly one week (3->4)';
+    end if;
+
+    -- (b) last logged 14 days ago (missed a whole scheduled week) -> resets to 1
+    insert into user_practices (owner_id, practice_id, current_streak, last_log_date)
+      values (v_uid, v_practice_wb, 3, current_date - 14) returning id into v_up_wb;
+    r := submit_practice_log(v_up_wb);
+    if (r->>'practice_streak')::int <> 1 then
+      raise exception 'FAIL: weekly streak did not reset after a missed week';
+    end if;
+
+    -- (c) weekly practice scheduled on a different weekday cannot be logged today
+    insert into user_practices (owner_id, practice_id) values (v_uid, v_practice_wc) returning id into v_up_wc;
+    v_failed := false;
+    begin
+      perform submit_practice_log(v_up_wc);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: weekly practice logged on a non-scheduled weekday'; end if;
   end;
 
   -- N. push_subscriptions: the unique constraint is (user_id, endpoint) now,
