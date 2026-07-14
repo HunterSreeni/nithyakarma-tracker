@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.9.0...app-v0.10.0) (2026-07-12)
+
+
+### Features
+
+* ad before celebration + cap + G-rated ads (Intent 0.2 code) ([2720c58](https://github.com/HunterSreeni/nithyakarma-tracker/commit/2720c581fb3a6b8ccddb9aa174569a361f2770c4))
+* ad before celebration + session cap + G-rated ads (Intent 0.2 code) ([1780c48](https://github.com/HunterSreeni/nithyakarma-tracker/commit/1780c4819a7ca1a7820dfb7185cb584d042ca514))
+
 ## [0.9.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.8.0...app-v0.9.0) (2026-07-12)
 
 
