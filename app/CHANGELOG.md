@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.10.1...app-v0.11.0) (2026-07-14)
+
+
+### Features
+
+* notification self-heal + on-demand test push ([50a4180](https://github.com/HunterSreeni/nithyakarma-tracker/commit/50a4180a855544265e301e06cc5b6cae4cada868))
+
 ## [0.10.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.10.0...app-v0.10.1) (2026-07-14)
 
 
