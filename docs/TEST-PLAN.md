@@ -40,7 +40,7 @@ before each run). See memory.
 10. **Profile switcher** - track self vs each family member.
 11. **Profile** - edit name; tier progress bar; stats (streak/best/punya); referral share; leaderboard opt-out; notifications toggle; sign out.
 12. **Family members** - add (name, gender, upanayanam toggle, Bala Sabha opt-in); boys+upanayanam auto-get sandhya; remove (cascades logs).
-13. **Notifications** - enable/disable; web push (VAPID) + Android FCM; local reminders; timezone windows (9:00/12:30/18:30/20:00); per-slot dedup; token rotation.
+13. **Notifications** - enable/disable; web push (VAPID) + Android FCM; local reminders; timezone windows (9:00/12:30/18:30/20:00); per-slot dedup; token rotation; on-demand "Send test notification"; self-heal on mount; permission-revoked guidance.
 14. **Referrals** - apply code at signup; both parties +30 ad-free days; self/invalid rejected.
 15. **Delete account** - type-DELETE confirm → `delete_account()` RPC removes auth user + cascade.
 16. **Streaks & tiers** - per-practice + overall streak continuity/reset; tiers Jijnasu→Sadhaka→Tapasvi→Rishi→Brahmarishi.
@@ -111,7 +111,11 @@ Legend: ✅ exists · ⬜ to add.
 | 'reminders' channel created | Unit | ✅ |
 | Delivery dedup unique constraint | Integration | ✅ |
 | Edge fn sends only in tz window (live) | Integration/manual | ✅ (verified) |
-| Permission denied path | E2E(A) manual | ⬜ |
+| Permission denied blocks toggle-on with guidance, DB untouched (web + Android) | Unit | ✅ |
+| Self-heal on mount: re-subscribes silently if enabled+granted+subscription lost; shows guidance if enabled+denied (web + Android) | Unit | ✅ |
+| "Send test notification" button sends via `send-test-notification` edge fn and reports device count / no-subscription error | Unit | ✅ |
+| **Manual round-trip (W + A):** toggle off → on → click "Send test notification" → confirm a real push arrives immediately (no waiting for a scheduled window) | Manual | ⬜ |
+| **Manual (W + A):** revoke notification permission in browser/OS settings, confirm the app shows blocked guidance and cannot silently claim success; re-grant permission and confirm the checkbox/test button work again without a full reload (web, via the Permissions API listener) | Manual | ⬜ |
 
 ---
 

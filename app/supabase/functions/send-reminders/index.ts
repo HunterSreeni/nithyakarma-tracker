@@ -4,12 +4,11 @@
 // (sandhya slots, skipped if already logged), 20:00 streak nudge (any
 // scheduled practice still incomplete).
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import webpush from "npm:web-push";
+import { loadConfig, sendFCM, sendWebPush } from "../_shared/push.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const DEFAULT_TIMEZONE = "Asia/Kolkata";
-const APP_URL = "https://nithykarma.netlify.app";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -25,109 +24,6 @@ const BODIES: Record<string, string> = {
   evening: "Time for your evening sandhya. Open the app!",
   nudge: "Namaskaram! Today's anushtanams are not all marked yet. 2 minutes is all it takes.",
 };
-
-let config: Record<string, string> = {};
-async function loadConfig() {
-  const { data } = await supabase.from("app_config").select("key, value");
-  config = Object.fromEntries((data ?? []).map((r: any) => [r.key, r.value]));
-}
-
-let fcmAccessToken: string | null = null;
-let fcmTokenExpiry = 0;
-
-function base64ToBytes(b64: string): Uint8Array {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
-}
-function bytesToBase64Url(bytes: Uint8Array): string {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-async function getFCMAccessToken(): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  if (fcmAccessToken && now < fcmTokenExpiry - 60) return fcmAccessToken;
-  const b64 = config.fcm_service_account_b64;
-  if (!b64) throw new Error("fcm_service_account_b64 not configured");
-  const serviceAccount = JSON.parse(atob(b64));
-  const pemBody = serviceAccount.private_key
-    .replace("-----BEGIN PRIVATE KEY-----", "")
-    .replace("-----END PRIVATE KEY-----", "")
-    .replace(/\s/g, "");
-  const key = await crypto.subtle.importKey(
-    "pkcs8", base64ToBytes(pemBody),
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"],
-  );
-  const header = { alg: "RS256", typ: "JWT" };
-  const claim = {
-    iss: serviceAccount.client_email,
-    scope: "https://www.googleapis.com/auth/firebase.messaging",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600, iat: now,
-  };
-  const toSign = `${bytesToBase64Url(new TextEncoder().encode(JSON.stringify(header)))}.${bytesToBase64Url(new TextEncoder().encode(JSON.stringify(claim)))}`;
-  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(toSign));
-  const jwt = `${toSign}.${bytesToBase64Url(new Uint8Array(sig))}`;
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: jwt }),
-  });
-  if (!res.ok) throw new Error(`FCM OAuth failed: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  fcmAccessToken = data.access_token;
-  fcmTokenExpiry = now + (data.expires_in || 3600);
-  return fcmAccessToken!;
-}
-
-async function sendFCM(token: string, title: string, body: string, slot: string): Promise<boolean> {
-  try {
-    const accessToken = await getFCMAccessToken();
-    const projectId = JSON.parse(atob(config.fcm_service_account_b64)).project_id;
-    const res = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: {
-          token,
-          notification: { title, body },
-          android: { priority: "high", notification: { channel_id: "reminders", color: "#FF9933" } },
-          data: { url: APP_URL, slot },
-        },
-      }),
-    });
-    if (res.ok) return true;
-    const err = await res.json();
-    const errorCode = (err as any)?.error?.details?.[0]?.errorCode || "";
-    if (errorCode === "UNREGISTERED" || errorCode === "SENDER_ID_MISMATCH") {
-      await supabase.from("push_subscriptions").delete().eq("endpoint", token);
-    }
-    return false;
-  } catch (err) {
-    console.error("[send-reminders] sendFCM failed", err);
-    return false;
-  }
-}
-
-async function sendWebPush(sub: { endpoint: string; p256dh: string; auth_key: string }, title: string, body: string): Promise<boolean> {
-  try {
-    await webpush.sendNotification(
-      { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth_key } },
-      JSON.stringify({ title, body, url: APP_URL }),
-    );
-    return true;
-  } catch (err: any) {
-    if (err?.statusCode === 410 || err?.statusCode === 404) {
-      await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
-    } else {
-      console.error("[send-reminders] sendWebPush failed", err);
-    }
-    return false;
-  }
-}
 
 function localParts(now: Date, tz: string) {
   try {
@@ -152,12 +48,11 @@ function slotFor(hour: number, minute: number): string | null {
 }
 
 Deno.serve(async (req: Request) => {
-  await loadConfig();
+  const config = await loadConfig(supabase);
   const authHeader = req.headers.get("Authorization");
   if (!config.cron_secret || authHeader !== `Bearer ${config.cron_secret}`) {
     return new Response("Unauthorized", { status: 401 });
   }
-  webpush.setVapidDetails(config.vapid_email, config.vapid_public_key, config.vapid_private_key);
 
   const now = new Date();
   const { data: prefs } = await supabase
@@ -229,8 +124,8 @@ Deno.serve(async (req: Request) => {
         .insert({ user_id: uid, reminder_date: date, slot, endpoint: sub.endpoint.slice(0, 500) });
       if (dupErr) continue; // already sent this slot today to this endpoint
       const ok = sub.platform === "android"
-        ? await sendFCM(sub.endpoint, title, body, slot)
-        : await sendWebPush(sub, title, body);
+        ? await sendFCM(supabase, config, sub.endpoint, title, body, slot)
+        : await sendWebPush(supabase, config, sub, title, body);
       if (ok) sent++;
     }
   }
