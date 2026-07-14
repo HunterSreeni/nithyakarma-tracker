@@ -26,6 +26,58 @@ before each run). See memory.
 
 ---
 
+## Android tooling (this dev machine, verified 2026-07-14)
+
+- **Android Studio** runs on Sreeni's desktop session (GUI) - it is not
+  filesystem-visible from an agent's sandboxed shell, so an agent can't launch
+  it directly. What an agent *can* do: connect to whatever emulator/device is
+  already running via `adb`, which talks to a local `adb` server over
+  `localhost:5037` regardless of which process (Android Studio's Device
+  Manager, or a manually-launched AVD) started the emulator.
+- **SDK location**: `~/Android/Sdk` (`$ANDROID_HOME` / `$ANDROID_SDK_ROOT`
+  both point here).
+  - `adb`: `~/Android/Sdk/platform-tools/adb`
+  - `emulator`: `~/Android/Sdk/emulator/emulator`
+  - AVDs: `~/.android/avd/` - as of this writing, one exists (`shorts_test`,
+    left over from a different project). There is no nithyakarma-specific
+    AVD yet; running app builds against whatever emulator is currently up
+    works fine regardless of the AVD's name.
+- **Build + install a fresh debug build** (from `app/`):
+  ```
+  npm run build && npx cap sync android
+  cd android && ./gradlew assembleDebug
+  adb uninstall in.co.sreeniverse.nithyakarma   # clean slate, optional
+  adb install app/build/outputs/apk/debug/app-debug.apk
+  adb shell am start -n in.co.sreeniverse.nithyakarma/.MainActivity
+  ```
+  Gradle and a JDK are present in this environment (no Android Studio launch
+  needed to build - `./gradlew` alone is sufficient).
+- **Driving the UI from an agent (no display server available)**: the
+  in-app WebView exposes nothing to `uiautomator` (`NAF="true"` - "not
+  accessibility friendly"), so element-lookup tools don't work; interaction
+  has to be screenshot-then-tap:
+  ```
+  adb exec-out screencap -p > screen.png   # inspect, pick a target pixel
+  adb shell input tap <x> <y>              # coordinates are native pixels
+  adb shell input text "..."               # for text fields (no spaces support well)
+  adb shell input keyevent KEYCODE_BACK    # dismiss keyboard/back
+  ```
+  Screenshots returned by `screencap` are full native resolution (e.g.
+  1080x2400) - if a coordinate was read off a *resized/displayed* copy of
+  that image, scale it back up to native pixels before tapping, and take a
+  fresh screenshot immediately before every tap (any keyboard toggle or
+  scroll invalidates previously-read coordinates).
+- **Logs**: `adb logcat -d -t <N> | grep -iE "nithyakarma|capacitor|error"` -
+  useful filters: `Capacitor` (bridge/plugin calls), `AdMob` (interstitial
+  lifecycle), `firebase|fcm|PushNotif` (push registration/delivery),
+  `TaskPersister`/`FontLog` noise can be ignored.
+- **Manual pre-release gate**: reseed `e2efull@nithyakarma.test` via
+  `supabase/tests/seed-e2efull.sql` (Supabase MCP) before each full run,
+  since the destructive Playwright journey (and a manual Android pass
+  through the same flow) deletes it at the end.
+
+---
+
 ## 1. User-flow map (all flows)
 
 1. **Auth** - sign up (email), email verification notice, sign in (email), Google (W/Mw only), invalid creds, min-password, mode toggle, sign out.
@@ -114,7 +166,7 @@ Legend: ✅ exists · ⬜ to add.
 | Permission denied blocks toggle-on with guidance, DB untouched (web + Android) | Unit | ✅ |
 | Self-heal on mount: re-subscribes silently if enabled+granted+subscription lost; shows guidance if enabled+denied (web + Android) | Unit | ✅ |
 | "Send test notification" button sends via `send-test-notification` edge fn and reports device count / no-subscription error | Unit | ✅ |
-| **Manual round-trip (W + A):** toggle off → on → click "Send test notification" → confirm a real push arrives immediately (no waiting for a scheduled window) | Manual | ⬜ |
+| **Manual round-trip:** toggle off → on → click "Send test notification" → confirm a real push arrives immediately (no waiting for a scheduled window) | Manual | ✅ (A, 2026-07-14 emulator run) / ⬜ (W) |
 | **Manual (W + A):** revoke notification permission in browser/OS settings, confirm the app shows blocked guidance and cannot silently claim success; re-grant permission and confirm the checkbox/test button work again without a full reload (web, via the Permissions API listener) | Manual | ⬜ |
 
 ---
