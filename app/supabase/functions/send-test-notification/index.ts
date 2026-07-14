@@ -9,7 +9,18 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// send-reminders never needed CORS handling (server-to-server, cron only).
+// This function is called directly from the browser via
+// supabase.functions.invoke(), which preflights on the Authorization header -
+// without these headers the browser blocks the request before it's even sent.
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
+
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
@@ -28,7 +39,10 @@ Deno.serve(async (req: Request) => {
     .eq("user_id", user.id);
 
   if (!subs?.length) {
-    return json({ error: "No active notification subscription found. Enable notifications first." }, 404);
+    // 200, not 404: supabase-js's functions.invoke() treats any non-2xx as a
+    // generic FunctionsHttpError and discards the parsed body, which would
+    // swallow this specific message the client is built to surface.
+    return json({ error: "No active notification subscription found. Enable notifications first." });
   }
 
   const title = "Test notification 🔔";
@@ -46,5 +60,8 @@ Deno.serve(async (req: Request) => {
 });
 
 function json(obj: unknown, status = 200) {
-  return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+  });
 }

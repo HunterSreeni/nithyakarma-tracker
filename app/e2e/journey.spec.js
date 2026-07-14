@@ -1,4 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, chromium } from '@playwright/test'
+import { mkdtempSync, rmSync } from 'fs'
+import { tmpdir } from 'os'
+import path from 'path'
 
 // Full user journey against the production build + live Supabase backend.
 // Runs against the dedicated DESTRUCTIVE account e2efull - the final step
@@ -11,15 +14,28 @@ import { test, expect } from '@playwright/test'
 // defaults keep local runs working without any env setup.
 const EMAIL = process.env.E2E_EMAIL ?? 'e2efull@nithyakarma.test'
 const PASSWORD = process.env.E2E_PASSWORD ?? 'E2eFull#2026'
+const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:4173'
 
 test.describe.serial('Nithyakarma full journey @destructive', () => {
-  let page
+  let page, context, userDataDir
 
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage()
+  // A plain browser.newContext() is Chromium-incognito-like, and Chrome
+  // deliberately does not support the Push API in incognito (undetectable by
+  // design - https://crbug.com/41124656). The notification-toggle test below
+  // needs a real subscribe() to succeed, so this journey needs a persistent
+  // (non-incognito) profile, unlike the other non-destructive specs.
+  test.beforeAll(async () => {
+    userDataDir = mkdtempSync(path.join(tmpdir(), 'nk-journey-'))
+    context = await chromium.launchPersistentContext(userDataDir, {
+      channel: 'chromium',
+      baseURL: BASE_URL,
+      permissions: ['notifications'],
+    })
+    page = await context.newPage()
   })
   test.afterAll(async () => {
-    await page.close()
+    await context.close()
+    rmSync(userDataDir, { recursive: true, force: true })
   })
 
   test('login with email/password', async () => {
