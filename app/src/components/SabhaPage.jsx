@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { tierClass } from '../utils/tiers'
 import { shareUrl } from '../utils/share'
 import { track } from '../utils/analytics'
+import ErrorBanner from './ErrorBanner'
+import { friendlyError } from '../utils/friendlyError'
 
 const SCOPES = [
   { key: 'week', label: 'Week', scope: 'global', period: 'week' },
@@ -16,16 +18,26 @@ export default function SabhaPage() {
   const [tab, setTab] = useState(SCOPES[0])
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const { profile } = useAuth()
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     setLoading(true)
-    supabase.rpc('get_leaderboard', { p_period: tab.period, p_scope: tab.scope })
-      .then(({ data, error }) => {
-        setRows(error ? [] : (data ?? []))
-        setLoading(false)
-      })
+    setError('')
+    try {
+      const { data, error: rpcError } = await supabase.rpc('get_leaderboard', { p_period: tab.period, p_scope: tab.scope })
+      if (rpcError) throw rpcError
+      setRows(data ?? [])
+    } catch (err) {
+      // A real failure used to be disguised as an empty leaderboard - now it
+      // surfaces as an error with a retry instead of a misleading empty state.
+      setError(friendlyError(err))
+    } finally {
+      setLoading(false)
+    }
   }, [tab])
+
+  useEffect(() => { load() }, [load])
 
   const hall = rows[0]
   const myRow = rows.find(r => r.is_me)
@@ -36,7 +48,7 @@ export default function SabhaPage() {
   const noFriends = tab.key === 'friends' && rows.filter(r => !r.is_me).length === 0
   const inviteWhatsApp = () => {
     track('share_clicked', { from: 'sabha_friends' })
-    const text = `🪔 Join me on Nithyakarma - track your daily anushtanams with the Sabha!\n${shareUrl(profile.referral_code)}`
+    const text = `Join me on Nithyakarma - track your daily anushtanams with the Sabha!\n${shareUrl(profile.referral_code)}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
   }
 
@@ -56,7 +68,9 @@ export default function SabhaPage() {
         ))}
       </div>
 
-      {loading ? <div className="spinner-wrap">Loading...</div> : noFriends ? (
+      {loading ? <div className="spinner-wrap">Loading...</div> : error ? (
+        <ErrorBanner message={error} onRetry={load} />
+      ) : noFriends ? (
         <div className="referral-card">
           <div className="ref-title">Your Sabha grows with friends 🎁</div>
           <div className="ref-sub">

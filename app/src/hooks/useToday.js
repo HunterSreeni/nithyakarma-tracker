@@ -1,35 +1,43 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { isScheduled, localDateString } from '../utils/cadence'
+import { friendlyError } from '../utils/friendlyError'
 
 // Loads the selected subject's practices + today's logs.
 // Streaks/punya are maintained server-side by submit_practice_log.
 export function useToday(ownerId, familyMemberId = null) {
   const [items, setItems] = useState([]) // [{ up, practice, logs }]
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const load = useCallback(async () => {
     if (!ownerId) return
     setLoading(true)
-    let q = supabase.from('user_practices')
-      .select('*, practice:practices(*)')
-      .eq('owner_id', ownerId)
-    q = familyMemberId ? q.eq('family_member_id', familyMemberId) : q.is('family_member_id', null)
-    const { data: ups } = await q
-    const today = localDateString()
-    const ids = (ups ?? []).map(u => u.id)
-    let logs = []
-    if (ids.length) {
-      const { data } = await supabase.from('practice_logs')
-        .select('*').in('user_practice_id', ids).eq('log_date', today)
-      logs = data ?? []
+    setError('')
+    try {
+      let q = supabase.from('user_practices')
+        .select('*, practice:practices(*)')
+        .eq('owner_id', ownerId)
+      q = familyMemberId ? q.eq('family_member_id', familyMemberId) : q.is('family_member_id', null)
+      const { data: ups } = await q
+      const today = localDateString()
+      const ids = (ups ?? []).map(u => u.id)
+      let logs = []
+      if (ids.length) {
+        const { data } = await supabase.from('practice_logs')
+          .select('*').in('user_practice_id', ids).eq('log_date', today)
+        logs = data ?? []
+      }
+      const scheduled = (ups ?? [])
+        .filter(u => isScheduled(u.practice))
+        .map(u => ({ up: u, practice: u.practice, logs: logs.filter(l => l.user_practice_id === u.id) }))
+        .sort((a, b) => (b.practice.is_sandhyavandhanam ? 1 : 0) - (a.practice.is_sandhyavandhanam ? 1 : 0))
+      setItems(scheduled)
+    } catch (err) {
+      setError(friendlyError(err))
+    } finally {
+      setLoading(false)
     }
-    const scheduled = (ups ?? [])
-      .filter(u => isScheduled(u.practice))
-      .map(u => ({ up: u, practice: u.practice, logs: logs.filter(l => l.user_practice_id === u.id) }))
-      .sort((a, b) => (b.practice.is_sandhyavandhanam ? 1 : 0) - (a.practice.is_sandhyavandhanam ? 1 : 0))
-    setItems(scheduled)
-    setLoading(false)
   }, [ownerId, familyMemberId])
 
   useEffect(() => { load() }, [load])
@@ -54,5 +62,5 @@ export function useToday(ownerId, familyMemberId = null) {
     await load()
   }
 
-  return { items, loading, submit, addPractice, reload: load }
+  return { items, loading, error, submit, addPractice, reload: load }
 }

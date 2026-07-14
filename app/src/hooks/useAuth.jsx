@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabase'
 import { track } from '../utils/analytics'
 
@@ -21,17 +22,43 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
+    // A rejected getSession()/loadProfile() (expired refresh token, network
+    // not ready right after a long-backgrounded resume) must never leave
+    // loading stuck true - it gates the entire app (see App.jsx's Gate()).
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
-      if (session) await loadProfile(session.user.id)
+      if (session) await loadProfile(session.user.id).catch(() => {})
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
-      if (session) await loadProfile(session.user.id)
+      if (session) await loadProfile(session.user.id).catch(() => {})
       else { setProfile(null); setFamilyMembers([]); setSelectedMember(null) }
     })
-    return () => subscription.unsubscribe()
+
+    // Re-validate the session when the app returns to the foreground. A tab
+    // or native webview backgrounded for 24h+ can resume with a session that
+    // silently expired; nothing else re-checks it, so the UI would otherwise
+    // keep showing whatever stale state it had before backgrounding. Feeding
+    // getSession() re-triggers the onAuthStateChange handler above either way.
+    const revalidate = () => { supabase.auth.getSession().catch(() => {}) }
+    let removeResumeListener
+    if (Capacitor.isNativePlatform()) {
+      import('@capacitor/app').then(({ App }) => {
+        App.addListener('resume', revalidate).then((handle) => { removeResumeListener = handle.remove })
+      })
+    } else {
+      document.addEventListener('visibilitychange', onVisibilityChange)
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') revalidate()
+    }
+
+    return () => {
+      subscription.unsubscribe()
+      removeResumeListener?.()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
   }, [loadProfile])
 
   const signInGoogle = () =>

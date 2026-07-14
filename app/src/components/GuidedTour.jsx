@@ -61,7 +61,7 @@ export default function GuidedTour({ ready, showSandhya }) {
       progressText: '{{current}} of {{total}}',
       nextBtnText: 'Next',
       prevBtnText: 'Back',
-      doneBtnText: 'Begin 🪔',
+      doneBtnText: 'Begin',
       popoverClass: 'nk-tour',
       onDestroyed: () => markSeen(),
       steps: buildSteps(showSandhya && hasSlots),

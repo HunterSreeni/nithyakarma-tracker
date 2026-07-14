@@ -94,10 +94,10 @@ describe('TodayPage - empty-day activation (female / non-sandhya)', () => {
   it('shows one-tap suggestions instead of an empty screen', async () => {
     h.items = []; h.catalog = suggestions
     render(<TodayPage />)
-    expect(await screen.findByText('Suggested to start 🪔')).toBeInTheDocument()
+    expect(await screen.findByText('Suggested to start')).toBeInTheDocument()
     expect(screen.getByText('Vishnu Sahasranamam')).toBeInTheDocument()
     expect(screen.getByText('Lalitha Sahasranamam')).toBeInTheDocument()
-    expect(screen.getByText('Start with a suggested anushtanam below 🪔')).toBeInTheDocument()
+    expect(screen.getByText('Start with a suggested anushtanam below')).toBeInTheDocument()
   })
 
   it('adding a suggestion calls addPractice with its id', async () => {

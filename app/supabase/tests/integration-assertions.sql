@@ -229,6 +229,36 @@ begin
     if (r->>'freeze_credits')::int <> 1 then raise exception 'FAIL: freeze credits wrong after tier-up+consume (expected 1, got %)', r->>'freeze_credits'; end if;
   end;
 
+  -- N. push_subscriptions: the unique constraint is (user_id, endpoint) now,
+  -- not endpoint alone - two different accounts must each be able to hold a
+  -- row for the same physical device/browser endpoint (e.g. shared test
+  -- hardware), which is exactly what silently broke push in production.
+  -- Reuses the persistent e2e account as a second real profile.
+  declare
+    v_e2e_uid uuid;
+    v_shared_endpoint text := 'test-shared-endpoint-' || gen_random_uuid();
+  begin
+    select id into v_e2e_uid from auth.users where email = 'e2e@nithyakarma.test';
+    if v_e2e_uid is null then raise exception 'TEST SETUP: e2e user missing'; end if;
+    insert into push_subscriptions (user_id, endpoint, platform) values (v_uid, v_shared_endpoint, 'android');
+    v_failed := false;
+    begin
+      insert into push_subscriptions (user_id, endpoint, platform) values (v_e2e_uid, v_shared_endpoint, 'android');
+    exception when unique_violation then
+      v_failed := true;
+    end;
+    if v_failed then raise exception 'FAIL: two different accounts could not each hold a row for the same endpoint (unique constraint still global)'; end if;
+    -- same user + same endpoint must still be rejected - this is what the
+    -- client's onConflict:'user_id,endpoint' upsert relies on.
+    v_failed := false;
+    begin
+      insert into push_subscriptions (user_id, endpoint, platform) values (v_uid, v_shared_endpoint, 'android');
+    exception when unique_violation then
+      v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: duplicate (user_id, endpoint) was accepted'; end if;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;

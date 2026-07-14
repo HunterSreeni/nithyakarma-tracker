@@ -6,13 +6,15 @@ import { isDoneToday, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
 import CelebrationModal from './CelebrationModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import GuidedTour from './GuidedTour'
+import ErrorBanner from './ErrorBanner'
 import { track } from '../utils/analytics'
 import { showInterstitial } from '../utils/ads'
 import { isMilestone, maybeRequestReview } from '../utils/review'
 
 export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
-  const { items, loading, submit, addPractice } = useToday(session.user.id, selectedMember?.id ?? null)
+  const { items, loading, error: loadError, submit, addPractice, reload } =
+    useToday(session.user.id, selectedMember?.id ?? null)
   const [celebration, setCelebration] = useState(null)
   const [busyId, setBusyId] = useState(null)
   const [error, setError] = useState(null)
@@ -55,7 +57,7 @@ export default function TodayPage() {
       <div className="eyebrow">{dateLine}</div>
       <div className="greet">Namaskaram, {subjectName.split(' ')[0]} 🙏</div>
       <div className="greet-sub">
-        {items.length === 0 ? 'Start with a suggested anushtanam below 🪔'
+        {items.length === 0 ? 'Start with a suggested anushtanam below'
           : `${doneCount} of ${items.length} anushtanams done.`}
       </div>
 
@@ -80,7 +82,9 @@ export default function TodayPage() {
       {error && <div className="auth-error">{error}</div>}
 
       <div className="section-h">Today's Anushtanams</div>
-      {loading ? <div className="spinner-wrap">Loading...</div> : items.length === 0 ? (
+      {loading ? <div className="spinner-wrap">Loading...</div> : loadError ? (
+        <ErrorBanner message={loadError} onRetry={reload} />
+      ) : items.length === 0 ? (
         <SuggestedPractices onAdd={addPractice} />
       ) : (
         <div className="practice-list">
@@ -124,7 +128,7 @@ function SuggestedPractices({ onAdd }) {
   if (!suggestions.length) return null
   return (
     <>
-      <div className="section-h">Suggested to start 🪔</div>
+      <div className="section-h">Suggested to start</div>
       <div className="practice-list">
         {suggestions.map(p => (
           <div key={p.id} className="practice-card">

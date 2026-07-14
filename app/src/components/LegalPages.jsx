@@ -9,7 +9,7 @@ function LegalShell({ title, children }) {
     <div className="legal-page">
       <div className="legal-head">
         <button className="legal-back" onClick={() => navigate(-1)} aria-label="Go back">← Back</button>
-        <div className="auth-logo" style={{ fontSize: '1rem', margin: 0 }}>🪔 Nithya<span>karma</span></div>
+        <div className="auth-logo" style={{ fontSize: '1rem', margin: 0 }}>Nithya<span>karma</span></div>
       </div>
       <h1 className="legal-title">{title}</h1>
       <div className="legal-date">Effective {EFFECTIVE} · Sreeniverse</div>

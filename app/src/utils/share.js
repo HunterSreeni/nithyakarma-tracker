@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core'
 
 export function shareText({ streak, practiceName, displayName, tier, referralCode }) {
   return [
-    `🪔 ${streak} day streak on Nithyakarma!`,
+    `${streak} day streak on Nithyakarma!`,
     `${practiceName} - ${displayName} (${tier})`,
     `Join me: ${shareUrl(referralCode)}`,
   ].join('\n')
