@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.10.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.10.0...app-v0.10.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* mock lib/supabase in App.test.jsx to fix CI ([414c992](https://github.com/HunterSreeni/nithyakarma-tracker/commit/414c9923fdb53593c9c79753ef3d8a18787752c9))
+* remove diya branding, fix push notifications, fix stuck-loading bug ([56c34a8](https://github.com/HunterSreeni/nithyakarma-tracker/commit/56c34a8daa48e13a8019bce3abcbacd608c07537))
+* remove diya branding, fix push notifications, fix stuck-loading bug ([9a84e3e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/9a84e3efebaa1efae047ed753f12bffe233a378f))
+
 ## [0.10.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.9.0...app-v0.10.0) (2026-07-12)
 
 
