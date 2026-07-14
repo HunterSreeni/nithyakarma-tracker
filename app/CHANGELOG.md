@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.11.1...app-v0.11.2) (2026-07-14)
+
+
+### Bug Fixes
+
+* register @capacitor/app in Android Gradle project; document Android testing ([abe5a29](https://github.com/HunterSreeni/nithyakarma-tracker/commit/abe5a295a29b860572a49a4a628fb559b8f44614))
+* register @capacitor/app in the Android Gradle project; document Android testing setup ([d2cbbef](https://github.com/HunterSreeni/nithyakarma-tracker/commit/d2cbbef7f02536c273f14916972088d91f1adb19))
+
 ## [0.11.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.11.0...app-v0.11.1) (2026-07-14)
 
 
