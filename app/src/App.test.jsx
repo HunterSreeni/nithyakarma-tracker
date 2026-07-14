@@ -5,6 +5,11 @@ vi.mock('./hooks/useAuth', () => ({
   useAuth: () => ({ session: null, profile: null, loading: true }),
   AuthProvider: ({ children }) => children,
 }))
+// Gate() never renders the real page components while loading=true, but they
+// (and lib/supabase.js, which throws without env vars at module-load time)
+// still get imported transitively - stub it so this test doesn't depend on
+// VITE_SUPABASE_URL/KEY being set, which CI's verify job doesn't set.
+vi.mock('./lib/supabase', () => ({ supabase: {} }))
 
 import App from './App'
 
