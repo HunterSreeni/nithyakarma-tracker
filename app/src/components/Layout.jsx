@@ -23,7 +23,6 @@ export default function Layout({ children }) {
     <div className="app-shell">
       <header className="topbar">
         <Link to="/" className="wordmark">
-          <span className="diya">🪔</span>
           <span className="name">Nithya<span>karma</span></span>
         </Link>
         <nav className="nav-tabs">

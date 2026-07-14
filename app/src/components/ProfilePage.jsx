@@ -39,7 +39,7 @@ export default function ProfilePage() {
 
   const inviteWhatsApp = () => {
     track('share_clicked', { from: 'profile' })
-    const text = `🪔 Join me on Nithyakarma - track your daily anushtanams with the Sabha!\n${shareUrl(profile.referral_code)}`
+    const text = `Join me on Nithyakarma - track your daily anushtanams with the Sabha!\n${shareUrl(profile.referral_code)}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
   }
 

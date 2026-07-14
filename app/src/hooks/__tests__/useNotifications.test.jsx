@@ -104,4 +104,18 @@ describe('useNotifications (native)', () => {
     expect(result.current.enabled).toBe(false)
     expect(result.current.error).toMatch(/denied/)
   })
+
+  it('does not persist enabled=true when FCM registration fails - the pref must wait for a confirmed subscription', async () => {
+    mockNative.mockReturnValue(true)
+    const { cancelAllReminders } = await import('../../utils/notifications')
+    const { registerFCM } = await import('../../utils/pushAndroid')
+    registerFCM.mockRejectedValueOnce(new Error('registration denied'))
+    const { result } = renderHook(() => useNotifications(user, { includeSandhya: false }))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await act(() => result.current.toggle())
+    expect(result.current.enabled).toBe(false)
+    expect(result.current.error).toMatch(/Could not register/)
+    expect(cancelAllReminders).toHaveBeenCalled() // rolls back local scheduling too
+    expect(upsertPref).not.toHaveBeenCalled() // pref never flipped on for an unconfirmed subscription
+  })
 })

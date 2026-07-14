@@ -1,16 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import ProfileSwitcher from './ProfileSwitcher'
+import ErrorBanner from './ErrorBanner'
+import { friendlyError } from '../utils/friendlyError'
 
 export default function HistoryPage() {
   const { session, selectedMember } = useAuth()
   const [days, setDays] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true)
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
       let q = supabase.from('user_practices')
         .select('id, practice:practices(name, icon, is_sandhyavandhanam)')
         .eq('owner_id', session.user.id)
@@ -18,7 +22,7 @@ export default function HistoryPage() {
       const { data: ups } = await q
       const byUp = Object.fromEntries((ups ?? []).map(u => [u.id, u.practice]))
       const ids = Object.keys(byUp)
-      if (!ids.length) { setDays([]); setLoading(false); return }
+      if (!ids.length) { setDays([]); return }
       const { data: logs } = await supabase.from('practice_logs')
         .select('user_practice_id, log_date, slot')
         .in('user_practice_id', ids)
@@ -38,16 +42,23 @@ export default function HistoryPage() {
           return acc
         }, {})),
       })))
+    } catch (err) {
+      setError(friendlyError(err))
+    } finally {
       setLoading(false)
-    })()
+    }
   }, [session.user.id, selectedMember])
+
+  useEffect(() => { load() }, [load])
 
   return (
     <>
       <div className="greet" style={{ fontSize: '1.1rem' }}>History</div>
       <ProfileSwitcher />
       <div style={{ marginTop: '1rem' }}>
-        {loading ? <div className="spinner-wrap">Loading...</div> : days.length === 0 ? (
+        {loading ? <div className="spinner-wrap">Loading...</div> : error ? (
+          <ErrorBanner message={error} onRetry={load} />
+        ) : days.length === 0 ? (
           <div className="empty-note">No anushtanams logged yet.</div>
         ) : days.map(d => (
           <div className="history-row" key={d.date}>

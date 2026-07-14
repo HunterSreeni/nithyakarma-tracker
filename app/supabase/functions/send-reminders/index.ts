@@ -106,7 +106,10 @@ async function sendFCM(token: string, title: string, body: string, slot: string)
       await supabase.from("push_subscriptions").delete().eq("endpoint", token);
     }
     return false;
-  } catch { return false; }
+  } catch (err) {
+    console.error("[send-reminders] sendFCM failed", err);
+    return false;
+  }
 }
 
 async function sendWebPush(sub: { endpoint: string; p256dh: string; auth_key: string }, title: string, body: string): Promise<boolean> {
@@ -119,6 +122,8 @@ async function sendWebPush(sub: { endpoint: string; p256dh: string; auth_key: st
   } catch (err: any) {
     if (err?.statusCode === 410 || err?.statusCode === 404) {
       await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+    } else {
+      console.error("[send-reminders] sendWebPush failed", err);
     }
     return false;
   }

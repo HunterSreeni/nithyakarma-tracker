@@ -14,9 +14,15 @@ let listenersReady = false
 
 async function saveToken(token) {
   if (!currentUserId) return
-  await supabase.from('push_subscriptions').upsert({
+  // A device token can be left over from a previous account signed into the
+  // same device (e.g. shared test hardware) - reclaim it for this user since
+  // the unique constraint is now per-user, not global.
+  await supabase.from('push_subscriptions').delete()
+    .eq('endpoint', token).neq('user_id', currentUserId)
+  const { error } = await supabase.from('push_subscriptions').upsert({
     user_id: currentUserId, endpoint: token, platform: 'android',
-  }, { onConflict: 'endpoint' })
+  }, { onConflict: 'user_id,endpoint' })
+  if (error) console.warn('[push] failed to save FCM token', error.message)
 }
 
 async function ensureListeners(PushNotifications) {

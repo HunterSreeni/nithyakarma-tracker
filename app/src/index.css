@@ -4,6 +4,7 @@
   --saffron-50: #FFF7ED; --saffron-100: #FFEDD5; --saffron-200: #FED7AA;
   --saffron-300: #FDBA74; --saffron-400: #FB923C; --saffron-500: #FF9933;
   --saffron-600: #F37C02; --saffron-700: #C2410C;
+  --saffron-800: #9A3412; --saffron-900: #7C2D12; --saffron-950: #431407;
   --ink: #0d0d0d; --paper: #f5f0e8; --cream: #ede8dc; --warm: #d4c9b0;
   --success: #16a34a; --gold: #d4a017; --silver: #9aa0a8; --bronze: #b0763b;
   --danger: #b91c1c;
@@ -21,7 +22,6 @@ input, select { font-family: 'DM Sans', sans-serif; }
 /* topbar */
 .topbar { background: var(--ink); padding: 0 1.2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
 .wordmark { display: flex; align-items: center; gap: 7px; text-decoration: none; }
-.wordmark .diya { font-size: 0.95rem; }
 .wordmark .name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; color: #fff; letter-spacing: -0.02em; }
 .wordmark .name span { color: var(--saffron-500); }
 .top-right { display: flex; align-items: center; gap: 10px; }
@@ -143,7 +143,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .cel-streak span { color: var(--action); }
 .cel-sub { font-size: 0.78rem; color: var(--text-2); margin-top: 4px; font-weight: 300; }
 .cel-freeze { margin-top: 0.7rem; font-size: 0.76rem; font-weight: 700; color: var(--saffron-700); background: var(--saffron-50); border: 1px solid var(--saffron-200); border-radius: 100px; padding: 6px 14px; display: inline-block; }
-.share-card { margin: 1.1rem auto 0; width: 280px; border-radius: 16px; background: linear-gradient(160deg, #1a1208, #3b2408 55%, #7a4a10); color: #fff; text-align: left; padding: 1.1rem 1.1rem 0.9rem; position: relative; overflow: hidden; }
+.share-card { margin: 1.1rem auto 0; width: 280px; border-radius: 16px; background: linear-gradient(160deg, var(--saffron-950), var(--saffron-900) 55%, var(--saffron-700)); color: #fff; text-align: left; padding: 1.1rem 1.1rem 0.9rem; position: relative; overflow: hidden; }
 .share-card .sc-om { position: absolute; right: -6px; top: -10px; font-size: 4.5rem; opacity: 0.08; }
 .sc-brand { font-family: 'Syne', sans-serif; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--saffron-400); }
 .sc-days { font-size: 2rem; font-weight: 700; margin-top: 0.5rem; line-height: 1; }
@@ -157,7 +157,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .seg-toggle { display: flex; background: var(--cream); border-radius: 100px; padding: 4px; margin-bottom: 1rem; }
 .seg { flex: 1; text-align: center; font-size: 0.68rem; font-weight: 700; padding: 8px 0; border-radius: 100px; color: var(--text-2); background: none; border: none; }
 .seg.on { background: #fff; color: var(--ink); box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
-.hall-banner { background: linear-gradient(135deg, #2a1c05, #5c3a08); border-radius: 16px; color: #fff; padding: 1rem 1.1rem; display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.1rem; }
+.hall-banner { background: linear-gradient(135deg, var(--saffron-900), var(--saffron-700)); border-radius: 16px; color: #fff; padding: 1rem 1.1rem; display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.1rem; }
 .hall-avatar { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--gold); background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem; flex-shrink: 0; }
 .hall-label { font-family: 'Syne', sans-serif; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
 .hall-name { font-weight: 700; font-size: 0.95rem; margin-top: 2px; }
@@ -245,6 +245,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .onboard-intro .btn-auth { margin-top: 1.4rem; }
 .auth-switch button { background: none; border: none; color: var(--action); font-weight: 700; font-size: 0.74rem; }
 .auth-error { background: #fee2e2; color: var(--danger); border: 1px solid #f87171; border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.74rem; margin-top: 0.9rem; }
+.error-retry { margin-left: 0.6rem; background: none; border: none; color: var(--action); font-weight: 700; text-decoration: underline; cursor: pointer; padding: 0; font-size: inherit; }
 .auth-notice { background: #d1fae5; color: #047857; border: 1px solid #34d399; border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.74rem; margin-top: 0.9rem; }
 
 /* Two-panel auth: Periyava hero + form (image on top when stacked on mobile) */
@@ -252,7 +253,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .auth-hero {
   position: relative; overflow: hidden; text-align: center;
   display: flex; align-items: center; justify-content: center; padding: 2.5rem;
-  background: linear-gradient(160deg, #1a1208, #3b2408 55%, #7a4a10);
+  background: linear-gradient(160deg, var(--saffron-950), var(--saffron-900) 55%, var(--saffron-700));
 }
 .auth-hero::before {
   content: ''; position: absolute; inset: 0;
@@ -305,3 +306,4 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .history-items { font-size: 0.72rem; color: var(--text-2); margin-top: 3px; font-weight: 300; }
 .empty-note { text-align: center; color: var(--text-2); font-size: 0.78rem; padding: 2rem 1rem; font-weight: 300; }
 .spinner-wrap { display: flex; justify-content: center; padding: 3rem; color: var(--text-2); font-size: 0.8rem; }
+.spinner-wrap.stuck { flex-direction: column; align-items: center; gap: 0.8rem; }

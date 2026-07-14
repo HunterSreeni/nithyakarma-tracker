@@ -38,7 +38,7 @@ export default function CelebrationModal({ data, onClose }) {
 
         <div className="share-card">
           <div className="sc-om">🕉</div>
-          <div className="sc-brand">🪔 Nithyakarma</div>
+          <div className="sc-brand">Nithyakarma</div>
           <div className="sc-days">{streak} <span>day streak</span></div>
           <div className="sc-practice">
             {data.practice_name}<br />

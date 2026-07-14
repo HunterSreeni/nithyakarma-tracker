@@ -47,7 +47,7 @@ export default function AuthPage() {
       {/* Form panel */}
       <div className="auth-panel">
         <div className="auth-formwrap">
-          <div className="auth-logo">🪔 Nithya<span>karma</span></div>
+          <div className="auth-logo">Nithya<span>karma</span></div>
           <div className="auth-welcome">
             {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Get started' : 'Reset password'}
           </div>

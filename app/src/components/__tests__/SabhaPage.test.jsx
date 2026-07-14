@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 
-const h = vi.hoisted(() => ({ rows: [] }))
+const h = vi.hoisted(() => ({ rows: [], rpcError: null }))
 vi.mock('../../lib/supabase', () => ({
-  supabase: { rpc: () => Promise.resolve({ data: h.rows, error: null }) },
+  supabase: { rpc: () => Promise.resolve({ data: h.rows, error: h.rpcError }) },
 }))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ profile: { referral_code: 'ref123' } }),
@@ -12,7 +12,7 @@ vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
 
 import SabhaPage from '../SabhaPage'
 
-beforeEach(() => { h.rows = [] })
+beforeEach(() => { h.rows = []; h.rpcError = null })
 
 describe('SabhaPage - Friends tab', () => {
   it('shows an invite CTA when you have no friends yet (not a lonely one-person board)', async () => {
@@ -39,5 +39,18 @@ describe('SabhaPage - Friends tab', () => {
     render(<SabhaPage />)
     expect(await screen.findByText('Me (You)')).toBeInTheDocument()
     expect(screen.queryByText('Invite on WhatsApp')).not.toBeInTheDocument()
+  })
+})
+
+describe('SabhaPage - RPC failure', () => {
+  it('shows an error with Retry instead of disguising a real failure as an empty leaderboard', async () => {
+    h.rpcError = { message: 'permission denied' }
+    render(<SabhaPage />)
+    expect(await screen.findByText(/permission/)).toBeInTheDocument()
+    expect(screen.queryByText('No entries yet. Complete an anushtanam to appear here!')).not.toBeInTheDocument()
+    h.rpcError = null
+    h.rows = [{ subject_id: 'me', display_name: 'Me', tier: 'Jijnasu', score: 3, streak: 3, is_me: true }]
+    fireEvent.click(screen.getByText('Retry'))
+    expect(await screen.findByText('Me (You)')).toBeInTheDocument()
   })
 })

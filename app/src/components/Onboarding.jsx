@@ -26,12 +26,12 @@ export default function Onboarding() {
     return (
       <div className="auth-wrap">
         <div className="onboard-intro">
-          <div className="auth-logo" style={{ textAlign: 'center', marginBottom: '0.2rem' }}>🪔 Nithya<span>karma</span></div>
+          <div className="auth-logo" style={{ textAlign: 'center', marginBottom: '0.2rem' }}>Nithya<span>karma</span></div>
           <div className="oi-title">Namaskaram 🙏</div>
           <div className="oi-sub">A simple way to keep up your daily anushtanams.</div>
           <div className="oi-points">
             <div className="oi-point">
-              <span className="oi-ic">🪔</span>
+              <span className="oi-ic">📿</span>
               <div><b>Track every day</b><p>Sandhyavandhanam, parayanams, japam - marked in seconds.</p></div>
             </div>
             <div className="oi-point">
@@ -43,7 +43,7 @@ export default function Onboarding() {
               <div><b>Join the Sabha</b><p>A gentle community leaderboard with your friends and family.</p></div>
             </div>
           </div>
-          <button className="btn-auth" onClick={() => setStep('form')}>Get started 🪔</button>
+          <button className="btn-auth" onClick={() => setStep('form')}>Get started</button>
         </div>
       </div>
     )
@@ -51,7 +51,7 @@ export default function Onboarding() {
 
   return (
     <div className="auth-wrap">
-      <div className="auth-logo">🪔 Namaskaram 🙏</div>
+      <div className="auth-logo">Namaskaram 🙏</div>
       <div className="auth-sub">A few details to set up your anushtanams</div>
       <div className="auth-card">
         <form onSubmit={submit}>
@@ -73,7 +73,7 @@ export default function Onboarding() {
           <input className="field-input" value={referral} onChange={e => setReferral(e.target.value)}
             placeholder="From a friend's invite link" />
           {error && <div className="auth-error">{error}</div>}
-          <button className="btn-auth" type="submit" disabled={busy}>Begin 🪔</button>
+          <button className="btn-auth" type="submit" disabled={busy}>Begin</button>
         </form>
       </div>
     </div>
