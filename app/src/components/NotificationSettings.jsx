@@ -3,7 +3,7 @@ import { useNotifications } from '../hooks/useNotifications'
 
 export default function NotificationSettings() {
   const { session, profile } = useAuth()
-  const { enabled, loading, error, supported, toggle } = useNotifications(
+  const { enabled, loading, error, testResult, supported, toggle, sendTestNotification } = useNotifications(
     session.user, { includeSandhya: profile.gender === 'male' },
   )
 
@@ -23,6 +23,10 @@ export default function NotificationSettings() {
               ? 'Sandhya reminders at 9:00 AM, 12:30 PM and 6:30 PM, plus an 8:00 PM streak nudge for unmarked anushtanams.'
               : 'An 8:00 PM streak nudge when today\'s anushtanams are not yet marked.'}
           </div>
+          <button type="button" className="btn-secondary" onClick={sendTestNotification}>
+            Send test notification
+          </button>
+          {testResult && <div className="tp-hint">{testResult}</div>}
           {error && <div className="auth-error">{error}</div>}
         </>
       )}

@@ -40,6 +40,16 @@ async function ensureListeners(PushNotifications) {
   })
 }
 
+// Reads current permission status WITHOUT prompting - used for the mount-time
+// self-heal so a stale checked box doesn't silently re-trigger a permission
+// dialog the user never asked for.
+export async function checkFCMPermission() {
+  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return 'granted'
+  const { PushNotifications } = await import('@capacitor/push-notifications')
+  const status = await PushNotifications.checkPermissions()
+  return status.receive
+}
+
 export async function registerFCM(userId) {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return
   currentUserId = userId

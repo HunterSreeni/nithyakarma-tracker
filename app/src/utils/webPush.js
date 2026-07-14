@@ -17,6 +17,20 @@ export function isPushSupported() {
     && 'PushManager' in window && 'Notification' in window)
 }
 
+// Detects a browser storage/cache clear that wiped the PushManager
+// subscription without the user revoking notification permission - the
+// `enabled` DB flag would otherwise keep showing a checked-but-dead box.
+export async function hasActiveSubscription() {
+  if (!isPushSupported()) return false
+  try {
+    const registration = await navigator.serviceWorker.ready
+    const subscription = await registration.pushManager.getSubscription()
+    return Boolean(subscription)
+  } catch {
+    return false
+  }
+}
+
 export async function setupWebPush(userId) {
   if (!isPushSupported()) return
   // Was a silent no-op before - that let toggle() report success with no

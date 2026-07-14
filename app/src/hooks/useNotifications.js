@@ -2,8 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabase'
 import { scheduleAllReminders, cancelAllReminders } from '../utils/notifications'
-import { registerFCM, unregisterFCM } from '../utils/pushAndroid'
-import { isPushSupported, setupWebPush, deleteWebPushSubscription } from '../utils/webPush'
+import { registerFCM, unregisterFCM, checkFCMPermission } from '../utils/pushAndroid'
+import { isPushSupported, setupWebPush, deleteWebPushSubscription, hasActiveSubscription } from '../utils/webPush'
+import { friendlyError } from '../utils/friendlyError'
+
+const WEB_BLOCKED_MESSAGE =
+  'Notifications are blocked in this browser. Click the padlock icon next to the address bar, allow notifications, then try again.'
+const ANDROID_BLOCKED_MESSAGE =
+  'Notifications are blocked for this app. Enable them in your device Settings > Apps > Nithyakarma > Notifications.'
 
 async function savePref(userId, enabled) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -16,6 +22,7 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
   const [enabled, setEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [testResult, setTestResult] = useState('')
   const native = Capacitor.isNativePlatform()
 
   useEffect(() => {
@@ -35,6 +42,47 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
     scheduleAllReminders({ includeSandhya }).catch(() => {})
   }, [native, enabled, includeSandhya])
 
+  // Self-heal: the DB `enabled` flag can go stale without the app knowing -
+  // browser storage cleared (subscription gone, permission untouched) or the
+  // Android registration silently lost. Never prompt here (that would be a
+  // surprise permission dialog on page load) - only act on ALREADY-granted
+  // permission, and proactively explain an ALREADY-denied one instead of
+  // just showing a checked-but-dead box.
+  useEffect(() => {
+    if (!user || !enabled) return
+    if (native) {
+      checkFCMPermission().then((status) => {
+        if (status === 'denied') setError(ANDROID_BLOCKED_MESSAGE)
+        else if (status === 'granted') registerFCM(user.id).catch(() => {})
+      })
+      return
+    }
+    if (!isPushSupported()) return
+    if (Notification.permission === 'denied') { setError(WEB_BLOCKED_MESSAGE); return }
+    if (Notification.permission !== 'granted') return
+    hasActiveSubscription().then((has) => {
+      if (!has) setupWebPush(user.id).catch(() => {})
+    })
+  }, [user, native, enabled])
+
+  // Reactively clear a stale "blocked" error the moment the user fixes the
+  // permission in the browser's own site-settings UI, without a page reload.
+  // Not all browsers support the Permissions API for 'notifications' - no-op
+  // where absent.
+  useEffect(() => {
+    if (native || !navigator.permissions?.query) return
+    let status
+    let cancelled = false
+    navigator.permissions.query({ name: 'notifications' }).then((s) => {
+      if (cancelled) return
+      status = s
+      status.onchange = () => {
+        if (status.state === 'granted') setError('')
+      }
+    }).catch(() => {})
+    return () => { cancelled = true; if (status) status.onchange = null }
+  }, [native])
+
   const toggle = useCallback(async () => {
     setError('')
     const next = !enabled
@@ -46,7 +94,7 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
           return
         }
         if (Notification.permission === 'denied') {
-          setError('Notifications are blocked. Enable them in your browser settings.')
+          setError(WEB_BLOCKED_MESSAGE)
           return
         }
         if (Notification.permission === 'default') {
@@ -96,5 +144,24 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
     setEnabled(next)
   }, [user, native, enabled, includeSandhya])
 
-  return { enabled, loading, error, supported: native || isPushSupported(), toggle }
+  // Sends a real push through the full server round-trip right now, instead
+  // of waiting for a scheduled reminder window - the fastest way to confirm
+  // whether a given account's subscription actually works.
+  const sendTestNotification = useCallback(async () => {
+    setError('')
+    setTestResult('')
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('send-test-notification')
+      if (fnError) throw fnError
+      if (data?.error) { setError(data.error); return }
+      setTestResult(`Sent to ${data.sent} of ${data.total} device${data.total === 1 ? '' : 's'}.`)
+    } catch (err) {
+      setError(friendlyError(err))
+    }
+  }, [])
+
+  return {
+    enabled, loading, error, testResult, supported: native || isPushSupported(),
+    toggle, sendTestNotification,
+  }
 }
