@@ -53,7 +53,7 @@ export default function HistoryPage() {
 
   return (
     <>
-      <div className="greet" style={{ fontSize: '1.1rem' }}>History</div>
+      <h1 className="greet" style={{ fontSize: '1.1rem' }}>History</h1>
       <ProfileSwitcher />
       <div style={{ marginTop: '1rem' }}>
         {loading ? <div className="spinner-wrap">Loading...</div> : error ? (

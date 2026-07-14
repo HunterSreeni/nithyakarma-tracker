@@ -48,9 +48,9 @@ export default function AuthPage() {
       <div className="auth-panel">
         <div className="auth-formwrap">
           <div className="auth-logo">Nithya<span>karma</span></div>
-          <div className="auth-welcome">
+          <h1 className="auth-welcome">
             {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Get started' : 'Reset password'}
-          </div>
+          </h1>
           <div className="auth-sub">
             {mode === 'login' ? 'Sign in to continue your practice.'
               : mode === 'signup' ? 'Create your account to begin.'
@@ -87,7 +87,7 @@ export default function AuthPage() {
                 Forgot password?
               </button>
             )}
-            {error && <div className="auth-error">{error}</div>}
+            {error && <div className="auth-error" role="alert">{error}</div>}
             {notice && <div className="auth-notice">{notice}</div>}
             <button className="btn-auth" type="submit" disabled={busy}>
               {mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send reset link'}

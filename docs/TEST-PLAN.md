@@ -182,17 +182,17 @@ Legend: ✅ exists · ⬜ to add.
 | Check | Where | Status |
 |---|---|---|
 | All inputs have associated `<label>` (htmlFor/id) | auth, profile, family, add | partial - audit |
-| Buttons have discernible text / aria-label (icon-only: slot buttons, info icon, nav) | Today, nav, switcher | ⬜ audit |
-| Images have alt (Periyava, share card) | auth, celebration | ⬜ (add alt) |
-| Color contrast AA (4.5:1 text): saffron-on-white, new light-saffron hero text, muted #8a7f70, tier badges | global | ⬜ audit + fix |
-| Keyboard: full tab order, visible focus ring, Enter submits, Esc closes modal | all | ⬜ |
-| Focus trap + return focus in celebration/onboarding modals | modals | ⬜ |
-| Heading hierarchy (h1→h2…), landmarks (main/nav) | all pages | ⬜ |
-| Form errors announced (aria-live / role=alert on .auth-error) | auth | ⬜ |
-| Touch targets ≥44×44 (sandhya slot buttons, nav items, chips) | mobile | ⬜ audit |
-| `prefers-reduced-motion` respected (confetti, spinners, pulse) | celebration | ⬜ |
-| Android TalkBack pass; web NVDA/VoiceOver spot check | A / W | ⬜ manual |
-| Automated a11y scan (axe-core, jsdom) - AuthPage, Terms, Privacy, GuidedTour | Unit | ✅ (no serious/critical) |
+| Buttons have discernible text / aria-label (icon-only: slot buttons, info icon, nav) | Today, nav, switcher | ✅ (audit found most already compliant; added `aria-label` to the `top-avatar` profile link, the one real gap) |
+| Images have alt (Periyava, share card) | auth, celebration | ✅ (Periyava already had `alt`; the "share card" is styled markup, not an `<img>` - nothing to add) |
+| Color contrast AA (4.5:1 text): saffron-on-white, new light-saffron hero text, muted #8a7f70, tier badges | global | ✅ (saffron-on-white/`--text-2`/tier badges already passed; fixed the real failures - gradient text on the auth hero/share card/hall banner, `.nav-item`, `.auth-or`/`.app-version`, `.dz-sub` - locked in via `contrast.test.js`) |
+| Keyboard: full tab order, visible focus ring, Enter submits, Esc closes modal | all | ✅ (restored a visible focus ring on `.field-input`/`.dd-search`; wrapped ProfilePage's edit-name/add-family/delete-confirm in `<form>` so Enter submits; added Escape-to-close to the add-practice dropdown) |
+| Focus trap + return focus in celebration/onboarding modals | modals | ✅ (new `useFocusTrap` hook, wired into CelebrationModal and the add-practice dropdown; GuidedTour is out of scope - third-party driver.js-managed overlay) |
+| Heading hierarchy (h1→h2…), landmarks (main/nav) | all pages | ✅ (added `<h1>`/`<h2>` to Auth/Onboarding/Today/History/Sabha/Profile, which previously used zero semantic headings; labeled the two `<nav>` landmarks in Layout.jsx) |
+| Form errors announced (aria-live / role=alert on .auth-error) | auth | ✅ (`role="alert"` added to `ErrorBanner` and all 8 inline `.auth-error` occurrences) |
+| Touch targets ≥44×44 (sandhya slot buttons, nav items, chips) | mobile | ✅ (`.slot-btn`/`.ps-chip`/`.radio-chip`/`.seg` bumped to `min-height:44px`; `.info-btn`/`.top-avatar` keep their visual size, hit area expanded via an invisible `::after`) |
+| `prefers-reduced-motion` respected (confetti, spinners, pulse) | celebration | ✅ (audit found no actual CSS animation exists yet - confetti/spinner/pulse are static text; added the global reduced-motion rule proactively so future motion inherits it) |
+| Android TalkBack pass; web NVDA/VoiceOver spot check | A / W | ⬜ manual (unchanged - needs a real device/screen-reader pass, not automatable) |
+| Automated a11y scan (axe-core, jsdom) - AuthPage, Terms, Privacy, TodayPage (inside real Layout, `region` rule enabled), CelebrationModal | Unit | ✅ (no serious/critical; corrected this row - GuidedTour was never actually covered despite the prior claim, and still isn't, since it's a third-party overlay with low test value) |
 
 ## 5. 2-day manual test window (starts 2026-07-11)
 Daily, on web + Android emulator, signed in as e2e (male) and a female profile:

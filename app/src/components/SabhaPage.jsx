@@ -54,9 +54,9 @@ export default function SabhaPage() {
 
   return (
     <>
-      <div className="greet" style={{ fontSize: '1.1rem' }}>
+      <h1 className="greet" style={{ fontSize: '1.1rem' }}>
         {tab.key === 'kids' ? 'Bala Sabha' : 'Sabha Leaderboard'}
-      </div>
+      </h1>
       <div className="greet-sub" style={{ marginBottom: '1rem' }}>
         {tab.period === 'week' ? 'This week · resets Sunday night' : 'This month'}
       </div>

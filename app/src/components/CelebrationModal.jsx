@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { shareToWhatsApp } from '../utils/share'
 import { track } from '../utils/analytics'
 
@@ -8,6 +9,8 @@ import { track } from '../utils/analytics'
 // before this reward). Closing just dismisses.
 export default function CelebrationModal({ data, onClose }) {
   const { profile } = useAuth()
+  const modalRef = useRef(null)
+  useFocusTrap(modalRef, true)
 
   const close = () => onClose()
 
@@ -20,10 +23,10 @@ export default function CelebrationModal({ data, onClose }) {
   const streak = data.overall_streak ?? 0
   return (
     <div className="modal-dim" onClick={close}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="celebration-title" tabIndex={-1} ref={modalRef} onClick={e => e.stopPropagation()}>
         <div className="confetti-row">✨ 🎉 ✨</div>
         <div className="big-flame">🔥</div>
-        <div className="cel-streak">
+        <div className="cel-streak" id="celebration-title">
           {data.day_complete
             ? <><span>{streak} Day</span> Streak!</>
             : <>{data.practice_done_today ? 'Completed!' : 'Marked!'}</>}

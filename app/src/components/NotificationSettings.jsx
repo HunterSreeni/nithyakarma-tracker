@@ -27,7 +27,7 @@ export default function NotificationSettings() {
             Send test notification
           </button>
           {testResult && <div className="tp-hint">{testResult}</div>}
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-error" role="alert">{error}</div>}
         </>
       )}
     </div>

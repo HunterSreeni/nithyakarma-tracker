@@ -47,12 +47,12 @@ export default function ProfilePage() {
     <>
       <div className="profile-head">
         <div className="profile-avatar">{initials}</div>
-        <div className="profile-name">{profile.display_name}</div>
+        <h1 className="profile-name">{profile.display_name}</h1>
         <span className={`tier-badge ${tierClass(tier)}`} style={{ fontSize: '0.6rem', padding: '3px 10px' }}>{tier}</span>
       </div>
 
       <div className="card">
-        <div className="card-h">Tier Progress</div>
+        <h2 className="card-h">Tier Progress</h2>
         <div className="tp-row"><span>{tp.current}</span><span className="next">{tp.next ?? 'Highest tier'}</span></div>
         <div className="tp-bar"><div className="tp-fill" style={{ width: `${tp.pct}%` }} /></div>
         <div className="tp-hint">
@@ -69,16 +69,18 @@ export default function ProfilePage() {
       </div>
 
       <div className="card">
-        <div className="card-h">Edit Profile</div>
-        <label className="field-label" htmlFor="pf-name">Display name</label>
-        <input id="pf-name" className="field-input" value={name} onChange={e => setName(e.target.value)} />
-        <button className="btn-primary" onClick={saveName} disabled={!name.trim() || name === profile.display_name}>
-          {saved ? 'Saved ✓' : 'Save changes'}
-        </button>
+        <h2 className="card-h">Edit Profile</h2>
+        <form onSubmit={e => { e.preventDefault(); saveName() }}>
+          <label className="field-label" htmlFor="pf-name">Display name</label>
+          <input id="pf-name" className="field-input" value={name} onChange={e => setName(e.target.value)} />
+          <button type="submit" className="btn-primary" disabled={!name.trim() || name === profile.display_name}>
+            {saved ? 'Saved ✓' : 'Save changes'}
+          </button>
+        </form>
       </div>
 
       <div className="card" id="family">
-        <div className="card-h">Family Members (children under 15)</div>
+        <h2 className="card-h">Family Members (children under 15)</h2>
         {familyMembers.length === 0 && (
           <div className="greet-sub">No phones for kids - add them here and mark their anushtanams on their behalf.</div>
         )}
@@ -104,7 +106,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="referral-card">
-        <div className="ref-title">Invite from your Sabha 🎁</div>
+        <h2 className="ref-title">Invite from your Sabha 🎁</h2>
         <div className="ref-sub">
           Every member who joins with your link gives you both 1 month ad-free.
           Your code: <strong>{profile.referral_code}</strong>
@@ -113,7 +115,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="card">
-        <div className="card-h">Privacy</div>
+        <h2 className="card-h">Privacy</h2>
         <label className="checkbox-row" style={{ marginTop: 0 }}>
           <input type="checkbox" checked={optOut}
             onChange={e => toggleOptOut(e.target.checked)} />
@@ -124,23 +126,27 @@ export default function ProfilePage() {
       <NotificationSettings />
 
       <div className="card">
-        <div className="card-h">Account</div>
+        <h2 className="card-h">Account</h2>
         <button className="btn-secondary" style={{ marginTop: 0 }} onClick={signOut}>Sign out</button>
       </div>
 
       <div className="danger-zone">
-        <div className="dz-title">Danger zone</div>
+        <h2 className="dz-title">Danger zone</h2>
         <div className="dz-sub">
           Deleting your account removes your profile, all family member profiles, every log,
           streak, and leaderboard entry - permanently. Type DELETE to confirm.
         </div>
-        <input className="field-input" style={{ marginTop: '0.7rem' }} value={confirmDelete}
-          onChange={e => setConfirmDelete(e.target.value)} placeholder="Type DELETE" />
-        <button className="btn-danger" disabled={confirmDelete !== 'DELETE'}
-          onClick={async () => { try { await deleteAccount() } catch (err) { setError(err.message) } }}>
-          Delete my account &amp; all data
-        </button>
-        {error && <div className="auth-error">{error}</div>}
+        <form onSubmit={async e => {
+          e.preventDefault()
+          try { await deleteAccount() } catch (err) { setError(err.message) }
+        }}>
+          <input className="field-input" style={{ marginTop: '0.7rem' }} value={confirmDelete}
+            onChange={e => setConfirmDelete(e.target.value)} placeholder="Type DELETE" />
+          <button type="submit" className="btn-danger" disabled={confirmDelete !== 'DELETE'}>
+            Delete my account &amp; all data
+          </button>
+        </form>
+        {error && <div className="auth-error" role="alert">{error}</div>}
       </div>
 
       <div className="profile-legal">
@@ -173,7 +179,7 @@ function AddFamilyForm({ onAdd, onDone }) {
   }
 
   return (
-    <div style={{ marginTop: '0.8rem' }}>
+    <form style={{ marginTop: '0.8rem' }} onSubmit={e => { e.preventDefault(); submit() }}>
       <label className="field-label" htmlFor="fam-name">Child's name</label>
       <input id="fam-name" className="field-input" value={name} onChange={e => setName(e.target.value)} />
       <label className="field-label">Gender</label>
@@ -191,11 +197,11 @@ function AddFamilyForm({ onAdd, onDone }) {
         <input type="checkbox" checked={balaSabha} onChange={e => setBalaSabha(e.target.checked)} />
         Include in Bala Sabha kids leaderboard (first name only)
       </label>
-      {error && <div className="auth-error">{error}</div>}
+      {error && <div className="auth-error" role="alert">{error}</div>}
       <div style={{ display: 'flex', gap: '0.6rem' }}>
-        <button className="btn-primary" onClick={submit} disabled={busy}>Add</button>
-        <button className="btn-secondary" onClick={onDone}>Cancel</button>
+        <button type="submit" className="btn-primary" disabled={busy}>Add</button>
+        <button type="button" className="btn-secondary" onClick={onDone}>Cancel</button>
       </div>
-    </div>
+    </form>
   )
 }

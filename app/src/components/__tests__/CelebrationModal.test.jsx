@@ -54,4 +54,31 @@ describe('CelebrationModal', () => {
     rerender(<CelebrationModal data={{ ...data, freeze_used: true }} onClose={() => {}} />)
     expect(screen.getByText(/A freeze saved your streak/)).toBeInTheDocument()
   })
+
+  it('Escape dismisses the modal', async () => {
+    const onClose = vi.fn()
+    render(<CelebrationModal data={data} onClose={onClose} />)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
+
+  it('moves focus into the modal on open and traps Tab within it', () => {
+    render(<CelebrationModal data={data} onClose={() => {}} />)
+    const whatsapp = screen.getByText('Share to WhatsApp')
+    const continueBtn = screen.getByText('Continue')
+    expect(document.activeElement).toBe(whatsapp)
+    continueBtn.focus()
+    fireEvent.keyDown(document, { key: 'Tab' })
+    expect(document.activeElement).toBe(whatsapp)
+  })
+
+  it('returns focus to the triggering element on close', () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+    const { unmount } = render(<CelebrationModal data={data} onClose={() => {}} />)
+    unmount()
+    expect(document.activeElement).toBe(trigger)
+    trigger.remove()
+  })
 })

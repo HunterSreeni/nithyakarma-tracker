@@ -25,7 +25,7 @@ export default function Layout({ children }) {
         <Link to="/" className="wordmark">
           <span className="name">Nithya<span>karma</span></span>
         </Link>
-        <nav className="nav-tabs">
+        <nav className="nav-tabs" aria-label="Primary">
           {TABS.map(t => (
             <NavLink key={t.to} to={t.to} end={t.to === '/'}
               className={({ isActive }) => `nav-tab ${isActive ? 'on' : ''}`}>
@@ -35,12 +35,12 @@ export default function Layout({ children }) {
         </nav>
         <div className="top-right">
           <div className="streak-pill">🔥 {profile?.current_streak ?? 0}</div>
-          <Link to="/profile" className="top-avatar" style={{ textDecoration: 'none' }}>{initials}</Link>
+          <Link to="/profile" className="top-avatar" style={{ textDecoration: 'none' }} aria-label="Profile">{initials}</Link>
           <button className="nav-logout" onClick={signOut}>Logout</button>
         </div>
       </header>
       <main className="content">{children}</main>
-      <nav className="bottomnav">
+      <nav className="bottomnav" aria-label="Bottom">
         {TABS.map(t => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
