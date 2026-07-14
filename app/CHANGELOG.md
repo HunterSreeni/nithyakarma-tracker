@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.11.0...app-v0.11.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* web push service worker never registered + test-notification CORS ([8462cab](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8462cab8c46137352c3c9833e73a7b636a9ae42d))
+
 ## [0.11.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.10.1...app-v0.11.0) (2026-07-14)
 
 
