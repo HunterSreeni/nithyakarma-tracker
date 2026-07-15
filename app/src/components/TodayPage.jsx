@@ -69,9 +69,9 @@ export default function TodayPage() {
       <div className="today-card">
         <div>
           <div className="tc-label">Current Streak</div>
-          <div className="tc-big"><Flame size={18} strokeWidth={2.5} /> {subjectStreak} days</div>
+          <div className="tc-big"><Flame size={18} strokeWidth={2.5} /> {subjectStreak} day{subjectStreak === 1 ? '' : 's'}</div>
           <div className="tc-hint">
-            Best: {selectedMember?.best_streak ?? profile.best_streak} days
+            Best: {selectedMember?.best_streak ?? profile.best_streak} day{(selectedMember?.best_streak ?? profile.best_streak) === 1 ? '' : 's'}
             {' · '}<Snowflake size={12} strokeWidth={2.5} /> {subjectFreezes} freeze{subjectFreezes === 1 ? '' : 's'}
           </div>
         </div>
