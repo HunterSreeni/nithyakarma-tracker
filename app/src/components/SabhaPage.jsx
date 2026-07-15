@@ -67,7 +67,7 @@ export default function SabhaPage() {
       <div className="seg-toggle">
         {SCOPES.map(s => (
           <button key={s.key} className={`seg ${tab.key === s.key ? 'on' : ''}`}
-            onClick={() => setTab(s)}>{s.label}</button>
+            onClick={() => { setRows([]); setTab(s) }}>{s.label}</button>
         ))}
       </div>
 
