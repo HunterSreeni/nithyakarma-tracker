@@ -84,7 +84,7 @@ describe('accessibility (axe-core, WCAG 2.1 AA subset)', () => {
     const { default: CelebrationModal } = await import('../CelebrationModal')
     const data = {
       practice_name: 'Hanuman Chalisa', practice_done_today: true,
-      day_complete: true, overall_streak: 3, tier: 'Jijnasu', subjectName: 'Test',
+      day_complete: true, overall_streak: 3, tier: 'Shishya', subjectName: 'Test',
     }
     const { container } = render(<CelebrationModal data={data} onClose={() => {}} />)
     expect(await seriousViolations(container, STANDALONE_CONFIG)).toEqual([])

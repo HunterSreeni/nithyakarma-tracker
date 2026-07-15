@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Flame, Check, Gift } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import NotificationSettings from './NotificationSettings'
 import { tierProgress, tierClass, tierFor } from '../utils/tiers'
@@ -69,12 +70,12 @@ export default function ProfilePage() {
         <div className="tp-hint">
           {tp.next
             ? `${profile.punya} / ${tp.nextAt} punya points · ${tp.toNext} more to reach ${tp.next}`
-            : `${profile.punya} punya points · Brahmarishi 🙏`}
+            : `${profile.punya} punya points · Brahmarishi`}
         </div>
       </div>
 
       <div className="stat-row">
-        <div className="stat-tile"><div className="stat-num">🔥 {profile.current_streak}</div><div className="stat-lbl">Streak</div></div>
+        <div className="stat-tile"><div className="stat-num"><Flame size={16} strokeWidth={2.5} /> {profile.current_streak}</div><div className="stat-lbl">Streak</div></div>
         <div className="stat-tile"><div className="stat-num">{profile.best_streak}</div><div className="stat-lbl">Best</div></div>
         <div className="stat-tile"><div className="stat-num">{profile.punya}</div><div className="stat-lbl">Punya</div></div>
       </div>
@@ -85,7 +86,7 @@ export default function ProfilePage() {
           <label className="field-label" htmlFor="pf-name">Display name</label>
           <input id="pf-name" className="field-input" value={name} onChange={e => setName(e.target.value)} />
           <button type="submit" className="btn-primary" disabled={!name.trim() || name === profile.display_name}>
-            {saved ? 'Saved ✓' : 'Save changes'}
+            {saved ? <>Saved <Check size={14} strokeWidth={3} /></> : 'Save changes'}
           </button>
         </form>
       </div>
@@ -103,7 +104,7 @@ export default function ProfilePage() {
               <div className="fam-meta">
                 {fm.gender === 'male' ? `Male · ${fm.upanayanam_done ? 'upanayanam done' : 'upanayanam pending'}` : 'Female'}
                 {fm.bala_sabha_opt_in ? ' · Bala Sabha' : ''}
-                {' · 🔥 '}{fm.current_streak}
+                {' · '}<Flame size={11} strokeWidth={2.5} style={{ verticalAlign: 'text-bottom' }} />{' '}{fm.current_streak}
               </div>
             </div>
             <button className="fam-remove" onClick={() => {
@@ -117,7 +118,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="referral-card">
-        <h2 className="ref-title">Invite &amp; earn rewards 🎁</h2>
+        <h2 className="ref-title"><Gift size={16} strokeWidth={2.5} /> Invite &amp; earn rewards</h2>
         <div className="ref-sub">
           Every member who joins with your link gives you both 1 month ad-free
           and a streak freeze. Your code: <strong>{profile.referral_code}</strong>

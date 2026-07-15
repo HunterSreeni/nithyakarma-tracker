@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Gift, Snowflake } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { shareUrl } from '../utils/share'
@@ -48,7 +49,7 @@ export default function ReferralsPage() {
         <ErrorBanner message={error} onRetry={load} />
       ) : rows.length === 0 ? (
         <div className="referral-card">
-          <div className="ref-title">Your referrals will appear here 🎁</div>
+          <div className="ref-title"><Gift size={16} strokeWidth={2.5} /> Your referrals will appear here</div>
           <div className="ref-sub">
             Invite people with your link. When they join, they'll show up here -
             and you'll both get a month ad-free plus a streak freeze.
@@ -74,7 +75,7 @@ function ReferralRow({ r, initials }) {
         <div className="lb-name">{r.display_name}</div>
         <div className="ref-row-meta">Joined {joined}</div>
       </div>
-      <div className="ref-row-tag">🎁 +1 mo · 🧊 +1</div>
+      <div className="ref-row-tag"><Gift size={11} strokeWidth={2.5} /> +1 mo <Snowflake size={11} strokeWidth={2.5} /> +1</div>
     </div>
   )
 }

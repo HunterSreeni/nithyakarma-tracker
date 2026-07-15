@@ -22,7 +22,7 @@ function markSeen() {
 export function buildSteps(showSandhya) {
   const steps = [{
     popover: {
-      title: 'Namaskaram 🙏',
+      title: 'Namaskaram',
       description: 'Track your daily anushtanams here. Mark each one done every day to grow your streak.',
     },
   }]

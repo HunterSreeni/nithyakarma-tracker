@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Flame, Snowflake, Check, Search, PartyPopper } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -8,6 +9,7 @@ import CelebrationModal from './CelebrationModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import GuidedTour from './GuidedTour'
 import ErrorBanner from './ErrorBanner'
+import PracticeIcon from '../utils/practiceIcons'
 import { track } from '../utils/analytics'
 import { showInterstitial } from '../utils/ads'
 import { isMilestone, maybeRequestReview } from '../utils/review'
@@ -56,7 +58,7 @@ export default function TodayPage() {
   return (
     <>
       <div className="eyebrow">{dateLine}</div>
-      <h1 className="greet">Namaskaram, {subjectName.split(' ')[0]} 🙏</h1>
+      <h1 className="greet">Namaskaram, {subjectName.split(' ')[0]}</h1>
       <div className="greet-sub">
         {items.length === 0 ? 'Start with a suggested anushtanam below'
           : `${doneCount} of ${items.length} anushtanams done.`}
@@ -67,10 +69,10 @@ export default function TodayPage() {
       <div className="today-card">
         <div>
           <div className="tc-label">Current Streak</div>
-          <div className="tc-big">{subjectStreak} days 🔥</div>
+          <div className="tc-big"><Flame size={18} strokeWidth={2.5} /> {subjectStreak} days</div>
           <div className="tc-hint">
             Best: {selectedMember?.best_streak ?? profile.best_streak} days
-            {' · '}🧊 {subjectFreezes} freeze{subjectFreezes === 1 ? '' : 's'}
+            {' · '}<Snowflake size={12} strokeWidth={2.5} /> {subjectFreezes} freeze{subjectFreezes === 1 ? '' : 's'}
           </div>
         </div>
         <div className="progress-ring" style={{
@@ -133,7 +135,7 @@ function SuggestedPractices({ onAdd }) {
       <div className="practice-list">
         {suggestions.map(p => (
           <div key={p.id} className="practice-card">
-            <div className="p-icon">{p.icon}</div>
+            <div className="p-icon"><PracticeIcon slug={p.slug} size={20} strokeWidth={1.8} /></div>
             <div className="p-body">
               <div className="p-name">{p.name}</div>
               <div className="p-meta">{cadenceLabel(p)}</div>
@@ -156,7 +158,7 @@ function PracticeCard({ item, busy, onMark }) {
 
   return (
     <div className={`practice-card ${done ? 'done' : ''}`}>
-      <div className="p-icon">{practice.icon}</div>
+      <div className="p-icon"><PracticeIcon slug={practice.slug} size={20} strokeWidth={1.8} /></div>
       <div className="p-body">
         <div className="p-name">
           {practice.name}
@@ -170,7 +172,7 @@ function PracticeCard({ item, busy, onMark }) {
           {practice.cadence === 'sequence' && up.sequence_position > 0
             ? `${up.sequence_position}${practice.sequence_length ? `/${practice.sequence_length}` : ''} · `
             : ''}
-          {cadenceLabel(practice)} · <span className="mini-flame">🔥 {up.current_streak}</span>
+          {cadenceLabel(practice)} · <span className="mini-flame"><Flame size={11} strokeWidth={2.5} /> {up.current_streak}</span>
         </div>
         {practice.is_sandhyavandhanam && (
           <>
@@ -182,21 +184,21 @@ function PracticeCard({ item, busy, onMark }) {
               </div>
             )}
             <div className="sandhya-progress">
-              {done ? 'All 3 sandhyas done 🎉' : `${slotsDone.size} of 3 sandhyas done`}
+              {done ? 'All 3 sandhyas done' : `${slotsDone.size} of 3 sandhyas done`}
             </div>
             <div className="slot-row" data-tour="sandhya-slots">
               {SANDHYA_SLOTS.map(s => (
                 <button key={s.key} disabled={slotsDone.has(s.key) || busy}
                   className={`slot-btn ${slotsDone.has(s.key) ? 'done' : ''}`}
                   onClick={() => onMark(item, s.key)}>
-                  {slotsDone.has(s.key) ? '✓ ' : ''}{s.short}
+                  {slotsDone.has(s.key) && <Check size={11} strokeWidth={3} />}{s.short}
                 </button>
               ))}
             </div>
           </>
         )}
       </div>
-      {done ? <div className="done-check">✓</div>
+      {done ? <div className="done-check"><Check size={16} strokeWidth={3} /></div>
         : !practice.is_sandhyavandhanam && (
           <button className="btn-done" disabled={busy} onClick={() => onMark(item)}>
             {busy ? 'Saving...' : 'Mark Done'}
@@ -253,17 +255,20 @@ function AddPracticeDropdown({ existing, onAdd }) {
       </button>
       {open && (
         <div className="dropdown" ref={dropdownRef}>
-          <input className="dd-search" placeholder="🔍 Search..." value={search}
-            onChange={e => setSearch(e.target.value)} />
+          <div className="dd-search-wrap">
+            <Search size={14} strokeWidth={2.5} className="dd-search-icon" />
+            <input className="dd-search" placeholder="Search..." value={search}
+              onChange={e => setSearch(e.target.value)} />
+          </div>
           {visible.map(p => {
             const tracked = existing.includes(p.id)
             return (
               <button key={p.id} className={`dd-item ${tracked ? 'muted' : ''}`}
                 disabled={tracked} onClick={() => add(p)}>
-                <span className="dd-icon">{p.icon}</span>
+                <span className="dd-icon"><PracticeIcon slug={p.slug} size={17} strokeWidth={1.8} /></span>
                 <span className="dd-name">{p.name}</span>
                 <span className="dd-freq">{tracked ? 'already tracking' : cadenceLabel(p)}</span>
-                {tracked && <span className="dd-check">✓</span>}
+                {tracked && <Check size={14} strokeWidth={2.5} className="dd-check" />}
               </button>
             )
           })}

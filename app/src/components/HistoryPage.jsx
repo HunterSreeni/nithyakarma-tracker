@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import ProfileSwitcher from './ProfileSwitcher'
 import ErrorBanner from './ErrorBanner'
+import PracticeIcon from '../utils/practiceIcons'
 import { friendlyError } from '../utils/friendlyError'
 
 export default function HistoryPage() {
@@ -16,7 +17,7 @@ export default function HistoryPage() {
     setError('')
     try {
       let q = supabase.from('user_practices')
-        .select('id, practice:practices(name, icon, is_sandhyavandhanam)')
+        .select('id, practice:practices(name, slug, is_sandhyavandhanam)')
         .eq('owner_id', session.user.id)
       q = selectedMember ? q.eq('family_member_id', selectedMember.id) : q.is('family_member_id', null)
       const { data: ups } = await q
@@ -68,9 +69,13 @@ export default function HistoryPage() {
               })}
             </div>
             <div className="history-items">
-              {d.items.map(({ p, slots }) =>
-                `${p.icon} ${p.name}${p.is_sandhyavandhanam ? ` (${slots}/3 sandhyas)` : ''}`,
-              ).join(' · ')}
+              {d.items.map(({ p, slots }, i) => (
+                <span className="history-item" key={p.slug}>
+                  {i > 0 && <span className="history-sep">·</span>}
+                  <PracticeIcon slug={p.slug} size={12} strokeWidth={2} />
+                  {p.name}{p.is_sandhyavandhanam ? ` (${slots}/3 sandhyas)` : ''}
+                </span>
+              ))}
             </div>
           </div>
         ))}

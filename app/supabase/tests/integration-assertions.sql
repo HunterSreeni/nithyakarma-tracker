@@ -71,7 +71,7 @@ begin
   if not v_failed then raise exception 'FAIL: duplicate same-day log accepted'; end if;
 
   -- 5. tier_for boundaries match the client mirror (src/utils/tiers.js)
-  if tier_for(99) <> 'Jijnasu' or tier_for(100) <> 'Sadhaka' or tier_for(400) <> 'Tapasvi'
+  if tier_for(99) <> 'Shishya' or tier_for(100) <> 'Sadhaka' or tier_for(400) <> 'Yogi'
      or tier_for(1000) <> 'Rishi' or tier_for(2500) <> 'Brahmarishi' then
     raise exception 'FAIL: tier boundaries drifted from client';
   end if;

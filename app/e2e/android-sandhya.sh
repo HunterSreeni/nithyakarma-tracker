@@ -50,6 +50,12 @@ npx cap sync android >/dev/null
 
 echo "==> 2. Install + launch"
 adb install -r "$APK" >/dev/null
+# adb install -r does NOT wipe app data - a leftover session from prior manual
+# testing on the same emulator would silently skip login entirely and resume
+# whatever account was last signed in. pm clear guarantees a fresh, logged-out
+# start every run.
+adb shell pm clear "$PKG" >/dev/null
+sleep 2
 adb logcat -c
 adb shell am start -n "$PKG/.MainActivity" >/dev/null
 sleep 8

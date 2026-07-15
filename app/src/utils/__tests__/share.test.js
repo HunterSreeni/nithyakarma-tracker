@@ -10,11 +10,11 @@ describe('shareText', () => {
   it('builds the WhatsApp status text with referral link', () => {
     const text = shareText({
       streak: 48, practiceName: 'Hanuman Chalisa',
-      displayName: 'Sreeni H', tier: 'Tapasvi', referralCode: 'abc123',
+      displayName: 'Sreeni H', tier: 'Yogi', referralCode: 'abc123',
     })
     expect(text).toContain('48 day streak')
     expect(text).toContain('Hanuman Chalisa')
-    expect(text).toContain('Sreeni H (Tapasvi)')
+    expect(text).toContain('Sreeni H (Yogi)')
     expect(text).toContain('/r/abc123')
   })
 })

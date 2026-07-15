@@ -1,8 +1,8 @@
 // Tier ladder mirrors public.tier_for() in the database.
 export const TIERS = [
-  { name: 'Jijnasu', min: 0 },
+  { name: 'Shishya', min: 0 },
   { name: 'Sadhaka', min: 100 },
-  { name: 'Tapasvi', min: 400 },
+  { name: 'Yogi', min: 400 },
   { name: 'Rishi', min: 1000 },
   { name: 'Brahmarishi', min: 2500 },
 ]

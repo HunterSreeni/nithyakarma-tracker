@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { CalendarCheck, Flame, Trophy } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 export default function Onboarding() {
@@ -35,19 +36,19 @@ export default function Onboarding() {
       <div className="auth-wrap">
         <div className="onboard-intro">
           <div className="auth-logo" style={{ textAlign: 'center', marginBottom: '0.2rem' }}>Nithya<span>karma</span></div>
-          <h1 className="oi-title">Namaskaram 🙏</h1>
+          <h1 className="oi-title">Namaskaram</h1>
           <div className="oi-sub">A simple way to keep up your daily anushtanams.</div>
           <div className="oi-points">
             <div className="oi-point">
-              <span className="oi-ic">📿</span>
+              <span className="oi-ic"><CalendarCheck size={22} strokeWidth={2} /></span>
               <div><b>Track every day</b><p>Sandhyavandhanam, parayanams, japam - marked in seconds.</p></div>
             </div>
             <div className="oi-point">
-              <span className="oi-ic">🔥</span>
+              <span className="oi-ic"><Flame size={22} strokeWidth={2} /></span>
               <div><b>Build a streak</b><p>Earn freezes as you climb tiers, so one missed day won't break it.</p></div>
             </div>
             <div className="oi-point">
-              <span className="oi-ic">🏆</span>
+              <span className="oi-ic"><Trophy size={22} strokeWidth={2} /></span>
               <div><b>Join the Sabha</b><p>An optional community leaderboard - turn it on anytime from your profile.</p></div>
             </div>
           </div>
@@ -59,7 +60,7 @@ export default function Onboarding() {
 
   return (
     <div className="auth-wrap">
-      <h1 className="auth-logo">Namaskaram 🙏</h1>
+      <h1 className="auth-logo">Namaskaram</h1>
       <div className="auth-sub">A few details to set up your anushtanams</div>
       <div className="auth-card">
         <form onSubmit={submit}>

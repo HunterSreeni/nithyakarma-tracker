@@ -42,7 +42,7 @@ rejected, left unmonetized, or churning users on day one.
   -> `/r/:code` deep link -> onboarding auto-reads it (`Onboarding.jsx:55`).
   Both sides get a reward. Most important thing for a zero-budget launch, and it
   exists.
-- **Tier progression** (Jijnasu -> Brahmarishi, Vishwamitra's ladder) is a smart,
+- **Tier progression** (Shishya -> Brahmarishi, Vishwamitra's ladder) is a smart,
   on-theme retention hook that mirrors the DB.
 - **Legal + privacy hygiene:** Terms/Privacy pages, leaderboard opt-out, real
   account and data deletion with DELETE confirmation. Play Store Data Safety

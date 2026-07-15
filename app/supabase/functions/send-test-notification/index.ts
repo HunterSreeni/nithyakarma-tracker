@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: "No active notification subscription found. Enable notifications first." });
   }
 
-  const title = "Test notification 🔔";
+  const title = "Test notification";
   const body = "If you can see this, push notifications are working!";
   const results = [];
   let sent = 0;

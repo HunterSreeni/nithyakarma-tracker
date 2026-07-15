@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 
 const EFFECTIVE = '11 July 2026'
 const CONTACT = 'support@sreeniverse.co.in'
@@ -8,7 +9,7 @@ function LegalShell({ title, children }) {
   return (
     <div className="legal-page">
       <div className="legal-head">
-        <button className="legal-back" onClick={() => navigate(-1)} aria-label="Go back">← Back</button>
+        <button className="legal-back" onClick={() => navigate(-1)} aria-label="Go back"><ChevronLeft size={16} strokeWidth={2.5} /> Back</button>
         <div className="auth-logo" style={{ fontSize: '1rem', margin: 0 }}>Nithya<span>karma</span></div>
       </div>
       <h1 className="legal-title">{title}</h1>
