@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.14.0...app-v0.14.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* pluralize "day(s)" on the Today streak card ([4c4d2c6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/4c4d2c670c4a63922b2b86bf614c07bfcadc392d))
+
 ## [0.14.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.13.0...app-v0.14.0) (2026-07-15)
 
 
