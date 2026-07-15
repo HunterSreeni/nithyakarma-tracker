@@ -42,6 +42,7 @@ npx cap sync android >/dev/null
 
 echo "==> 2. Install + launch (fresh app data - this account isn't pre-onboarded)"
 adb shell pm clear "$PKG" >/dev/null || true
+sleep 2
 adb install -r "$APK" >/dev/null
 adb logcat -c
 adb shell am start -n "$PKG/.MainActivity" >/dev/null
