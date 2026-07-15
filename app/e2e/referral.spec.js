@@ -31,7 +31,7 @@ test.describe('Referral applied at signup', () => {
     // Self-cleanup: this is a throwaway account, delete it now that the
     // referral apply has been exercised (DB state is verified separately).
     await page.getByRole('link', { name: /Profile/ }).first().click()
-    await page.getByPlaceholder('Type DELETE').fill('DELETE')
+    await page.getByPlaceholder(EMAIL).fill(EMAIL)
     await page.getByRole('button', { name: /Delete my account/ }).click()
     await expect(page.getByText('Continue with Google')).toBeVisible({ timeout: 15000 })
   })

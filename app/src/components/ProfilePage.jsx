@@ -8,7 +8,8 @@ import { track } from '../utils/analytics'
 import { APP_VERSION } from '../version'
 
 export default function ProfilePage() {
-  const { profile, familyMembers, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount, signOut } = useAuth()
+  const { session, profile, familyMembers, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount, signOut } = useAuth()
+  const email = session.user.email
   const [name, setName] = useState(profile.display_name)
   const [saved, setSaved] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
@@ -149,15 +150,15 @@ export default function ProfilePage() {
         <h2 className="dz-title">Danger zone</h2>
         <div className="dz-sub">
           Deleting your account removes your profile, all family member profiles, every log,
-          streak, and leaderboard entry - permanently. Type DELETE to confirm.
+          streak, and leaderboard entry - permanently. Type your email address to confirm.
         </div>
         <form onSubmit={async e => {
           e.preventDefault()
           try { await deleteAccount() } catch (err) { setError(err.message) }
         }}>
           <input className="field-input" style={{ marginTop: '0.7rem' }} value={confirmDelete}
-            onChange={e => setConfirmDelete(e.target.value)} placeholder="Type DELETE" />
-          <button type="submit" className="btn-danger" disabled={confirmDelete !== 'DELETE'}>
+            onChange={e => setConfirmDelete(e.target.value)} placeholder={email} />
+          <button type="submit" className="btn-danger" disabled={confirmDelete !== email}>
             Delete my account &amp; all data
           </button>
         </form>
