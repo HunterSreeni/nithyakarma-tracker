@@ -15,6 +15,7 @@ export default function ProfilePage() {
   const [confirmDelete, setConfirmDelete] = useState('')
   const [error, setError] = useState(null)
   const [optOut, setOptOut] = useState(profile.leaderboard_opt_out)
+  const [communityEnabled, setCommunityEnabled] = useState(profile.community_enabled)
 
   const toggleOptOut = async (checked) => {
     setOptOut(checked) // optimistic - revert on failure
@@ -22,6 +23,15 @@ export default function ProfilePage() {
       await updateProfile({ leaderboard_opt_out: checked })
     } catch {
       setOptOut(!checked)
+    }
+  }
+
+  const toggleCommunity = async (checked) => {
+    setCommunityEnabled(checked) // optimistic - revert on failure
+    try {
+      await updateProfile({ community_enabled: checked })
+    } catch {
+      setCommunityEnabled(!checked)
     }
   }
 
@@ -106,17 +116,22 @@ export default function ProfilePage() {
       </div>
 
       <div className="referral-card">
-        <h2 className="ref-title">Invite from your Sabha 🎁</h2>
+        <h2 className="ref-title">Invite &amp; earn rewards 🎁</h2>
         <div className="ref-sub">
-          Every member who joins with your link gives you both 1 month ad-free.
-          Your code: <strong>{profile.referral_code}</strong>
+          Every member who joins with your link gives you both 1 month ad-free
+          and a streak freeze. Your code: <strong>{profile.referral_code}</strong>
         </div>
         <button className="btn-ref" onClick={inviteWhatsApp}>Share invite on WhatsApp</button>
       </div>
 
       <div className="card">
-        <h2 className="card-h">Privacy</h2>
+        <h2 className="card-h">Community</h2>
         <label className="checkbox-row" style={{ marginTop: 0 }}>
+          <input type="checkbox" checked={communityEnabled}
+            onChange={e => toggleCommunity(e.target.checked)} />
+          Show the Sabha tab (compare streaks and punya with others)
+        </label>
+        <label className="checkbox-row">
           <input type="checkbox" checked={optOut}
             onChange={e => toggleOptOut(e.target.checked)} />
           Hide me from community leaderboards (only you can see your row)
