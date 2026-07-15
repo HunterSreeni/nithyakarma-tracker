@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.13.0...app-v0.14.0) (2026-07-15)
+
+
+### Features
+
+* rename obscure tier names to more recognizable Vedic terms ([d049cf5](https://github.com/HunterSreeni/nithyakarma-tracker/commit/d049cf50ff249207dd3240636a50df6b84c79e1e))
+* replace all emoji with a real icon system, swap Syne for Sora ([0f2d7aa](https://github.com/HunterSreeni/nithyakarma-tracker/commit/0f2d7aa79fd72ba45b4af25eaf70d52e528ff817))
+
+
+### Bug Fixes
+
+* android-sandhya.sh never actually cleared app data before login ([d09588b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/d09588ba2d4dcd59d3c25d719fdd4bb4b74cc1d5))
+
 ## [0.13.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.12.0...app-v0.13.0) (2026-07-15)
 
 
