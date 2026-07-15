@@ -94,8 +94,8 @@ before each run). See memory.
 12. **Family members** - add (name, gender, upanayanam toggle, Bala Sabha opt-in); boys+upanayanam auto-get sandhya; remove (cascades logs).
 13. **Notifications** - enable/disable; web push (VAPID) + Android FCM; local reminders; timezone windows (9:00/12:30/18:30/20:00); per-slot dedup; token rotation; on-demand "Send test notification"; self-heal on mount; permission-revoked guidance.
 14. **Referrals** - apply code at signup; both parties +30 ad-free days; self/invalid rejected.
-15. **Delete account** - type-DELETE confirm → `delete_account()` RPC removes auth user + cascade.
-16. **Streaks & tiers** - per-practice + overall streak continuity/reset; tiers Jijnasu→Sadhaka→Tapasvi→Rishi→Brahmarishi.
+15. **Delete account** - type-your-email confirm → `delete_account()` RPC removes auth user + cascade.
+16. **Streaks & tiers** - per-practice + overall streak continuity/reset; tiers Shishya→Sadhaka→Yogi→Rishi→Brahmarishi.
 17. **Ads** - Android interstitial after celebration; skipped when ad-free; none on web.
 18. **Resilience** - offline / network error / expired session / stale profile.
 

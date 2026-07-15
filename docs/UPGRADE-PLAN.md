@@ -383,7 +383,7 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
 - **Economy:**
   - `freeze_credits` on `profiles` and `family_members`, **auto-consumed** on a
     single missed day. Gaps of 2+ missed days still reset (one freeze = one day).
-  - **Cap scales with tier:** Jijnasu 1, Sadhaka 2, Tapasvi 3, Rishi 4,
+  - **Cap scales with tier:** Shishya 1, Sadhaka 2, Yogi 3, Rishi 4,
     Brahmarishi 5 (`freeze_cap_for(punya)`).
   - **Levelling up tops credits up** to the new cap.
   - **Each successful referral grants +1 credit.**

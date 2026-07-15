@@ -15,7 +15,7 @@ import CelebrationModal from '../CelebrationModal'
 
 const data = {
   saved: true, practice_name: 'Hanuman Chalisa', practice_done_today: true,
-  day_complete: true, overall_streak: 48, tier: 'Tapasvi', subjectName: 'Sreeni H',
+  day_complete: true, overall_streak: 48, tier: 'Yogi', subjectName: 'Sreeni H',
 }
 
 beforeEach(() => vi.clearAllMocks())

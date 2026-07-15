@@ -209,9 +209,9 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .lb-name { font-weight: 700; font-size: 0.78rem; }
 .tier-badge { display: inline-block; font-family: 'Sora', sans-serif; font-size: 0.52rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; padding: 2px 7px; border-radius: 100px; margin-top: 3px; }
 .tier-rishi { background: #f3e8ff; color: #7c3aed; }
-.tier-tapasvi { background: var(--saffron-100); color: var(--saffron-700); }
+.tier-yogi { background: var(--saffron-100); color: var(--saffron-700); }
 .tier-sadhaka { background: #dbeafe; color: #1d4ed8; }
-.tier-jijnasu { background: var(--cream); color: var(--text-2); }
+.tier-shishya { background: var(--cream); color: var(--text-2); }
 .tier-brahmarishi { background: #fef3c7; color: #92400e; }
 .lb-score { font-weight: 700; font-size: 0.8rem; text-align: right; }
 .lb-score .u { display: flex; align-items: center; justify-content: flex-end; gap: 2px; font-family: 'Sora', sans-serif; font-size: 0.52rem; color: var(--text-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
