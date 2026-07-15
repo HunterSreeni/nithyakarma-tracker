@@ -85,12 +85,12 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     // Slot 3 - day complete
     await page.getByRole('button', { name: 'Evening' }).click()
     await page.getByRole('button', { name: 'Continue' }).click()
-    await expect(page.getByText('All 3 sandhyas done 🎉')).toBeVisible()
+    await expect(page.getByText('All 3 sandhyas done')).toBeVisible()
   })
 
   test('add a practice from the dropdown', async () => {
     await page.getByRole('button', { name: /Add an anushtanam/ }).click()
-    await page.getByPlaceholder('🔍 Search...').fill('hanuman')
+    await page.getByPlaceholder('Search...').fill('hanuman')
     await page.getByRole('button', { name: /Hanuman Chalisa/ }).click()
     await expect(page.locator('.practice-card', { hasText: 'Hanuman Chalisa' })).toBeVisible()
   })
@@ -104,6 +104,10 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
   })
 
   test('Sabha leaderboard shows my row; Kids tab is separate', async () => {
+    // Community/Sabha is opt-in (hidden by default) - enable it from Profile
+    // before it appears in the nav at all.
+    await page.getByRole('link', { name: /Profile/ }).first().click()
+    await page.getByRole('checkbox', { name: /Show the Sabha tab/ }).check()
     await page.getByRole('link', { name: /Sabha/ }).first().click()
     await expect(page.locator('.lb-row.me')).toBeVisible({ timeout: 15000 })
     await expect(page.locator('.lb-row.me')).toContainText('(You)')
@@ -131,7 +135,7 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await page.getByRole('link', { name: /Profile/ }).first().click()
     await page.getByLabel('Display name').fill('E2E Sreeni Renamed')
     await page.getByRole('button', { name: 'Save changes' }).click()
-    await expect(page.getByRole('button', { name: 'Saved ✓' })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('button', { name: 'Saved' })).toBeVisible({ timeout: 15000 })
   })
 
   test('leaderboard privacy opt-out persists', async () => {
