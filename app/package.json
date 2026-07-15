@@ -25,6 +25,7 @@
     "@sentry/react": "^10.65.0",
     "@supabase/supabase-js": "^2.110.0",
     "driver.js": "^1.6.0",
+    "lucide-react": "^1.24.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1"

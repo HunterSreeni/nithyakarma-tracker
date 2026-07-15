@@ -1,14 +1,15 @@
 import { useEffect } from 'react'
 import { NavLink, Link } from 'react-router-dom'
+import { Home, BookOpen, Trophy, Gift, CircleUserRound, Flame } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { scheduleAllReminders } from '../utils/notifications'
 
 const BASE_TABS = [
-  { to: '/', label: 'Today', icon: '🏠' },
-  { to: '/history', label: 'History', icon: '📖' },
-  { to: '/sabha', label: 'Sabha', icon: '🏆', community: true },
-  { to: '/referrals', label: 'Referrals', icon: '🎁' },
-  { to: '/profile', label: 'Profile', icon: '👤' },
+  { to: '/', label: 'Today', icon: Home },
+  { to: '/history', label: 'History', icon: BookOpen },
+  { to: '/sabha', label: 'Sabha', icon: Trophy, community: true },
+  { to: '/referrals', label: 'Referrals', icon: Gift },
+  { to: '/profile', label: 'Profile', icon: CircleUserRound },
 ]
 
 export default function Layout({ children }) {
@@ -37,7 +38,7 @@ export default function Layout({ children }) {
           ))}
         </nav>
         <div className="top-right">
-          <div className="streak-pill">🔥 {profile?.current_streak ?? 0}</div>
+          <div className="streak-pill"><Flame size={14} strokeWidth={2.5} /> {profile?.current_streak ?? 0}</div>
           <Link to="/profile" className="top-avatar" style={{ textDecoration: 'none' }} aria-label="Profile">{initials}</Link>
           <button className="nav-logout" onClick={signOut}>Logout</button>
         </div>
@@ -47,7 +48,7 @@ export default function Layout({ children }) {
         {TABS.map(t => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-            {t.icon}<span className="nl">{t.label}</span>
+            <t.icon size={20} strokeWidth={2} /><span className="nl">{t.label}</span>
           </NavLink>
         ))}
       </nav>

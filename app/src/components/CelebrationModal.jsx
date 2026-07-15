@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Flame, Snowflake } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { shareToWhatsApp } from '../utils/share'
@@ -24,8 +25,7 @@ export default function CelebrationModal({ data, onClose }) {
   return (
     <div className="modal-dim" onClick={close}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="celebration-title" tabIndex={-1} ref={modalRef} onClick={e => e.stopPropagation()}>
-        <div className="confetti-row">✨ 🎉 ✨</div>
-        <div className="big-flame">🔥</div>
+        <div className="big-flame"><Flame size={48} strokeWidth={2} /></div>
         <div className="cel-streak" id="celebration-title">
           {data.day_complete
             ? <><span>{streak} Day</span> Streak!</>
@@ -36,11 +36,11 @@ export default function CelebrationModal({ data, onClose }) {
         </div>
 
         {data.freeze_used && (
-          <div className="cel-freeze">🧊 A freeze saved your streak</div>
+          <div className="cel-freeze"><Snowflake size={13} strokeWidth={2.5} /> A freeze saved your streak</div>
         )}
 
         <div className="share-card">
-          <div className="sc-om">🕉</div>
+          <Flame className="sc-mark" size={80} strokeWidth={1.5} />
           <div className="sc-brand">Nithyakarma</div>
           <div className="sc-days">{streak} <span>day streak</span></div>
           <div className="sc-practice">

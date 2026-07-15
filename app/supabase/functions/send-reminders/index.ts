@@ -13,11 +13,11 @@ const DEFAULT_TIMEZONE = "Asia/Kolkata";
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const TITLES: Record<string, string> = {
-  morning: "Prathakala Sandhyavandhanam 🌅",
-  afternoon: "Madhyanika Sandhyavandhanam ☀️",
-  evening: "Saayamkala Sandhyavandhanam 🌇",
-  nudge_morning: "Start your streak today 🌞",
-  nudge: "Your streak is waiting 🔥",
+  morning: "Prathakala Sandhyavandhanam",
+  afternoon: "Madhyanika Sandhyavandhanam",
+  evening: "Saayamkala Sandhyavandhanam",
+  nudge_morning: "Start your streak today",
+  nudge: "Your streak is waiting",
 };
 const BODIES: Record<string, string> = {
   morning: "Time for your morning sandhya. Open the app!",

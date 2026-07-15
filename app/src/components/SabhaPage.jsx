@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Award, Flame } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { tierClass } from '../utils/tiers'
@@ -9,7 +10,7 @@ import { friendlyError } from '../utils/friendlyError'
 const SCOPES = [
   { key: 'week', label: 'Week', scope: 'global', period: 'week' },
   { key: 'month', label: 'Month', scope: 'global', period: 'month' },
-  { key: 'kids', label: 'Kids 🧒', scope: 'kids', period: 'week' },
+  { key: 'kids', label: 'Kids', scope: 'kids', period: 'week' },
 ]
 
 export default function SabhaPage() {
@@ -90,7 +91,7 @@ export default function SabhaPage() {
             <div className="hall-banner">
               <div className="hall-avatar">{initials(hall.display_name)}</div>
               <div>
-                <div className="hall-label">🏅 Hall of the {tab.period === 'month' ? 'Month' : 'Week'}</div>
+                <div className="hall-label"><Award size={12} strokeWidth={2.5} /> Hall of the {tab.period === 'month' ? 'Month' : 'Week'}</div>
                 <div className="hall-name">{hall.display_name}</div>
                 <div className="hall-stat">
                   {hall.score} anushtanams · {hall.streak}-day streak · {hall.tier} tier
@@ -115,7 +116,7 @@ function Row({ r, rank, initials }) {
         <div className="lb-name">{r.display_name}{r.is_me ? ' (You)' : ''}</div>
         <span className={`tier-badge ${tierClass(r.tier)}`}>{r.tier}</span>
       </div>
-      <div className="lb-score">{r.score}<span className="u">🔥 {r.streak}</span></div>
+      <div className="lb-score">{r.score}<span className="u"><Flame size={9} strokeWidth={2.5} /> {r.streak}</span></div>
     </div>
   )
 }

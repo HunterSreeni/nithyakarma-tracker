@@ -68,7 +68,7 @@ describe('TodayPage - Sandhyavandhanam UX', () => {
   it('shows completion once all 3 slots are marked', () => {
     h.items = [sandhyaItem(['morning', 'afternoon', 'evening'])]
     render(<TodayPage />)
-    expect(screen.getByText('All 3 sandhyas done 🎉')).toBeInTheDocument()
+    expect(screen.getByText('All 3 sandhyas done')).toBeInTheDocument()
     expect(screen.getByText('1 of 1 anushtanams done.')).toBeInTheDocument()
   })
 
@@ -86,7 +86,7 @@ describe('TodayPage - Sandhyavandhanam UX', () => {
     h.items = [sandhyaItem([])]
     render(<TodayPage />)
     expect(screen.getByText(
-      (_, el) => el?.className === 'tc-hint' && el.textContent.includes('🧊 2 freezes'),
+      (_, el) => el?.className === 'tc-hint' && el.textContent.includes('2 freezes'),
     )).toBeInTheDocument()
   })
 })

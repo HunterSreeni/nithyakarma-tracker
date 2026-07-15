@@ -4,13 +4,13 @@ import { Capacitor } from '@capacitor/core'
 // Native-only (Capacitor LocalNotifications); silent no-op on web.
 
 const SLOT_CONFIG = {
-  morning: { id: 100, hour: 9, minute: 0, title: 'Prathakala Sandhyavandhanam 🌅', body: 'Time for your morning sandhya. Open the app!' },
-  afternoon: { id: 200, hour: 12, minute: 30, title: 'Madhyanika Sandhyavandhanam ☀️', body: 'Time for your noon sandhya. Open the app!' },
-  evening: { id: 300, hour: 18, minute: 30, title: 'Saayamkala Sandhyavandhanam 🌇', body: 'Time for your evening sandhya. Open the app!' },
+  morning: { id: 100, hour: 9, minute: 0, title: 'Prathakala Sandhyavandhanam', body: 'Time for your morning sandhya. Open the app!' },
+  afternoon: { id: 200, hour: 12, minute: 30, title: 'Madhyanika Sandhyavandhanam', body: 'Time for your noon sandhya. Open the app!' },
+  evening: { id: 300, hour: 18, minute: 30, title: 'Saayamkala Sandhyavandhanam', body: 'Time for your evening sandhya. Open the app!' },
 }
 
-const NUDGE = { id: 400, hour: 20, minute: 0, title: 'Your streak is waiting 🔥', body: 'Namaskaram! Today\'s anushtanams are not all marked yet. 2 minutes is all it takes.' }
-const LAST_CALL = { id: 500, hour: 21, minute: 30, title: 'Last call before midnight ⏳', body: 'Your streak ends at midnight. Mark today\'s anushtanam to keep it alive.' }
+const NUDGE = { id: 400, hour: 20, minute: 0, title: 'Your streak is waiting', body: 'Namaskaram! Today\'s anushtanams are not all marked yet. 2 minutes is all it takes.' }
+const LAST_CALL = { id: 500, hour: 21, minute: 30, title: 'Last call before midnight', body: 'Your streak ends at midnight. Mark today\'s anushtanam to keep it alive.' }
 
 function dailyAt(hour, minute) {
   const at = new Date()
