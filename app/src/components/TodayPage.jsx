@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
 import { isDoneToday, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
 import CelebrationModal from './CelebrationModal'
@@ -55,7 +56,7 @@ export default function TodayPage() {
   return (
     <>
       <div className="eyebrow">{dateLine}</div>
-      <div className="greet">Namaskaram, {subjectName.split(' ')[0]} 🙏</div>
+      <h1 className="greet">Namaskaram, {subjectName.split(' ')[0]} 🙏</h1>
       <div className="greet-sub">
         {items.length === 0 ? 'Start with a suggested anushtanam below'
           : `${doneCount} of ${items.length} anushtanams done.`}
@@ -79,9 +80,9 @@ export default function TodayPage() {
         </div>
       </div>
 
-      {error && <div className="auth-error">{error}</div>}
+      {error && <div className="auth-error" role="alert">{error}</div>}
 
-      <div className="section-h">Today's Anushtanams</div>
+      <h2 className="section-h">Today's Anushtanams</h2>
       {loading ? <div className="spinner-wrap">Loading...</div> : loadError ? (
         <ErrorBanner message={loadError} onRetry={reload} />
       ) : items.length === 0 ? (
@@ -128,7 +129,7 @@ function SuggestedPractices({ onAdd }) {
   if (!suggestions.length) return null
   return (
     <>
-      <div className="section-h">Suggested to start</div>
+      <h2 className="section-h">Suggested to start</h2>
       <div className="practice-list">
         {suggestions.map(p => (
           <div key={p.id} className="practice-card">
@@ -211,11 +212,20 @@ function AddPracticeDropdown({ existing, onAdd }) {
   const [catalog, setCatalog] = useState([])
   const [error, setError] = useState(null)
   const { profile, selectedMember } = useAuth()
+  const dropdownRef = useRef(null)
+  useFocusTrap(dropdownRef, open)
 
   useEffect(() => {
     supabase.from('practices').select('*').eq('active', true).order('id')
       .then(({ data }) => setCatalog(data ?? []))
   }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
 
   const subjectGender = selectedMember?.gender ?? profile.gender
   const upanayanamOk = selectedMember ? selectedMember.upanayanam_done : true
@@ -242,9 +252,9 @@ function AddPracticeDropdown({ existing, onAdd }) {
         <span className="plus">{open ? '×' : '+'}</span>
       </button>
       {open && (
-        <div className="dropdown">
+        <div className="dropdown" ref={dropdownRef}>
           <input className="dd-search" placeholder="🔍 Search..." value={search}
-            onChange={e => setSearch(e.target.value)} autoFocus />
+            onChange={e => setSearch(e.target.value)} />
           {visible.map(p => {
             const tracked = existing.includes(p.id)
             return (
@@ -260,7 +270,7 @@ function AddPracticeDropdown({ existing, onAdd }) {
           {visible.length === 0 && <div className="dd-item muted">No matches</div>}
         </div>
       )}
-      {error && <div className="auth-error">{error}</div>}
+      {error && <div className="auth-error" role="alert">{error}</div>}
     </div>
   )
 }

@@ -14,23 +14,21 @@ import SabhaPage from '../SabhaPage'
 
 beforeEach(() => { h.rows = []; h.rpcError = null })
 
-describe('SabhaPage - Friends tab', () => {
-  it('shows an invite CTA when you have no friends yet (not a lonely one-person board)', async () => {
-    h.rows = [{ subject_id: 'me', display_name: 'Me', tier: 'Jijnasu', score: 3, streak: 3, is_me: true }]
+describe('SabhaPage - Referrals tab', () => {
+  it('shows an invite CTA when you have no referrals yet (not an empty list)', async () => {
+    h.rows = []
     render(<SabhaPage />)
-    fireEvent.click(screen.getByText('Friends'))
+    fireEvent.click(screen.getByText('Referrals'))
     expect(await screen.findByText('Invite on WhatsApp')).toBeInTheDocument()
-    expect(screen.getByText(/Your Sabha grows with friends/)).toBeInTheDocument()
+    expect(screen.getByText(/Your referrals will appear here/)).toBeInTheDocument()
   })
 
-  it('shows the friends leaderboard once you have connections', async () => {
-    h.rows = [
-      { subject_id: 'me', display_name: 'Me', tier: 'Sadhaka', score: 10, streak: 5, is_me: true },
-      { subject_id: 'f1', display_name: 'Ravi Kumar', tier: 'Jijnasu', score: 4, streak: 2, is_me: false },
-    ]
+  it('shows who joined via your referral link, with their join date', async () => {
+    h.rows = [{ referred_id: 'f1', display_name: 'Ravi Kumar', joined_at: '2026-06-01T00:00:00Z' }]
     render(<SabhaPage />)
-    fireEvent.click(screen.getByText('Friends'))
+    fireEvent.click(screen.getByText('Referrals'))
     expect(await screen.findByText('Ravi Kumar')).toBeInTheDocument()
+    expect(screen.getByText(/Joined/)).toBeInTheDocument()
     expect(screen.queryByText('Invite on WhatsApp')).not.toBeInTheDocument()
   })
 

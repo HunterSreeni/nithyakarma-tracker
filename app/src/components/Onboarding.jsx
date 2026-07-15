@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 
 export default function Onboarding() {
@@ -9,6 +9,14 @@ export default function Onboarding() {
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
   const [step, setStep] = useState('intro')
+  const nameInputRef = useRef(null)
+
+  // Move focus to the first field when advancing from the intro step, so
+  // keyboard/screen-reader users land somewhere sensible instead of on
+  // whatever the now-unmounted "Get started" button used to be.
+  useEffect(() => {
+    if (step === 'form') nameInputRef.current?.focus()
+  }, [step])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -27,7 +35,7 @@ export default function Onboarding() {
       <div className="auth-wrap">
         <div className="onboard-intro">
           <div className="auth-logo" style={{ textAlign: 'center', marginBottom: '0.2rem' }}>Nithya<span>karma</span></div>
-          <div className="oi-title">Namaskaram 🙏</div>
+          <h1 className="oi-title">Namaskaram 🙏</h1>
           <div className="oi-sub">A simple way to keep up your daily anushtanams.</div>
           <div className="oi-points">
             <div className="oi-point">
@@ -51,12 +59,12 @@ export default function Onboarding() {
 
   return (
     <div className="auth-wrap">
-      <div className="auth-logo">Namaskaram 🙏</div>
+      <h1 className="auth-logo">Namaskaram 🙏</h1>
       <div className="auth-sub">A few details to set up your anushtanams</div>
       <div className="auth-card">
         <form onSubmit={submit}>
           <label className="field-label" htmlFor="ob-name">Your name</label>
-          <input id="ob-name" className="field-input" value={name} onChange={e => setName(e.target.value)} required />
+          <input id="ob-name" ref={nameInputRef} className="field-input" value={name} onChange={e => setName(e.target.value)} required />
           <label className="field-label">Gender</label>
           <div className="radio-row">
             <button type="button" className={`radio-chip ${gender === 'male' ? 'on' : ''}`}
@@ -72,7 +80,7 @@ export default function Onboarding() {
           <label className="field-label">Referral code (optional)</label>
           <input className="field-input" value={referral} onChange={e => setReferral(e.target.value)}
             placeholder="From a friend's invite link" />
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-error" role="alert">{error}</div>}
           <button className="btn-auth" type="submit" disabled={busy}>Begin</button>
         </form>
       </div>

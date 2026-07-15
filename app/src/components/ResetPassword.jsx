@@ -37,7 +37,7 @@ export default function ResetPassword() {
             <input id="rp-pass" className="field-input" type="password" value={password}
               onChange={e => setPassword(e.target.value)} required minLength={6}
               autoComplete="new-password" />
-            {error && <div className="auth-error">{error}</div>}
+            {error && <div className="auth-error" role="alert">{error}</div>}
             <button className="btn-auth" type="submit" disabled={busy}>
               {busy ? 'Updating...' : 'Update password'}
             </button>
