@@ -1,8 +1,8 @@
 // Cron-invoked reminder sender. Ported from the Sandhyavandhanam app's
 // send-reminders edge function, adapted to the nithyakarma schema.
 // Windows (user's local time): 9:00 morning, 12:30 afternoon, 18:30 evening
-// (sandhya slots, skipped if already logged), 20:00 streak nudge (any
-// scheduled practice still incomplete).
+// (sandhya slots, skipped if already logged), 8:00 and 20:00 streak nudges
+// (any scheduled practice still incomplete).
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { loadConfig, sendFCM, sendWebPush } from "../_shared/push.ts";
 
@@ -16,12 +16,14 @@ const TITLES: Record<string, string> = {
   morning: "Prathakala Sandhyavandhanam 🌅",
   afternoon: "Madhyanika Sandhyavandhanam ☀️",
   evening: "Saayamkala Sandhyavandhanam 🌇",
+  nudge_morning: "Start your streak today 🌞",
   nudge: "Your streak is waiting 🔥",
 };
 const BODIES: Record<string, string> = {
   morning: "Time for your morning sandhya. Open the app!",
   afternoon: "Time for your noon sandhya. Open the app!",
   evening: "Time for your evening sandhya. Open the app!",
+  nudge_morning: "Namaskaram! Today's anushtanams are waiting. 2 minutes is all it takes.",
   nudge: "Namaskaram! Today's anushtanams are not all marked yet. 2 minutes is all it takes.",
 };
 
@@ -40,6 +42,7 @@ function localParts(now: Date, tz: string) {
 }
 
 function slotFor(hour: number, minute: number): string | null {
+  if (hour === 8) return "nudge_morning";
   if (hour === 9) return "morning";
   if (hour === 12 && minute >= 30) return "afternoon";
   if (hour === 18 && minute >= 30) return "evening";
@@ -101,7 +104,7 @@ Deno.serve(async (req: Request) => {
     const date = userDate.get(uid)!;
     const mine = (ups ?? []).filter((u: any) => u.owner_id === uid);
 
-    if (slot === "nudge") {
+    if (slot === "nudge" || slot === "nudge_morning") {
       const incomplete = mine.some((u: any) => {
         if (!isScheduled(u.practice, date)) return false;
         const dayLogs = (logsByUp.get(u.id) ?? []).filter((l: any) => l.log_date === date);

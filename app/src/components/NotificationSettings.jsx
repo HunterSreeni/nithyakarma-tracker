@@ -20,8 +20,8 @@ export default function NotificationSettings() {
           </label>
           <div className="tp-hint">
             {profile.gender === 'male'
-              ? 'Sandhya reminders at 9:00 AM, 12:30 PM and 6:30 PM, plus an 8:00 PM streak nudge for unmarked anushtanams.'
-              : 'An 8:00 PM streak nudge when today\'s anushtanams are not yet marked.'}
+              ? 'Sandhya reminders at 9:00 AM, 12:30 PM and 6:30 PM, plus streak nudges at 8:00 AM and 8:00 PM for unmarked anushtanams.'
+              : 'Streak nudges at 8:00 AM and 8:00 PM when today\'s anushtanams are not yet marked.'}
           </div>
           <button type="button" className="btn-secondary" onClick={sendTestNotification}>
             Send test notification
