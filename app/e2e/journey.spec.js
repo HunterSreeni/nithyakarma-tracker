@@ -162,7 +162,7 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
   })
 
   test('delete account cascades and returns to auth', async () => {
-    await page.getByPlaceholder('Type DELETE').fill('DELETE')
+    await page.getByPlaceholder(EMAIL).fill(EMAIL)
     await page.getByRole('button', { name: /Delete my account/ }).click()
     await expect(page.getByText('Continue with Google')).toBeVisible({ timeout: 15000 })
   })

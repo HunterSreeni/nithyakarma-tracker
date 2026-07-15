@@ -3,10 +3,11 @@ import { NavLink, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { scheduleAllReminders } from '../utils/notifications'
 
-const TABS = [
+const BASE_TABS = [
   { to: '/', label: 'Today', icon: '🏠' },
   { to: '/history', label: 'History', icon: '📖' },
-  { to: '/sabha', label: 'Sabha', icon: '🏆' },
+  { to: '/sabha', label: 'Sabha', icon: '🏆', community: true },
+  { to: '/referrals', label: 'Referrals', icon: '🎁' },
   { to: '/profile', label: 'Profile', icon: '👤' },
 ]
 
@@ -14,6 +15,8 @@ export default function Layout({ children }) {
   const { profile, signOut } = useAuth()
   const initials = (profile?.display_name ?? '')
     .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+  // Community/Sabha is opt-in (default hidden) - see ProfilePage's toggle.
+  const TABS = BASE_TABS.filter(t => !t.community || profile?.community_enabled)
 
   useEffect(() => {
     if (profile) scheduleAllReminders({ includeSandhya: profile.gender === 'male' })

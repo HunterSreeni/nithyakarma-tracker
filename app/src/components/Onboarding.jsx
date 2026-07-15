@@ -48,7 +48,7 @@ export default function Onboarding() {
             </div>
             <div className="oi-point">
               <span className="oi-ic">🏆</span>
-              <div><b>Join the Sabha</b><p>A gentle community leaderboard with your friends and family.</p></div>
+              <div><b>Join the Sabha</b><p>An optional community leaderboard - turn it on anytime from your profile.</p></div>
             </div>
           </div>
           <button className="btn-auth" onClick={() => setStep('form')}>Get started</button>

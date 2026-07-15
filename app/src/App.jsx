@@ -7,6 +7,7 @@ import Layout from './components/Layout'
 import TodayPage from './components/TodayPage'
 import HistoryPage from './components/HistoryPage'
 import SabhaPage from './components/SabhaPage'
+import ReferralsPage from './components/ReferralsPage'
 import ProfilePage from './components/ProfilePage'
 import { TermsPage, PrivacyPage } from './components/LegalPages'
 import ResetPassword from './components/ResetPassword'
@@ -47,6 +48,7 @@ function Gate() {
         <Route path="/" element={<TodayPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/sabha" element={<SabhaPage />} />
+        <Route path="/referrals" element={<ReferralsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
