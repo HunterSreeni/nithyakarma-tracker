@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.11.2...app-v0.12.0) (2026-07-15)
+
+
+### Features
+
+* rename Sabha Friends tab to Referrals, add join-date tracking ([4f8cd91](https://github.com/HunterSreeni/nithyakarma-tracker/commit/4f8cd91241ab2f4cd88a960a4798985a5a14bf6e))
+
+
+### Bug Fixes
+
+* clear stale rows on Sabha tab switch to avoid mis-keyed render ([3eb07c7](https://github.com/HunterSreeni/nithyakarma-tracker/commit/3eb07c7e90c3427228b1f649e42a40914a11b4fa))
+* close the accessibility (WCAG 2.1 AA) gaps in TEST-PLAN.md ([26e56bc](https://github.com/HunterSreeni/nithyakarma-tracker/commit/26e56bce5f3a6b0abf5d33999b824c339a47b4dd))
+
 ## [0.11.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.11.1...app-v0.11.2) (2026-07-14)
 
 
