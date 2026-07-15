@@ -78,6 +78,30 @@ before each run). See memory.
 
 ---
 
+## Web tooling (Electronium MCP, verified 2026-07-15)
+
+- **Launch**: `electronium_launch` attaches to Chrome via CDP (port 9222). If Chrome
+  is already running with remote debugging on, it just reports `alreadyRunning`.
+- **Navigation is https-only**: `electronium_navigate` rejects `http://` URLs, so the
+  local Vite dev server (`http://localhost:5173`) is unreachable through this tool.
+  Test against a deployed `https://` target instead - production
+  (`https://nithykarma.netlify.app`) or a PR's Netlify deploy-preview URL. Confirm the
+  right build is live first (e.g. grep the built CSS bundle for a known class/string
+  before trusting the page reflects your latest merge).
+- **Queued actions**: `navigate`, `click_selector`, `click_text`, `type`, and
+  `evaluate` all queue and require a follow-up `electronium_approve(action_id)` (or
+  `electronium_deny`) - they don't execute on the first call.
+- **Login is manual, always**: Claude does not type account passwords into the login
+  form itself, including for the e2e test account - this is a hard rule, not a
+  per-session choice. Sreeni enters `e2e@nithyakarma.test` + password manually in the
+  Electronium browser window; Claude picks up testing once the Today page loads. The
+  password is not stored in this repo - see the `e2e-account-keep` memory (or ask
+  Claude to recall it) if it's needed again.
+- **Read-only inspection** (`screenshot`, `page_snapshot`) needs no approval and is
+  the fastest way to verify state between queued actions.
+
+---
+
 ## 1. User-flow map (all flows)
 
 1. **Auth** - sign up (email), email verification notice, sign in (email), Google (W/Mw only), invalid creds, min-password, mode toggle, sign out.
