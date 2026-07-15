@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.13.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.12.0...app-v0.13.0) (2026-07-15)
+
+
+### Features
+
+* split Referrals into its own tab, make Community opt-in (default off) ([6035d8d](https://github.com/HunterSreeni/nithyakarma-tracker/commit/6035d8da7fa819b3a041fcd50ffdaf6e68dcaad4))
+
+
+### Bug Fixes
+
+* require typing the account email (not the word DELETE) to confirm deletion ([4bcacb0](https://github.com/HunterSreeni/nithyakarma-tracker/commit/4bcacb07abfb952c00c7ef785e97793695173c46))
+
 ## [0.12.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.11.2...app-v0.12.0) (2026-07-15)
 
 
