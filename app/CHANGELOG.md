@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.0...app-v0.15.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* Learning content shows real verses, not translations ([56505e7](https://github.com/HunterSreeni/nithyakarma-tracker/commit/56505e7718a7348ecfef914d98683eac21287a86))
+* local notification completion + Learning content is real verses, not translations ([b55dc4b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/b55dc4bcc6e50a531f84871bd65d081cbf42cd93))
+* local notification respects day completion (closes Intent 1.2) ([a2e2608](https://github.com/HunterSreeni/nithyakarma-tracker/commit/a2e260821e44390623ce0e4176873c6180ef1557))
+
 ## [0.15.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.14.1...app-v0.15.0) (2026-07-16)
 
 
