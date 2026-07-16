@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.1...app-v0.15.2) (2026-07-16)
+
+
+### Bug Fixes
+
+* Learning page Sanskrit tab shows real Devanagari script ([a3627ed](https://github.com/HunterSreeni/nithyakarma-tracker/commit/a3627edc54ae0fd2ba98bcf6dd7db35bda2f3f98))
+* Learning page Sanskrit tab shows real Devanagari script ([baad901](https://github.com/HunterSreeni/nithyakarma-tracker/commit/baad9016f4d886c52b46de684f26ec852ab87140))
+
 ## [0.15.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.0...app-v0.15.1) (2026-07-16)
 
 
