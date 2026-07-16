@@ -25,10 +25,16 @@ vi.mock('../../lib/supabase', () => ({
   },
 }))
 
+const suppressTodayNudgesIfScheduled = vi.fn().mockResolvedValue(undefined)
+vi.mock('../../utils/notifications', () => ({
+  suppressTodayNudgesIfScheduled: (...a) => suppressTodayNudgesIfScheduled(...a),
+}))
+
 import { useToday } from '../useToday'
 
 beforeEach(() => {
   h.ups = []; h.logs = []; h.failNext = false; h.rpcResult = null
+  suppressTodayNudgesIfScheduled.mockClear()
 })
 
 describe('useToday loading', () => {
@@ -81,5 +87,25 @@ describe('useToday submit - celebration only from a verified RPC response', () =
 
     h.rpcResult = { data: { saved: false }, error: null }
     await expect(result.current.submit('up1', { slot: 'morning' })).rejects.toThrow('Save could not be verified')
+  })
+})
+
+describe('useToday submit - suppresses today\'s local nudge once the day completes', () => {
+  it('suppresses the local nudge when the RPC reports day_complete: true', async () => {
+    const { result } = renderHook(() => useToday('owner1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    h.rpcResult = { data: { saved: true, day_complete: true }, error: null }
+    await result.current.submit('up1')
+    expect(suppressTodayNudgesIfScheduled).toHaveBeenCalled()
+  })
+
+  it('does not touch local nudges when the day is not yet complete', async () => {
+    const { result } = renderHook(() => useToday('owner1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    h.rpcResult = { data: { saved: true, day_complete: false }, error: null }
+    await result.current.submit('up1')
+    expect(suppressTodayNudgesIfScheduled).not.toHaveBeenCalled()
   })
 })

@@ -9,14 +9,16 @@ const local = {
   requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
   schedule: vi.fn().mockResolvedValue(undefined),
   cancel: vi.fn().mockResolvedValue(undefined),
+  getPending: vi.fn().mockResolvedValue({ notifications: [] }),
 }
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: local }))
 
-import { scheduleAllReminders, cancelAllReminders } from '../notifications'
+import { scheduleAllReminders, cancelAllReminders, suppressTodayNudgesIfScheduled } from '../notifications'
 
 beforeEach(() => {
   vi.clearAllMocks()
   local.requestPermissions.mockResolvedValue({ display: 'granted' })
+  local.getPending.mockResolvedValue({ notifications: [] })
 })
 
 describe('scheduleAllReminders', () => {
@@ -78,5 +80,47 @@ describe('cancelAllReminders', () => {
     mockNative.mockReturnValue(false)
     await cancelAllReminders()
     expect(local.cancel).not.toHaveBeenCalled()
+  })
+})
+
+describe('suppressTodayNudgesIfScheduled', () => {
+  it('no-ops when notifications were never enabled (nothing pending)', async () => {
+    mockNative.mockReturnValue(true)
+    local.getPending.mockResolvedValue({ notifications: [{ id: 100 }, { id: 200 }, { id: 300 }] })
+    await suppressTodayNudgesIfScheduled()
+    expect(local.cancel).not.toHaveBeenCalled()
+    expect(local.schedule).not.toHaveBeenCalled()
+  })
+
+  it('no-ops on web', async () => {
+    mockNative.mockReturnValue(false)
+    await suppressTodayNudgesIfScheduled()
+    expect(local.getPending).not.toHaveBeenCalled()
+  })
+
+  it('cancels and reschedules NUDGE + LAST_CALL for tomorrow, same time-of-day, when pending', async () => {
+    mockNative.mockReturnValue(true)
+    local.getPending.mockResolvedValue({ notifications: [{ id: 400 }, { id: 500 }] })
+    await suppressTodayNudgesIfScheduled()
+
+    expect(local.cancel).toHaveBeenCalledWith({ notifications: [{ id: 400 }, { id: 500 }] })
+
+    const { notifications } = local.schedule.mock.calls[0][0]
+    expect(notifications.map(n => n.id).sort()).toEqual([400, 500])
+    const at = Object.fromEntries(notifications.map(n => [n.id, n.schedule.at]))
+    expect([at[400].getHours(), at[400].getMinutes()]).toEqual([20, 0])
+    expect([at[500].getHours(), at[500].getMinutes()]).toEqual([21, 30])
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
+    expect(at[400].getDate()).toBe(tomorrow.getDate())
+    for (const n of notifications) expect(n.schedule.every).toBe('day')
+  })
+
+  it('only reschedules NUDGE if only NUDGE is pending (sandhya-only user with just the nudge on)', async () => {
+    mockNative.mockReturnValue(true)
+    local.getPending.mockResolvedValue({ notifications: [{ id: 400 }] })
+    await suppressTodayNudgesIfScheduled()
+    expect(local.cancel).toHaveBeenCalledWith({ notifications: [{ id: 400 }, { id: 500 }] })
+    const { notifications } = local.schedule.mock.calls[0][0]
+    expect(notifications.map(n => n.id).sort()).toEqual([400, 500])
   })
 })
