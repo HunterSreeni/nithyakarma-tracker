@@ -61,6 +61,7 @@ describe('accessibility (axe-core, WCAG 2.1 AA subset)', () => {
     }))
     vi.doMock('../../utils/notifications', () => ({ scheduleAllReminders: vi.fn() }))
     vi.doMock('../GuidedTour', () => ({ default: () => null }))
+    vi.doMock('../PanchangamBox', () => ({ default: () => null }))
     vi.doMock('../../lib/supabase', () => {
       const chain = () => {
         const c = { select: () => c, eq: () => c, in: () => c, order: () => Promise.resolve({ data: [] }) }

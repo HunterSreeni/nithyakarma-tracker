@@ -7,6 +7,7 @@ vi.mock('../CelebrationModal', () => ({
   default: ({ data }) => (data ? <div data-testid="celebration">{data.practice_streak}</div> : null),
 }))
 vi.mock('../GuidedTour', () => ({ default: () => null }))
+vi.mock('../PanchangamBox', () => ({ default: () => null }))
 
 const h = vi.hoisted(() => ({
   items: [], catalog: [], addPractice: vi.fn(),
