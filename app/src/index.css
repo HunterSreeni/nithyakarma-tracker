@@ -110,6 +110,13 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .btn-done { font-weight: 700; font-size: 0.7rem; color: #fff; background: var(--action); border: none; border-radius: 100px; padding: 9px 16px; letter-spacing: 0.02em; }
 .btn-done:disabled { opacity: 0.5; cursor: wait; }
 .done-check { width: 30px; height: 30px; border-radius: 50%; background: var(--success); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
+/* panchangam box */
+.panchangam-box { background: #fff; border-radius: 12px; padding: 0.7rem 0.9rem; margin-top: 0.6rem; border: 1.5px solid var(--cream); }
+.pb-line { font-size: 0.76rem; color: var(--text-2); }
+.pb-line b { color: var(--ink); font-weight: 700; }
+.pb-line + .pb-line { margin-top: 3px; }
+.pb-kalams { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 5px; font-size: 0.68rem; color: var(--text-2); }
+
 /* learning page */
 .lang-select { display: flex; align-items: center; gap: 6px; margin: 1rem 0 0.8rem; color: var(--text-2); }
 .lang-btn { font-size: 0.72rem; font-weight: 600; padding: 6px 12px; border-radius: 100px; border: 1.5px solid var(--warm); background: #fff; color: var(--text-2); }

@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { isDoneToday, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
 import CelebrationModal from './CelebrationModal'
 import ProfileSwitcher from './ProfileSwitcher'
+import PanchangamBox from './PanchangamBox'
 import GuidedTour from './GuidedTour'
 import ErrorBanner from './ErrorBanner'
 import PracticeIcon from '../utils/practiceIcons'
@@ -58,6 +59,7 @@ export default function TodayPage() {
   return (
     <>
       <div className="eyebrow">{dateLine}</div>
+      <PanchangamBox />
       <h1 className="greet">Namaskaram, {subjectName.split(' ')[0]}</h1>
       <div className="greet-sub">
         {items.length === 0 ? 'Start with a suggested anushtanam below'
