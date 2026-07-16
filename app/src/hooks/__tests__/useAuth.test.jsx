@@ -6,18 +6,23 @@ vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => mockNative() },
 }))
 
-let resumeCb
+let resumeCb, urlOpenCb
 const mockAddListener = vi.fn((event, cb) => {
-  resumeCb = cb
+  if (event === 'resume') resumeCb = cb
+  if (event === 'appUrlOpen') urlOpenCb = cb
   return Promise.resolve({ remove: vi.fn() })
 })
 vi.mock('@capacitor/app', () => ({ App: { addListener: (...args) => mockAddListener(...args) } }))
 
 const getSession = vi.fn()
+const setSession = vi.fn().mockResolvedValue({ data: {}, error: null })
+const signInWithOAuth = vi.fn()
 vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: () => getSession(),
+      setSession: (...a) => setSession(...a),
+      signInWithOAuth: (...a) => signInWithOAuth(...a),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
     from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }), order: () => Promise.resolve({ data: [] }) }) }) })),
@@ -35,6 +40,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockNative.mockReturnValue(false)
   resumeCb = undefined
+  urlOpenCb = undefined
 })
 
 describe('useAuth loading', () => {
@@ -72,5 +78,49 @@ describe('resume/foreground revalidation', () => {
     Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
     document.dispatchEvent(new Event('visibilitychange'))
     await waitFor(() => expect(getSession).toHaveBeenCalled())
+  })
+})
+
+describe('Google Sign-In', () => {
+  it('redirects to the native deep-link scheme on native', async () => {
+    mockNative.mockReturnValue(true)
+    getSession.mockResolvedValue({ data: { session: null } })
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    result.current.signInGoogle()
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: 'in.co.sreeniverse.nithyakarma://auth-callback' },
+    })
+  })
+
+  it('redirects to window.location.origin on web', async () => {
+    mockNative.mockReturnValue(false)
+    getSession.mockResolvedValue({ data: { session: null } })
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    result.current.signInGoogle()
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
+  })
+
+  it('completes the session from the appUrlOpen redirect on native', async () => {
+    mockNative.mockReturnValue(true)
+    getSession.mockResolvedValue({ data: { session: null } })
+    renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(mockAddListener).toHaveBeenCalledWith('appUrlOpen', expect.any(Function)))
+    urlOpenCb({ url: 'in.co.sreeniverse.nithyakarma://auth-callback#access_token=tok123&refresh_token=ref456' })
+    await waitFor(() => expect(setSession).toHaveBeenCalledWith({ access_token: 'tok123', refresh_token: 'ref456' }))
+  })
+
+  it('ignores appUrlOpen events unrelated to the OAuth redirect', async () => {
+    mockNative.mockReturnValue(true)
+    getSession.mockResolvedValue({ data: { session: null } })
+    renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(mockAddListener).toHaveBeenCalledWith('appUrlOpen', expect.any(Function)))
+    urlOpenCb({ url: 'in.co.sreeniverse.nithyakarma://some-other-path' })
+    expect(setSession).not.toHaveBeenCalled()
   })
 })

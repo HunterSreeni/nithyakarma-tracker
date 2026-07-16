@@ -5,6 +5,10 @@ import { track } from '../utils/analytics'
 
 const AuthContext = createContext(null)
 
+// Custom scheme Google OAuth returns to on native (AndroidManifest.xml has the
+// matching intent-filter). Web keeps using window.location.origin.
+const NATIVE_OAUTH_REDIRECT = 'in.co.sreeniverse.nithyakarma://auth-callback'
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -42,10 +46,24 @@ export function AuthProvider({ children }) {
     // keep showing whatever stale state it had before backgrounding. Feeding
     // getSession() re-triggers the onAuthStateChange handler above either way.
     const revalidate = () => { supabase.auth.getSession().catch(() => {}) }
-    let removeResumeListener
+    // Google OAuth on native returns via NATIVE_OAUTH_REDIRECT instead of a
+    // web page load - Capacitor delivers that as an appUrlOpen event carrying
+    // the full redirect URL (implicit flow: tokens are in the URL fragment,
+    // matching this client's flowType - see lib/supabase.js).
+    const handleOAuthRedirect = ({ url }) => {
+      if (!url?.startsWith(NATIVE_OAUTH_REDIRECT)) return
+      const params = new URLSearchParams(url.split('#')[1] ?? '')
+      const access_token = params.get('access_token')
+      const refresh_token = params.get('refresh_token')
+      if (access_token && refresh_token) {
+        supabase.auth.setSession({ access_token, refresh_token }).catch(() => {})
+      }
+    }
+    let removeResumeListener, removeUrlListener
     if (Capacitor.isNativePlatform()) {
       import('@capacitor/app').then(({ App }) => {
         App.addListener('resume', revalidate).then((handle) => { removeResumeListener = handle.remove })
+        App.addListener('appUrlOpen', handleOAuthRedirect).then((handle) => { removeUrlListener = handle.remove })
       })
     } else {
       document.addEventListener('visibilitychange', onVisibilityChange)
@@ -57,12 +75,16 @@ export function AuthProvider({ children }) {
     return () => {
       subscription.unsubscribe()
       removeResumeListener?.()
+      removeUrlListener?.()
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [loadProfile])
 
   const signInGoogle = () =>
-    supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: Capacitor.isNativePlatform() ? NATIVE_OAUTH_REDIRECT : window.location.origin },
+    })
 
   const signInEmail = (email, password) => supabase.auth.signInWithPassword({ email, password })
   const signUpEmail = (email, password) => supabase.auth.signUp({ email, password })

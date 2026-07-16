@@ -10,16 +10,10 @@ vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ signInGoogle, signInEmail, signUpEmail, resetPassword }),
 }))
 
-const mockNative = vi.fn().mockReturnValue(false)
-vi.mock('@capacitor/core', () => ({
-  Capacitor: { isNativePlatform: () => mockNative() },
-}))
-
 import AuthPage from '../AuthPage'
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockNative.mockReturnValue(false)
 })
 
 describe('AuthPage', () => {
@@ -59,14 +53,6 @@ describe('AuthPage', () => {
     render(<MemoryRouter><AuthPage /></MemoryRouter>)
     fireEvent.click(screen.getByText(/Continue with Google/))
     expect(signInGoogle).toHaveBeenCalled()
-  })
-
-  it('hides Google sign-in on native (no deep-link return there)', () => {
-    mockNative.mockReturnValue(true)
-    render(<MemoryRouter><AuthPage /></MemoryRouter>)
-    expect(screen.queryByText(/Continue with Google/)).not.toBeInTheDocument()
-    // email/password still available
-    expect(screen.getByText('Sign In')).toBeInTheDocument()
   })
 
   it('shows the email-verification notice after signup (no session yet)', async () => {
