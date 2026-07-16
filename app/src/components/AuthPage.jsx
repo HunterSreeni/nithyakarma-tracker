@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Capacitor } from '@capacitor/core'
 import { useAuth } from '../hooks/useAuth'
 
 export default function AuthPage() {
@@ -57,10 +56,7 @@ export default function AuthPage() {
               : 'Enter your email and we will send you a reset link.'}
           </div>
 
-          {/* Google OAuth returns to https://localhost, which the native shell has
-              no deep-link handler for, so the button dead-ends on Android. Show it
-              only on web until native OAuth return is wired. */}
-          {!Capacitor.isNativePlatform() && mode !== 'forgot' && (
+          {mode !== 'forgot' && (
             <>
               <button className="btn-google" onClick={signInGoogle}>
                 <span>G</span> Continue with Google
