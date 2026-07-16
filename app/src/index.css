@@ -110,6 +110,17 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .btn-done { font-weight: 700; font-size: 0.7rem; color: #fff; background: var(--action); border: none; border-radius: 100px; padding: 9px 16px; letter-spacing: 0.02em; }
 .btn-done:disabled { opacity: 0.5; cursor: wait; }
 .done-check { width: 30px; height: 30px; border-radius: 50%; background: var(--success); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
+/* learning page */
+.lang-select { display: flex; align-items: center; gap: 6px; margin: 1rem 0 0.8rem; color: var(--text-2); }
+.lang-btn { font-size: 0.72rem; font-weight: 600; padding: 6px 12px; border-radius: 100px; border: 1.5px solid var(--warm); background: #fff; color: var(--text-2); }
+.lang-btn.on { background: var(--action); border-color: var(--action); color: #fff; }
+.verse-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.verse-card { background: #fff; border-radius: 14px; padding: 0.9rem 1rem; display: flex; align-items: center; gap: 0.85rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04); border: 1.5px solid transparent; }
+.verse-card.done { border-color: #bbe3c8; background: #f4fbf6; }
+.verse-card .v-body { flex: 1; min-width: 0; }
+.verse-type { font-family: 'Sora', sans-serif; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); }
+.verse-text { font-size: 0.88rem; line-height: 1.5; white-space: pre-line; margin-top: 0.3rem; }
+
 .slot-row { display: flex; gap: 5px; margin-top: 6px; }
 .slot-btn { font-size: 0.6rem; font-weight: 700; padding: 4px 10px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 100px; border: 1.5px solid var(--warm); background: #fff; color: var(--text-2); }
 .slot-btn.done { background: #d9f2e1; border-color: #bbe3c8; color: var(--success); }
