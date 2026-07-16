@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
 import { NavLink, Link } from 'react-router-dom'
-import { Home, BookOpen, Trophy, Gift, CircleUserRound, Flame } from 'lucide-react'
+import { Home, BookOpen, GraduationCap, Trophy, Gift, CircleUserRound, Flame } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { scheduleAllReminders } from '../utils/notifications'
 
 const BASE_TABS = [
   { to: '/', label: 'Today', icon: Home },
+  { to: '/learning', label: 'Learning', icon: GraduationCap },
   { to: '/history', label: 'History', icon: BookOpen },
   { to: '/sabha', label: 'Sabha', icon: Trophy, community: true },
   { to: '/referrals', label: 'Referrals', icon: Gift },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import AuthPage from './components/AuthPage'
@@ -11,6 +11,10 @@ import ReferralsPage from './components/ReferralsPage'
 import ProfilePage from './components/ProfilePage'
 import { TermsPage, PrivacyPage } from './components/LegalPages'
 import ResetPassword from './components/ResetPassword'
+
+// Lazy: verse content + page code only download when Learning is opened,
+// not on every app load (Intent 2.1a - the first code-split route).
+const LearningPage = lazy(() => import('./components/LearningPage'))
 
 function Gate() {
   const { session, profile, loading } = useAuth()
@@ -46,6 +50,9 @@ function Gate() {
     <Layout>
       <Routes>
         <Route path="/" element={<TodayPage />} />
+        <Route path="/learning" element={
+          <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><LearningPage /></Suspense>
+        } />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/sabha" element={<SabhaPage />} />
         <Route path="/referrals" element={<ReferralsPage />} />
