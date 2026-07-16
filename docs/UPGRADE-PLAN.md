@@ -358,9 +358,11 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
   code).
 - **Changes:** feature graphic (1024x500), phone screenshots (captured from the
   polished build), short + full description (drafted in-repo), a **hosted**
-  Privacy Policy URL, Data Safety answers (from `docs/DATA-SAFETY.md`), content
-  rating, release signing keystore, verified `applicationId`
-  (`in.co.sreeniverse.nithyakarma`), and an incrementing `versionCode` strategy.
+  Privacy Policy URL - **done**, `AuthPage`'s in-app `/privacy` route is live at
+  `https://nithykarma.netlify.app/privacy` (confirmed 200) - Data Safety answers
+  (from `docs/DATA-SAFETY.md`), content rating, release signing keystore,
+  verified `applicationId` (`in.co.sreeniverse.nithyakarma`), and an
+  incrementing `versionCode` strategy.
 - **Testing Gate:**
   - Signed release AAB builds, installs, and launches on a clean device/emulator.
   - Play Console pre-launch report passes with no policy violations.
@@ -402,7 +404,7 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
     shows the freeze message when `freeze_used`.
   - e2e + CI green; manual check of a simulated missed-day-with-credit.
 
-### Intent 1.2 - Streak-miss reminder notification (hardcoded)
+### Intent 1.2 - Streak-miss reminder notification (hardcoded) - done
 
 - **Intent:** Nudge a user who has not marked anything by a fixed time so they do
   not silently lose a streak. Push notifications stay **hardcoded** for now (no
@@ -410,17 +412,23 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
   streak-miss reminder. The broader location/time-aware reminder overhaul is
   deferred to Phase 2 (Intent 2.4) after Phase A live feedback.
 - **Commit type:** `feat:`
-- **Changes:** one additional hardcoded daily notification (fires once per day
-  when the day is not yet complete / streak at risk) in the existing notification
-  path (`utils/notifications.js` / `hooks/useNotifications` / the reminders edge
-  function). No new settings surface.
+- **Status:** the server-side push half was already shipped (ported from the
+  predecessor app) - `send-reminders`'s `nudge`/`nudge_morning` slots, which
+  check `practice_logs` and skip sending once the day is complete. The gap was
+  the **local on-device notification** (`utils/notifications.js`'s NUDGE/
+  LAST_CALL), which fired blindly regardless of completion. Fixed:
+  `suppressTodayNudgesIfScheduled()` cancels + reschedules both for tomorrow
+  (same time-of-day) once `submit_practice_log` reports `day_complete: true` -
+  called from the single shared `useToday.js` `submit()` path, so both
+  `TodayPage` and the Learning page get it for free.
 - **Testing Gate:**
   - Unit test: the streak-miss notification is scheduled once per day and is
-    suppressed once the day is already complete.
+    suppressed once the day is already complete. ✅
   - `hooks/__tests__/useNotifications` / `utils/__tests__/notifications` extended
-    to cover the new reminder.
+    to cover the new reminder. ✅ (`utils/__tests__/notifications.test.js`,
+    `hooks/__tests__/useToday.test.js`)
   - Manual on-device: the reminder arrives when the day is incomplete and does
-    not arrive after the day is completed.
+    not arrive after the day is completed. - pending a real-device check.
 
 ### Intent 1.3 - Analytics and crash reporting
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { isScheduled, localDateString } from '../utils/cadence'
 import { friendlyError } from '../utils/friendlyError'
+import { suppressTodayNudgesIfScheduled } from '../utils/notifications'
 
 // Loads the selected subject's practices + today's logs.
 // Streaks/punya are maintained server-side by submit_practice_log.
@@ -50,6 +51,7 @@ export function useToday(ownerId, familyMemberId = null) {
     })
     if (error) throw error
     if (!data?.saved) throw new Error('Save could not be verified')
+    if (data.day_complete) suppressTodayNudgesIfScheduled().catch(() => {})
     await load()
     return data
   }

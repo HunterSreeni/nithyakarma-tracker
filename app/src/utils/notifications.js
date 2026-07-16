@@ -47,3 +47,35 @@ export async function cancelAllReminders() {
   const ids = [100, 200, 300, 400, 500].map(id => ({ id }))
   await LocalNotifications.cancel({ notifications: ids }).catch(() => {})
 }
+
+// Unlike the server push (which checks practice_logs before sending), the
+// local NUDGE/LAST_CALL alarms are a blind daily `every: 'day'` OS schedule -
+// cancelling removes the whole future recurrence, not just today's firing. So
+// once the day completes, cancel today's occurrence and reschedule both for
+// tomorrow at the same time - the normal daily recurrence then resumes on its
+// own, since a fresh day naturally starts with nothing marked yet. No-ops if
+// the user never enabled notifications (nothing pending to suppress) - this
+// must never be the thing that silently starts scheduling for someone who
+// hasn't opted in. Sandhya slot reminders (100/200/300) are untouched - those
+// mark specific ritual times, not streak-at-risk.
+export async function suppressTodayNudgesIfScheduled() {
+  if (!Capacitor.isNativePlatform()) return
+  const { LocalNotifications } = await import('@capacitor/local-notifications')
+  const { notifications: pending } = await LocalNotifications.getPending()
+  const pendingIds = new Set(pending.map(n => n.id))
+  if (!pendingIds.has(NUDGE.id) && !pendingIds.has(LAST_CALL.id)) return
+
+  await LocalNotifications.cancel({ notifications: [{ id: NUDGE.id }, { id: LAST_CALL.id }] })
+  const tomorrowAt = (hour, minute) => {
+    const at = new Date()
+    at.setDate(at.getDate() + 1)
+    at.setHours(hour, minute, 0, 0)
+    return { every: 'day', at, allowWhileIdle: true }
+  }
+  await LocalNotifications.schedule({
+    notifications: [
+      { id: NUDGE.id, title: NUDGE.title, body: NUDGE.body, schedule: tomorrowAt(NUDGE.hour, NUDGE.minute) },
+      { id: LAST_CALL.id, title: LAST_CALL.title, body: LAST_CALL.body, schedule: tomorrowAt(LAST_CALL.hour, LAST_CALL.minute) },
+    ],
+  })
+}
