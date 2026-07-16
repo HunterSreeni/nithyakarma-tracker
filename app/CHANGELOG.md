@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.15.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.14.1...app-v0.15.0) (2026-07-16)
+
+
+### Features
+
+* Learning page pilot - Hanuman Chalisa verse-by-verse (Intent 2.1a) ([8796d27](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8796d274f4e615042bab56e378ead49b44a70736))
+* Learning page pilot - Hanuman Chalisa verse-by-verse (Intent 2.1a) ([cc4fb29](https://github.com/HunterSreeni/nithyakarma-tracker/commit/cc4fb296a99311d8713798c74d1182c358111005))
+* native Google Sign-In deep link (Intent 1.7) ([9fca547](https://github.com/HunterSreeni/nithyakarma-tracker/commit/9fca5479cd73251f3649ced85e5edafa0d8724c3))
+* native Google Sign-In deep link (Intent 1.7) ([bb2643d](https://github.com/HunterSreeni/nithyakarma-tracker/commit/bb2643d2b0b6b8d43c1affd54d7952e04a08346a))
+* Today page panchangam info box (Intent 2.7) ([15e9d95](https://github.com/HunterSreeni/nithyakarma-tracker/commit/15e9d9515c091b2f9fd501ddf2660ba78db73394))
+* Today page panchangam info box (Intent 2.7) ([88d5413](https://github.com/HunterSreeni/nithyakarma-tracker/commit/88d5413e15c41032b20f21e59fb78a548d476f37))
+
+
+### Bug Fixes
+
+* drop unneeded storage.objects SELECT policy on learning-content ([833f89d](https://github.com/HunterSreeni/nithyakarma-tracker/commit/833f89d8f8e24a661c48900dbe74ed57c8d40cea))
+
 ## [0.14.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.14.0...app-v0.14.1) (2026-07-15)
 
 
