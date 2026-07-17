@@ -28,7 +28,7 @@ export default function CelebrationModal({ data, onClose }) {
         <div className="big-flame"><Flame size={48} strokeWidth={2} /></div>
         <div className="cel-streak" id="celebration-title">
           {data.day_complete
-            ? <><span>{streak} Day</span> Streak!</>
+            ? <><span>{streak} Day{streak === 1 ? '' : 's'}</span> Streak!</>
             : <>{data.practice_done_today ? 'Completed!' : 'Marked!'}</>}
         </div>
         <div className="cel-sub">
@@ -42,7 +42,7 @@ export default function CelebrationModal({ data, onClose }) {
         <div className="share-card">
           <Flame className="sc-mark" size={80} strokeWidth={1.5} />
           <div className="sc-brand">Nithyakarma</div>
-          <div className="sc-days">{streak} <span>day streak</span></div>
+          <div className="sc-days">{streak} <span>day{streak === 1 ? '' : 's'} streak</span></div>
           <div className="sc-practice">
             {data.practice_name}<br />
             {data.subjectName} · {data.tier} tier
