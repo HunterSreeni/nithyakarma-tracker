@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { shareToWhatsApp } from '../utils/share'
 import { track } from '../utils/analytics'
+import { celebrationHaptic } from '../utils/haptics'
 
 // Shown ONLY from a verified submit_practice_log response, and now AFTER the
 // interstitial has already fired (Intent 0.2 moved the ad into TodayPage.mark,
@@ -20,6 +21,8 @@ export default function CelebrationModal({ data, onClose }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
+
+  useEffect(() => { celebrationHaptic() }, [])
 
   const streak = data.overall_streak ?? 0
   return (
