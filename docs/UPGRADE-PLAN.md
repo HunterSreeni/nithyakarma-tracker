@@ -116,6 +116,29 @@ gate is enforced by CI.
   - Component test asserts the Profile footer renders `v<version>`.
   - Manual: version shown matches the installed APK's `versionName`.
 
+### Intent R4 - Commit reconstructed migrations, close schema drift (B2)
+
+- **Intent:** Close B2 - the Learning tab, panchangam info box, and their
+  backing tables were live in prod with no matching committed migration, so a
+  clean rebuild from the repo would have produced a different database. The
+  DDL has since been reconstructed and applied (`learning_content`,
+  `panchangam_days`, `panchangam_service_role_grant`,
+  `drop_learning_content_list_policy` - confirmed present in
+  `mcp__supabase__list_migrations` against project `fkrifejzhnhknkuyhjhp` as of
+  2026-07-17), but the files are still untracked locally, not committed to git.
+- **Commit type:** `fix:` (repo now matches deployed state; no DB change,
+  since these are already applied live).
+- **Changes:** commit the four reconstruction migrations to git.
+- **Testing Gate:**
+  - `mcp__supabase__list_migrations` output and the committed
+    `app/supabase/migrations/*.sql` filenames match 1:1 - nothing applied
+    remotely that isn't in git, and vice versa.
+  - A fresh local Supabase stack replaying every committed migration in order
+    produces the Learning + panchangam tables with no manual patching.
+  - This drift check (`list_migrations` vs. `ls migrations/`) is added as a
+    manual pre-release step (Phase 0 launch checklist) so it doesn't silently
+    reopen.
+
 ### Drop-in files for Phase R
 
 `.release-please-manifest.json` (repo root):
@@ -239,7 +262,8 @@ launch, the manual `Release-As: 1.0.0` commit footer promotes the version to
 
 **Recommended execution order** (code-only first for momentum, then the items
 that need your external inputs): 0.4 accessibility -> 0.3 password reset -> 0.6
-onboarding value-prop -> 0.1 icon -> 0.2 AdMob -> 0.5 store assets.
+onboarding value-prop -> 0.7 password policy -> 0.1 icon -> 0.2 AdMob -> 0.5
+store assets.
 
 **What I need from you** (external, can't be produced in-repo):
 - **0.2 AdMob:** a real AdMob account, app ID, and interstitial unit ID.
@@ -370,6 +394,28 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
     (email, analytics = first-party, crash = Sentry, push = FCM).
   - `versionCode` increments on each upload (Play rejects duplicates).
 
+### Intent 0.7 - Harden Auth password policy (close S6)
+
+- **Intent:** Close the live Supabase Auth security advisory - HIBP
+  leaked-password protection is disabled and min password length is 6, flagged
+  in the 2026-07-16 project analysis and confirmed still open via
+  `get_advisors` on 2026-07-17. Weak default password rules are a launch
+  blocker on an app with no other MFA.
+- **Commit type:** `fix:` for the client-side min-length bump; the Auth toggle
+  itself is dashboard config, not app code.
+- **Dependency (you):** Supabase Dashboard -> Authentication -> Providers ->
+  Email: enable "Leaked password protection" (HIBP) and raise min password
+  length to 8. No MCP tool exposes this setting.
+- **Changes:** raise `minLength` on `AuthPage.jsx`'s password input from `6` to
+  `8` to match; update the signup validation copy if it references the old
+  minimum.
+- **Testing Gate:**
+  - `mcp__supabase__get_advisors` (security) no longer returns
+    `auth_leaked_password_protection`.
+  - Component test: `AuthPage` rejects a password under 8 chars client-side.
+  - Manual: signing up with a password on the HIBP breach list is rejected by
+    Supabase Auth itself (not just the client-side length check).
+
 ---
 
 ## Phase 1 - Retention and growth (target: 1.1.0 - 1.4.0)
@@ -453,17 +499,65 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
   - Unit test: prompt requested only at milestones and respects the rate limit.
   - Manual: native review sheet appears on a real device.
 
+### Intent 1.5a - Decide the women's flagship-practice scope
+
+> **Decided 2026-07-17: narrow scope.** Intent 1.5 builds the suggested/
+> default parayanam nudge as originally scoped - not the flagship parallel
+> practice. The flagship idea stays parked; revisit as its own Intent
+> (sized like 2.1/2.1a) if later data shows the nudge isn't enough to
+> activate female users.
+>
+> Decision gate, not a build - resolve before starting Intent 1.5 or any wider
+> female-activation work. Raised 2026-07-15 as an unscoped product gap: men get
+> Sandhyavandhanam as a daily spine; no equivalent flagship practice exists for
+> women, capping engagement for roughly half the potential audience.
+
+- **Intent:** Decide, explicitly, which of two scopes Intent 1.5 (and anything
+  larger) builds toward:
+  1. **Narrow (current 1.5 scope):** a suggested/default parayanam nudge for
+     profiles without Sandhyavandhanam - smaller lift, ships faster, but stays
+     a nudge toward an existing practice, not a parallel anchor.
+  2. **Flagship:** a real daily practice designed as a parallel to
+     Sandhyavandhanam for women - own identity, own tracking cadence, own
+     tier/streak weight - a materially larger scope (content research,
+     practice definition, likely its own UI, probably Phase-2-sized).
+- **Commit type:** `docs:` - no release bump; this is a decision recorded in
+  this plan, not code.
+- **Inputs needed (yours):** which practice(s) would actually anchor this for
+  the target household (consult the same tradition sources the app already
+  leans on); whether it's scoped for Phase 1 (soon) or deferred to Phase 2
+  alongside the premium content work (Intent 2.1).
+- **Testing Gate (decision, not code):**
+  - A scope decision recorded here (narrow vs. flagship) with the chosen
+    practice(s) named, before Intent 1.5 is started.
+  - Intent 1.5's open-question note below is resolved/removed to reflect
+    whichever scope was chosen.
+  - If flagship is chosen, a new Intent (sized like 2.1/2.1a) is written before
+    any building starts - this Intent alone does not authorize building the
+    larger scope.
+
 ### Intent 1.5 - Female activation default
 
 - **Intent:** Give female users (and non-upanayanam profiles) a meaningful Today
   screen instead of an empty one.
 - **Commit type:** `feat:`
-- **Changes:** a suggested/default parayanam for profiles without
-  Sandhyavandhanam; gentle nudge to add one.
+- **Changes:** a suggested/default parayanam (`SuggestedPractices` in
+  `TodayPage.jsx` - Narayaneeyam, Lalitha Sahasranamam, Devi Mahatmyam - chosen
+  2026-07-17 to skew toward practices more relevant to the target female
+  audience) for profiles without Sandhyavandhanam; gentle nudge to add one.
+  **Already built and shipped** (pre-existing in `main` as of this Intent's
+  writing; content list tuned 2026-07-17).
+- **Scope:** resolved by Intent 1.5a (2026-07-17) - narrow. Builds as
+  originally scoped, a suggestion, not the flagship parallel practice.
 - **Testing Gate:**
   - Component test: a female profile sees a non-empty Today with a suggested
-    practice.
-  - e2e: female signup reaches an actionable Today screen.
+    practice. **Done** - `TodayPage.test.jsx` "empty-day activation
+    (female / non-sandhya)".
+  - e2e: female signup reaches an actionable Today screen. **Done** -
+    `e2e/journey-female.spec.js` (`@destructive`, mirrors `journey.spec.js`
+    against a dedicated `e2efemale@nithyakarma.test` account; re-seed via
+    `supabase/tests/seed-e2efemale.sql` through the Supabase MCP before each
+    run, per Intent R1's manual pre-release gate pattern).
 
 ### Intent 1.6 - Finish or hide the Friends tab
 
@@ -476,6 +570,30 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
   - If built: unit/integration for the friend relationship + friends leaderboard;
     e2e adding a friend and seeing them ranked.
   - If hidden: `SabhaPage` test asserts the Friends tab is not rendered.
+
+### Intent 1.7 - Native Google Sign-In deep link
+
+- **Intent:** Make "Continue with Google" work on Android, not just web -
+  it's currently hidden on native (`AuthPage.jsx`) because the OAuth redirect
+  has nowhere to land, not because it's broken.
+- **Commit type:** `feat:`
+- **Dependency (you):** a Google Cloud OAuth client registered for the Android
+  `applicationId` (`in.co.sreeniverse.nithyakarma`) + release/debug SHA-1
+  fingerprints; add the resulting redirect URL to the Supabase Auth allow-list.
+- **Changes:** a custom URL scheme (or App Link) intent-filter in
+  `AndroidManifest.xml`; an `App.addListener('appUrlOpen', ...)` handler (via
+  the already-installed `@capacitor/app`) in `useAuth.jsx` that captures the
+  redirect and completes the Supabase session; point `redirectTo`
+  (`useAuth.jsx`'s `signInGoogle`) at the native scheme when
+  `Capacitor.isNativePlatform()`; remove the native-hiding guard in
+  `AuthPage.jsx`.
+- **Testing Gate:**
+  - Unit: `redirectTo` resolves to the native scheme on native, web origin on
+    web.
+  - Component: Google button renders on native once wired (`AuthPage.test.jsx`
+    updated for the new behavior).
+  - **Manual on Android device:** tap "Continue with Google" -> completes
+    OAuth -> lands back in the app signed in.
 
 ---
 
@@ -492,6 +610,9 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
 - **Commit type:** `feat:`
 - **Changes:** content model + synced-lyrics/AV player; romanized text (never
   Devanagari, per app convention); **premium "upgrade by tier"** gating.
+- **Delivery surface:** the **Learning** nav page (see Intent 2.1a, its first
+  concrete build-out) - lets users browse and learn content independent of
+  daily tracking, not just an in-practice panel.
 - **Monetization tie-in:** referral **discounts on the tier upgrade** (see the
   reward ladder, Intent 2.5) - invites lower the upgrade price. Design this once
   we introduce the paid upgrade.
@@ -500,6 +621,77 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
     premium gate blocks/allows correctly.
   - Component: lyrics sync + audio/video controls work.
   - Manual: playback clean on web and Android; discount math correct.
+
+### Intent 2.1a - Learning page pilot: Hanuman Chalisa verse-by-verse
+
+- **Intent:** The first concrete build-out of Intent 2.1's learning experience -
+  **text-only** (no audio/video yet), scoped to **Hanuman Chalisa** (the
+  smallest japam - 2 opening dohas, 40 chaupais, 1 closing doha). A new
+  **Learning** nav page where users read/learn verse by verse in **English,
+  Malayalam, or Sanskrit** (romanized, never Devanagari, per app convention)
+  via a language-select dropdown. Marking a verse learned auto-completes
+  today's Hanuman Chalisa anushtanam on the dashboard.
+- **Commit type:** `feat:`
+- **Open question - version bump:** whether shipping this page is itself what
+  cuts `1.0.0` (vs. the existing "Play Store launch cuts 1.0.0" rule tied to
+  the Phase 0 blockers) is **undecided** - revisit before building.
+- **Content architecture (sustainability):** the catalog will eventually cover
+  much larger works - Vishnu/Lalitha Sahasranamam (1000 names each),
+  Narayaneeyam (1034 verses), Bhagavad Gita (700 verses), and an open-ended
+  Bhagavatam. Bundling that into the JS/app binary forever would compound Play
+  Store install-conversion loss (~1% per 6MB of download size, confirmed via
+  Google's own guidance) and force an app release for every content fix. So:
+  - Verse text lives in a **Supabase Storage public bucket**, one JSON file per
+    stotram (`learning-content/hanuman-chalisa.json`, all 3 languages) - not in
+    the JS bundle. Public buckets get a high CDN cache-hit rate on Supabase's
+    Smart CDN; updates propagate in ~60s via a versioned path/cacheNonce, no
+    app release needed.
+  - A thin manifest (extend `practices` with `has_learning_content` /
+    `storage_path`, or a small `learning_content` table) lists what's available
+    - same "admin-extendable without app update" spirit as `practices-catalog.md`.
+  - Client fetches a stotram's JSON once, caches it (localStorage/IndexedDB) for
+    offline reuse after first open - the same pattern YouVersion uses for
+    scripture delivery, confirmed via their published offline architecture.
+- **Progress tracking:** new `learning_progress` table, one row per learned
+  verse per subject, same shape and RLS pattern as `practice_logs`:
+  ```sql
+  create table public.learning_progress (
+    id uuid primary key default gen_random_uuid(),
+    owner_id uuid not null references public.profiles(id) on delete cascade,
+    family_member_id uuid references public.family_members(id) on delete cascade,
+    content_slug text not null,
+    verse_id text not null,
+    learned_at timestamptz not null default now()
+  );
+  create unique index learning_progress_unique on public.learning_progress
+    (owner_id, coalesce(family_member_id, '00000000-0000-0000-0000-000000000000'::uuid), content_slug, verse_id);
+  ```
+- **Dashboard/streak wiring - reuse existing machinery, no new streak logic:**
+  `hanuman-chalisa` already exists as a `daily`-cadence row in `practices`. On
+  marking a verse learned: if the subject doesn't already track it, auto-add it
+  (`addPractice`, same one-tap flow `SuggestedPractices` already uses in
+  `TodayPage.jsx`); if today's Hanuman Chalisa isn't already marked done
+  (`isDoneToday` from `utils/cadence.js`), call the existing `submit(userPracticeId)`
+  from `useToday` - the same `submit_practice_log` RPC `TodayPage.mark()`
+  already calls. One verse learned = today's anushtanam marked; streak, punya,
+  and the celebration modal are all handled by existing code, unchanged.
+- **Premium gating:** per Intent 2.1, tier-gated - this is the first concrete
+  content behind that gate.
+- **Open questions:**
+  - Auto-track Hanuman Chalisa on first verse learned, vs. requiring the user
+    add it from Today first.
+  - After all verses are learned, does continuing to open Learning and review a
+    verse keep auto-marking the daily practice (simplest: yes, same rule
+    forever), or does daily marking then only come from Today?
+- **Testing Gate:**
+  - Unit: verse-learned handler auto-adds the practice when untracked; skips a
+    duplicate `submit_practice_log` call when today is already done; a content
+    fetch failure shows a retry state, not a crash.
+  - Component: language dropdown renders the correct script/text; a verse's
+    learned state persists across reload (from `learning_progress`).
+  - Manual: mark a verse, confirm Today's Hanuman Chalisa flips to done and the
+    streak increments; re-opening a previously-loaded stotram offline works
+    without network.
 
 ### Intent 2.5 - Tier + referral reward ladder (perks)
 
@@ -588,6 +780,82 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
   - Unit tests for slot-time computation across timezones and DST.
   - `hooks/__tests__/useNotifications` extended for three-slot scheduling.
   - Manual on-device: notifications arrive in the correct windows.
+
+---
+
+### Intent 2.7 - Today page panchangam info box
+
+> Research-first per Sreeni - do not build until the open questions below are
+> resolved. This is a **smaller, standalone slice** of the fuller "Panchangam /
+> calendar integration" already scoped in `docs/ROADMAP.md` - that item stays
+> the bigger post-launch calendar view + thithi-based scheduling (Intent 2.4
+> depends on it); this Intent is the narrower "just show today's info" version
+> and should share whichever data source 2.4/`ROADMAP.md` ultimately picks.
+
+- **Intent:** A small info box on the Today dashboard showing the day's
+  panchangam details alongside the date - era/varsham name, Malayalam and
+  Tamil month+day, thithi, nakshatra, and the inauspicious windows (Rahu Kalam,
+  Yamagandam, Gulika Kalam). Example shape: "16 July 2026, Thursday - Parabhava
+  Varsham - [Malayalam month/day] - [Tamil month/day] - [thithi/nakshatra/kalam
+  times]."
+- **Commit type:** `feat:`
+- **Correction found during research:** the example year name needs care - the
+  60-year Samvatsara cycle has two similarly-named-but-distinct years:
+  **Prabhava** (1st in the cycle, 1987-88) and **Parabhava** (40th, 2026-27).
+  The year starting in 2026 is **Parabhava**, not Prabhava - easy to mix up,
+  and wrong on a dharma app is a visible, checkable mistake to knowledgeable
+  users.
+- **Open question - regional start-date convention:** the Samvatsara start date
+  differs by tradition - North Indian/lunar reckoning (Chaitra Shukla
+  Pratipada, ~19 March 2026) vs. South Indian solar reckoning (Mesha
+  Sankranti / Tamil-Malayalam New Year, mid-April). Since the household
+  audience references **Pambu Panchangam** (a Tamil publication) and the app
+  shows Malayalam alongside Tamil, confirm which start-date convention to
+  follow before building - the varsham name must not flip a month "early"
+  relative to what users' own physical panchangam shows.
+- **Data source - do NOT scrape Pambu Panchangam's PDF directly.** It's a
+  specific copyrighted publication (Manonmani Vilasam Press, Chennai, since
+  1883); reproducing its exact calculated tables is an IP concern, and
+  PDF-scraping is fragile (breaks on layout changes every year). The
+  underlying astronomical method (drik ganita: Swiss Ephemeris + an ayanamsa)
+  is not proprietary to Pambu Panchangam - every modern panchang source
+  computes from the same open astronomy, with minor timing differences from
+  ayanamsa/convention choice. Two legally-clean options, either works:
+  1. **Commercial Panchang API** - e.g. Prokerala's Astrology API (free tier:
+     5,000 credits, 5 req/min; basic Panchang call = 10 credits; regional
+     calendar call for Tamil/Malayalam month+day = 2,000 credits; has
+     Tamil/Malayalam/Telugu localization built in).
+  2. **Self-computed, open source** - `drik-panchanga` (Python, Swiss
+     Ephemeris-based, the reference implementation most other tools build on)
+     for the core panchangam math; `kollavarsham` (npm, TypeScript) for
+     Malayalam month/day conversion out of the box. No ready-made Tamil-
+     calendar npm package exists - Tamil solar months use the same
+     sidereal-ingress logic as Malayalam (same computation, different
+     month-name table and epoch), not a separate problem.
+- **Precompute once, not live per request** - matches the framing that started
+  this: "the panchangam PDF comes out every Feb/March, and that year's dataset
+  is constant." A script/Supabase Edge Function run ~once a year computes/fetches
+  all ~365 days of `{date, thithi, nakshatra, rahu_kalam, yamagandam,
+  gulika_kalam, tamil_month_day, malayalam_month_day, varsham_name}` and stores
+  it as a small precomputed dataset - unlike the free-text stotram content in
+  2.1a, this is structured and date-keyed, so an ordinary Supabase table (or
+  even a bundled JSON, tens of KB for a year) fits fine; no Storage-bucket
+  treatment needed. Today's page does a same-day lookup - zero ongoing API
+  cost, zero live astronomical computation per page load.
+- **Open question - location dependency:** Rahu Kalam / Yamagandam / Gulika
+  Kalam are sunrise-based clock times that shift with the user's exact
+  location. Precomputing for one reference location (e.g. Kerala) is simplest
+  for v1; true per-user-location precision is a later enhancement, and would
+  tie naturally into Intent 2.4's location/sunrise-based reminder work.
+- **Testing Gate:**
+  - Unit: date-lookup function returns the correct precomputed row; falls back
+    gracefully if a date is missing (e.g. year boundary before next year's data
+    is loaded).
+  - Manual: cross-check a sample of dates against a printed/PDF Pambu
+    Panchangam or another trusted panchang source to confirm thithi, nakshatra,
+    kalam times, and the varsham name match what users expect.
+  - **Annual maintenance task** (documented, matching the Feb/March publish
+    cadence): regenerate next year's dataset before the current one runs out.
 
 ---
 
