@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.4](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.3...app-v0.15.4) (2026-07-17)
+
+
+### Bug Fixes
+
+* resolve ambiguous score/streak column reference breaking get_leaderboard ([2587486](https://github.com/HunterSreeni/nithyakarma-tracker/commit/2587486967cc819a9086b0d5cda2dd0d0c81da6a))
+* stop verse-learning marks from driving streaks; weight punya by effort ([c1590be](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c1590befac6ae774f89ee9216922a4536dfc73ab))
+* verse-learning streak exploit, effort-weighted punya, broken leaderboard ([c99e65d](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c99e65d0f86aa8c614f24418994e012436bef25d))
+
 ## [0.15.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.2...app-v0.15.3) (2026-07-17)
 
 
