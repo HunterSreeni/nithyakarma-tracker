@@ -61,13 +61,13 @@ export default function TodayPage() {
   return (
     <>
       <div className="eyebrow">{dateLine}</div>
-      <PanchangamBox />
       <h1 className="greet">Namaskaram, {subjectName.split(' ')[0]}</h1>
       <div className="greet-sub">
         {loading ? ' '
           : items.length === 0 ? 'Start with a suggested anushtanam below'
           : `${doneCount} of ${items.length} anushtanams done.`}
       </div>
+      <PanchangamBox />
 
       <ProfileSwitcher />
 
