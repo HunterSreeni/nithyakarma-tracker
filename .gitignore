@@ -13,3 +13,7 @@ fcm-service-account.json
 
 # supabase CLI temp (project uses Supabase MCP only)
 app/supabase/.temp/
+
+# duplicate/superseded migration reconstructions (content already committed
+# upstream under different timestamps) - kept locally for reference only
+app/supabase/migrations/_archive/
