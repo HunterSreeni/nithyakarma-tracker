@@ -1,4 +1,5 @@
 import { usePanchangam } from '../hooks/usePanchangam'
+import { TAMIL_MONTH_SCRIPT, MALAYALAM_MONTH_SCRIPT } from '../utils/panchangamScript'
 
 // Today-page panchangam info box (Intent 2.7) - best-effort v1, see
 // docs/UPGRADE-PLAN.md Intent 2.7 for the accuracy caveats. Renders nothing
@@ -10,8 +11,9 @@ export default function PanchangamBox() {
   return (
     <div className="panchangam-box">
       <div className="pb-line">
-        <b>{day.varsham_name} Varsham</b> · {day.malayalam_month} {day.malayalam_day} (Malayalam) ·{' '}
-        {day.tamil_month} {day.tamil_day} (Tamil)
+        <b>{day.varsham_name} Varsham</b> ·{' '}
+        {MALAYALAM_MONTH_SCRIPT[day.malayalam_month] ?? day.malayalam_month} [{day.malayalam_month}] {day.malayalam_day} ·{' '}
+        {TAMIL_MONTH_SCRIPT[day.tamil_month] ?? day.tamil_month} [{day.tamil_month}] {day.tamil_day}
       </div>
       <div className="pb-line">{day.thithi} · {day.nakshatra} Nakshatram</div>
       <div className="pb-kalams">
