@@ -23,9 +23,14 @@ beforeEach(() => vi.clearAllMocks())
 describe('CelebrationModal', () => {
   it('renders streak and share card from the verified server response', () => {
     render(<CelebrationModal data={data} onClose={() => {}} />)
-    expect(screen.getByText('48 Day')).toBeInTheDocument()
+    expect(screen.getByText('48 Days')).toBeInTheDocument()
     expect(screen.getByText(/Hanuman Chalisa completed/)).toBeInTheDocument()
     expect(screen.getByText('/r/ref123')).toBeInTheDocument()
+  })
+
+  it('keeps "Day" singular at a streak of 1', () => {
+    render(<CelebrationModal data={{ ...data, overall_streak: 1 }} onClose={() => {}} />)
+    expect(screen.getByText('1 Day')).toBeInTheDocument()
   })
 
   it('celebrates without a day streak when the day is not complete', () => {

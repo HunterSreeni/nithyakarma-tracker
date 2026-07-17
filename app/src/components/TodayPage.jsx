@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Flame, Snowflake, Check, Search, PartyPopper } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react'
+import { Flame, Snowflake, Check, Search } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -8,12 +8,14 @@ import { isDoneToday, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
 import CelebrationModal from './CelebrationModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import PanchangamBox from './PanchangamBox'
-import GuidedTour from './GuidedTour'
 import ErrorBanner from './ErrorBanner'
 import PracticeIcon from '../utils/practiceIcons'
 import { track } from '../utils/analytics'
 import { showInterstitial } from '../utils/ads'
 import { isMilestone, maybeRequestReview } from '../utils/review'
+
+// Deferred - pulls in driver.js, which only the first-run tour ever needs.
+const GuidedTour = lazy(() => import('./GuidedTour'))
 
 export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
@@ -62,7 +64,8 @@ export default function TodayPage() {
       <PanchangamBox />
       <h1 className="greet">Namaskaram, {subjectName.split(' ')[0]}</h1>
       <div className="greet-sub">
-        {items.length === 0 ? 'Start with a suggested anushtanam below'
+        {loading ? ' '
+          : items.length === 0 ? 'Start with a suggested anushtanam below'
           : `${doneCount} of ${items.length} anushtanams done.`}
       </div>
 
@@ -106,7 +109,9 @@ export default function TodayPage() {
         <CelebrationModal data={celebration} onClose={() => setCelebration(null)} />
       )}
 
-      <GuidedTour ready={!loading} showSandhya={profile.gender === 'male'} />
+      <Suspense fallback={null}>
+        <GuidedTour ready={!loading} showSandhya={profile.gender === 'male'} />
+      </Suspense>
     </>
   )
 }
@@ -114,7 +119,7 @@ export default function TodayPage() {
 // Curated one-tap starters shown when the day is empty (e.g. female profiles and
 // non-upanayanam boys who don't get Sandhyavandhanam) so onboarding lands on an
 // actionable screen instead of a blank list.
-const SUGGESTED_SLUGS = ['vishnu-sahasranamam', 'lalitha-sahasranamam', 'hanuman-chalisa']
+const SUGGESTED_SLUGS = ['narayaneeyam', 'lalitha-sahasranamam', 'devi-mahatmyam']
 
 function SuggestedPractices({ onAdd }) {
   const [suggestions, setSuggestions] = useState([])

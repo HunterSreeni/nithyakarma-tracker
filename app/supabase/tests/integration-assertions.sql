@@ -169,12 +169,88 @@ begin
     end if;
   end if;
 
+  -- 9b. apply_referral rate limit (S3): a referrer can only be credited 5 times
+  -- per rolling 24h - throwaway accounts referring the same code past that cap
+  -- must be rejected, not silently keep stacking ad-free days.
+  declare
+    v_test_referrer uuid := gen_random_uuid();
+    v_test_code text;
+    v_throwaway uuid;
+    v_i int;
+  begin
+    insert into auth.users (
+      instance_id, id, aud, role, email, encrypted_password,
+      email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data,
+      confirmation_token, recovery_token, email_change_token_new, email_change,
+      email_change_token_current, reauthentication_token, phone_change, phone_change_token
+    ) values (
+      '00000000-0000-0000-0000-000000000000', v_test_referrer, 'authenticated', 'authenticated',
+      'ratelimit-referrer@nithyakarma.test', crypt('RateLimitReferrer#2026', gen_salt('bf')),
+      now(), now(), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+      '', '', '', '', '', '', '', ''
+    );
+    insert into profiles (id, display_name, gender) values (v_test_referrer, 'Rate Limit Referrer', 'male');
+    select referral_code into v_test_code from profiles where id = v_test_referrer;
+
+    for v_i in 1..6 loop
+      v_throwaway := gen_random_uuid();
+      insert into auth.users (
+        instance_id, id, aud, role, email, encrypted_password,
+        email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data,
+        confirmation_token, recovery_token, email_change_token_new, email_change,
+        email_change_token_current, reauthentication_token, phone_change, phone_change_token
+      ) values (
+        '00000000-0000-0000-0000-000000000000', v_throwaway, 'authenticated', 'authenticated',
+        'ratelimit-throwaway-' || v_i || '@nithyakarma.test', crypt('RateLimitThrowaway#2026', gen_salt('bf')),
+        now(), now(), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+        '', '', '', '', '', '', '', ''
+      );
+      insert into profiles (id, display_name, gender) values (v_throwaway, 'Rate Limit Throwaway ' || v_i, 'male');
+      perform set_config('request.jwt.claims', json_build_object('sub', v_throwaway::text)::text, true);
+
+      v_failed := false;
+      begin
+        perform apply_referral(v_test_code);
+      exception when others then v_failed := true;
+      end;
+
+      if v_i <= 5 and v_failed then
+        raise exception 'FAIL: referral %/5 within the daily cap was rejected', v_i;
+      end if;
+      if v_i = 6 and not v_failed then
+        raise exception 'FAIL: 6th referral within 24h exceeded the cap but was accepted';
+      end if;
+    end loop;
+    -- restore integtest impersonation for the remaining sections
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
+  end;
+
   -- 10. daily_count practice: the target count is stored on the log verbatim.
   insert into user_practices (owner_id, practice_id) values (v_uid, 9) returning id into v_upc; -- shiva-panchakshari (108)
   perform submit_practice_log(v_upc, null, 108);
   if (select count from practice_logs where user_practice_id = v_upc and log_date = current_date) <> 108 then
     raise exception 'FAIL: daily_count target not stored on log';
   end if;
+
+  -- 10b. submit_practice_log honors a client-supplied p_local_date within
+  -- +/-1 day of the server date (B1: fixes early-morning IST logs landing on
+  -- the wrong UTC date), but ignores a wildly-off date to prevent streak-gaming.
+  declare v_up_tz uuid;
+  begin
+    insert into user_practices (owner_id, practice_id) values (v_uid, 2) returning id into v_up_tz; -- vishnu
+    perform submit_practice_log(v_up_tz, null, null, current_date - 1);
+    if (select log_date from practice_logs where user_practice_id = v_up_tz) <> current_date - 1 then
+      raise exception 'FAIL: p_local_date within bound was not honored';
+    end if;
+    delete from user_practices where id = v_up_tz;
+
+    insert into user_practices (owner_id, practice_id) values (v_uid, 3) returning id into v_up_tz; -- lalitha
+    perform submit_practice_log(v_up_tz, null, null, current_date - 3);
+    if (select log_date from practice_logs where user_practice_id = v_up_tz) <> current_date then
+      raise exception 'FAIL: an out-of-bound p_local_date was honored instead of falling back to current_date';
+    end if;
+    delete from user_practices where id = v_up_tz; -- section 12 re-uses practice_id 3 for v_uid
+  end;
 
   -- 11. sequence practice: position increments, then cycles back to 1 at length.
   insert into user_practices (owner_id, practice_id, sequence_position, last_log_date)

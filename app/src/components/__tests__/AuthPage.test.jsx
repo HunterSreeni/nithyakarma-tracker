@@ -78,6 +78,11 @@ describe('AuthPage', () => {
     expect(screen.queryByText(/Verification email sent/)).not.toBeInTheDocument()
   })
 
+  it('requires an 8-character minimum password (Supabase Auth policy match)', () => {
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    expect(screen.getByLabelText('Password')).toHaveAttribute('minLength', '8')
+  })
+
   it('offers a password reset flow from the login form', async () => {
     render(<MemoryRouter><AuthPage /></MemoryRouter>)
     fireEvent.click(screen.getByText('Forgot password?'))

@@ -25,6 +25,9 @@ const push = {
 }
 vi.mock('@capacitor/push-notifications', () => ({ PushNotifications: push }))
 
+const localSchedule = vi.fn().mockResolvedValue(undefined)
+vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: { schedule: localSchedule } }))
+
 import { registerFCM, unregisterFCM } from '../pushAndroid'
 
 // saveToken() runs unawaited off the 'registration' listener callback - flush
@@ -34,6 +37,7 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 beforeEach(() => {
   upsert.mockClear(); match.mockClear(); eq.mockClear(); neq.mockClear()
   push.createChannel.mockClear(); push.register.mockClear(); push.addListener.mockClear()
+  localSchedule.mockClear()
   mockNative.mockReturnValue(true); mockPlatform.mockReturnValue('android')
 })
 
@@ -86,6 +90,15 @@ describe('registerFCM', () => {
     await registerFCM('u1')
     // register not called this run (createChannel from earlier tests is cleared per-file scope)
     expect(push.register).not.toHaveBeenCalled()
+  })
+
+  it('raises a local notification for a push received while foregrounded', async () => {
+    await registerFCM('u1')
+    await listeners.pushNotificationReceived({ title: 'Reminder', body: 'Time for sandhya' })
+    await flush()
+    expect(localSchedule).toHaveBeenCalledWith({
+      notifications: [expect.objectContaining({ title: 'Reminder', body: 'Time for sandhya' })],
+    })
   })
 })
 

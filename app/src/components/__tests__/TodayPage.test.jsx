@@ -94,7 +94,7 @@ describe('TodayPage - Sandhyavandhanam UX', () => {
 
 describe('TodayPage - empty-day activation (female / non-sandhya)', () => {
   const suggestions = [
-    { id: 2, slug: 'vishnu-sahasranamam', name: 'Vishnu Sahasranamam', icon: '🕉️', cadence: 'daily' },
+    { id: 2, slug: 'narayaneeyam', name: 'Narayaneeyam', icon: '🕉️', cadence: 'daily' },
     { id: 3, slug: 'lalitha-sahasranamam', name: 'Lalitha Sahasranamam', icon: '🌺', cadence: 'daily' },
   ]
 
@@ -102,7 +102,7 @@ describe('TodayPage - empty-day activation (female / non-sandhya)', () => {
     h.items = []; h.catalog = suggestions
     render(<TodayPage />)
     expect(await screen.findByText('Suggested to start')).toBeInTheDocument()
-    expect(screen.getByText('Vishnu Sahasranamam')).toBeInTheDocument()
+    expect(screen.getByText('Narayaneeyam')).toBeInTheDocument()
     expect(screen.getByText('Lalitha Sahasranamam')).toBeInTheDocument()
     expect(screen.getByText('Start with a suggested anushtanam below')).toBeInTheDocument()
   })

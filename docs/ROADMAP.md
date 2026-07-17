@@ -32,3 +32,8 @@ needs its own design + test pass when picked up.
   calendars/scripts (e.g. Tamil) can be added later.
 - Test impact: calc correctness across a year of known dates + locales, the
   language toggle, and a11y of the calendar grid.
+- **Related, smaller, nearer-term:** `docs/UPGRADE-PLAN.md` Intent 2.7 scopes a
+  standalone Today-page panchangam info box (thithi, nakshatra, kalams,
+  Tamil/Malayalam month+day, varsham name) - a narrower slice of this same data
+  problem. Whichever data source (API vs. self-computed) and regional
+  convention gets picked there should be reused here, not decided twice.

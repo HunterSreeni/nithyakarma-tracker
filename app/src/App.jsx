@@ -2,15 +2,19 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import AuthPage from './components/AuthPage'
-import Onboarding from './components/Onboarding'
 import Layout from './components/Layout'
 import TodayPage from './components/TodayPage'
-import HistoryPage from './components/HistoryPage'
-import SabhaPage from './components/SabhaPage'
-import ReferralsPage from './components/ReferralsPage'
-import ProfilePage from './components/ProfilePage'
-import { TermsPage, PrivacyPage } from './components/LegalPages'
-import ResetPassword from './components/ResetPassword'
+
+// Deferred: only fetched when actually navigated to, keeping them out of the
+// initial bundle everyone downloads just to see Today.
+const Onboarding = lazy(() => import('./components/Onboarding'))
+const HistoryPage = lazy(() => import('./components/HistoryPage'))
+const SabhaPage = lazy(() => import('./components/SabhaPage'))
+const ReferralsPage = lazy(() => import('./components/ReferralsPage'))
+const ProfilePage = lazy(() => import('./components/ProfilePage'))
+const TermsPage = lazy(() => import('./components/LegalPages').then(m => ({ default: m.TermsPage })))
+const PrivacyPage = lazy(() => import('./components/LegalPages').then(m => ({ default: m.PrivacyPage })))
+const ResetPassword = lazy(() => import('./components/ResetPassword'))
 
 // Lazy: verse content + page code only download when Learning is opened,
 // not on every app load (Intent 2.1a - the first code-split route).
@@ -40,25 +44,25 @@ function Gate() {
     return <div className="spinner-wrap">Loading...</div>
   }
   // Legal pages are reachable standalone whether signed in or not (Play Store requirement)
-  if (pathname === '/terms') return <TermsPage />
-  if (pathname === '/privacy') return <PrivacyPage />
+  if (pathname === '/terms') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><TermsPage /></Suspense>
+  if (pathname === '/privacy') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><PrivacyPage /></Suspense>
   // Reachable during the recovery session so it isn't skipped into the app.
-  if (pathname === '/reset') return <ResetPassword />
+  if (pathname === '/reset') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><ResetPassword /></Suspense>
   if (!session) return <AuthPage />
-  if (!profile) return <Onboarding />
+  if (!profile) return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><Onboarding /></Suspense>
   return (
     <Layout>
-      <Routes>
-        <Route path="/" element={<TodayPage />} />
-        <Route path="/learning" element={
-          <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><LearningPage /></Suspense>
-        } />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/sabha" element={<SabhaPage />} />
-        <Route path="/referrals" element={<ReferralsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<div className="spinner-wrap">Loading...</div>}>
+        <Routes>
+          <Route path="/" element={<TodayPage />} />
+          <Route path="/learning" element={<LearningPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/sabha" element={<SabhaPage />} />
+          <Route path="/referrals" element={<ReferralsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </Layout>
   )
 }

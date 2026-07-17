@@ -12,6 +12,11 @@ import { supabase } from '../lib/supabase'
 let currentUserId = null
 let listenersReady = false
 
+// Distinct from the scheduled-reminder ids (100-500) in utils/notifications.js -
+// this one just relays whatever push just arrived, so re-using it across
+// receives is fine (each call replaces the last unactioned one).
+const FOREGROUND_PUSH_ID = 600
+
 async function saveToken(token) {
   if (!currentUserId) return
   // A device token can be left over from a previous account signed into the
@@ -37,6 +42,22 @@ async function ensureListeners(PushNotifications) {
   await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
     const url = action?.notification?.data?.url
     if (url) { try { window.location.href = url } catch { /* noop */ } }
+  })
+  // Android only auto-displays a push's system notification while the app is
+  // backgrounded - in the foreground it hands the payload to this event and
+  // shows nothing on its own, so a reminder that lands while the app is open
+  // used to look like it silently did nothing. Raise it ourselves.
+  await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+    try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications')
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: FOREGROUND_PUSH_ID,
+          title: notification.title ?? 'Nithyakarma',
+          body: notification.body ?? '',
+        }],
+      })
+    } catch { /* best-effort - never let a receive handler throw */ }
   })
 }
 

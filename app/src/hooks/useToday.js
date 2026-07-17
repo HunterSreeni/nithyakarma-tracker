@@ -48,6 +48,7 @@ export function useToday(ownerId, familyMemberId = null) {
   const submit = async (userPracticeId, { slot = null, count = null } = {}) => {
     const { data, error } = await supabase.rpc('submit_practice_log', {
       p_user_practice_id: userPracticeId, p_slot: slot, p_count: count,
+      p_local_date: localDateString(),
     })
     if (error) throw error
     if (!data?.saved) throw new Error('Save could not be verified')

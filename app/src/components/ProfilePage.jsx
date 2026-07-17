@@ -16,15 +16,15 @@ export default function ProfilePage() {
   const [showAdd, setShowAdd] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState('')
   const [error, setError] = useState(null)
-  const [optOut, setOptOut] = useState(profile.leaderboard_opt_out)
+  const [optIn, setOptIn] = useState(profile.leaderboard_opt_in)
   const [communityEnabled, setCommunityEnabled] = useState(profile.community_enabled)
 
-  const toggleOptOut = async (checked) => {
-    setOptOut(checked) // optimistic - revert on failure
+  const toggleOptIn = async (checked) => {
+    setOptIn(checked) // optimistic - revert on failure
     try {
-      await updateProfile({ leaderboard_opt_out: checked })
+      await updateProfile({ leaderboard_opt_in: checked })
     } catch {
-      setOptOut(!checked)
+      setOptIn(!checked)
     }
   }
 
@@ -134,9 +134,9 @@ export default function ProfilePage() {
           Show the Sabha tab (compare streaks and punya with others)
         </label>
         <label className="checkbox-row">
-          <input type="checkbox" checked={optOut}
-            onChange={e => toggleOptOut(e.target.checked)} />
-          Hide me from community leaderboards (only you can see your row)
+          <input type="checkbox" checked={optIn}
+            onChange={e => toggleOptIn(e.target.checked)} />
+          Show me on community leaderboards (off by default - your row stays private until you opt in)
         </label>
       </div>
 
