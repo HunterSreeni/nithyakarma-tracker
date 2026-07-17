@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.15.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.2...app-v0.15.3) (2026-07-17)
+
+
+### Bug Fixes
+
+* compute streak completion from the caller's local date, not server UTC ([41d8409](https://github.com/HunterSreeni/nithyakarma-tracker/commit/41d8409225af7ed7fa6bce19f424a877028a5dbd))
+* harden Android backup settings; add Netlify security headers ([df4fdfb](https://github.com/HunterSreeni/nithyakarma-tracker/commit/df4fdfb69e1b6ccb818698b76cd511f0090ebb2b))
+* hide zero-score profiles from the leaderboard ([cd0403a](https://github.com/HunterSreeni/nithyakarma-tracker/commit/cd0403a991f4ddc80c5fe926e409c79840652b3a))
+* make leaderboard visibility opt-in instead of opt-out ([f9782f0](https://github.com/HunterSreeni/nithyakarma-tracker/commit/f9782f01517cebf6b209e046633ab5e5c93c130a))
+* normalize the deprecated Asia/Calcutta timezone alias before storing ([1ec6193](https://github.com/HunterSreeni/nithyakarma-tracker/commit/1ec6193986054e5c11c21839134ea8a9c6e09c8f))
+* pluralize "day(s)" in the celebration modal ([96c1371](https://github.com/HunterSreeni/nithyakarma-tracker/commit/96c137129abdab703112898b39d509d4fad1085b))
+* raise a local notification for foreground push receives on Android ([dbdd386](https://github.com/HunterSreeni/nithyakarma-tracker/commit/dbdd386dbcc1610f2162dab1d356341504c7c910))
+* raise Auth password minimum to 8 chars ([393914f](https://github.com/HunterSreeni/nithyakarma-tracker/commit/393914f17391209760fd5aef82900f4829d9996a))
+* rate-limit apply_referral against ad-free/freeze farming ([9a2be8c](https://github.com/HunterSreeni/nithyakarma-tracker/commit/9a2be8c1ed909b71c854d8dd5091afe22d896e5a))
+* restore search_path on tier_for ([ccdc3d2](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ccdc3d229ac63b23f7eb98df498526f816715492))
+* security/bug batch from the 2026-07-16 project analysis ([4023038](https://github.com/HunterSreeni/nithyakarma-tracker/commit/4023038e6cc93ca4abee3c2bf4f009fbcf30f424))
+
+
+### Performance Improvements
+
+* lazy-load the first-run guided tour ([ed6811e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ed6811e11ed6b2b17027fccab79d704c156bd271))
+
 ## [0.15.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.1...app-v0.15.2) (2026-07-16)
 
 
