@@ -14,6 +14,8 @@ const ReferralsPage = lazy(() => import('./components/ReferralsPage'))
 const ProfilePage = lazy(() => import('./components/ProfilePage'))
 const TermsPage = lazy(() => import('./components/LegalPages').then(m => ({ default: m.TermsPage })))
 const PrivacyPage = lazy(() => import('./components/LegalPages').then(m => ({ default: m.PrivacyPage })))
+const AboutPage = lazy(() => import('./components/InfoPages').then(m => ({ default: m.AboutPage })))
+const KarmaPage = lazy(() => import('./components/InfoPages').then(m => ({ default: m.KarmaPage })))
 const ResetPassword = lazy(() => import('./components/ResetPassword'))
 
 // Lazy: verse content + page code only download when Learning is opened,
@@ -43,9 +45,13 @@ function Gate() {
     }
     return <div className="spinner-wrap">Loading...</div>
   }
-  // Legal pages are reachable standalone whether signed in or not (Play Store requirement)
+  // Legal and info pages are reachable standalone whether signed in or not
+  // (Play Store requirement for /terms and /privacy; /about and /karma follow
+  // the same pattern so they can be linked from outside the app too).
   if (pathname === '/terms') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><TermsPage /></Suspense>
   if (pathname === '/privacy') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><PrivacyPage /></Suspense>
+  if (pathname === '/about') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><AboutPage /></Suspense>
+  if (pathname === '/karma') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><KarmaPage /></Suspense>
   // Reachable during the recovery session so it isn't skipped into the app.
   if (pathname === '/reset') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><ResetPassword /></Suspense>
   if (!session) return <AuthPage />
