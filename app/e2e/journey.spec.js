@@ -138,17 +138,17 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await expect(page.getByRole('button', { name: 'Saved' })).toBeVisible({ timeout: 15000 })
   })
 
-  test('leaderboard privacy opt-out persists', async () => {
-    const optOut = page.getByRole('checkbox', { name: /Hide me from community leaderboards/ })
-    await expect(optOut).not.toBeChecked()
+  test('leaderboard visibility opt-in persists', async () => {
+    const showMe = page.getByRole('checkbox', { name: /Show me on community leaderboards/ })
+    await expect(showMe).not.toBeChecked()
     const saved = page.waitForResponse(r =>
       r.url().includes('/rest/v1/profiles') && r.request().method() === 'PATCH')
-    await optOut.check()
+    await showMe.check()
     await saved
     await page.reload()
-    await expect(page.getByRole('checkbox', { name: /Hide me from community leaderboards/ }))
+    await expect(page.getByRole('checkbox', { name: /Show me on community leaderboards/ }))
       .toBeChecked({ timeout: 15000 })
-    // own row must still be visible to the opted-out user
+    // own row must still be visible regardless of opt-in state
     await page.getByRole('link', { name: /Sabha/ }).first().click()
     await expect(page.locator('.lb-row.me')).toBeVisible({ timeout: 15000 })
     await page.getByRole('link', { name: /Profile/ }).first().click()
