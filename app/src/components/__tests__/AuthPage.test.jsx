@@ -28,7 +28,7 @@ describe('AuthPage', () => {
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret123' } })
     fireEvent.click(screen.getByText('Sign In'))
-    await waitFor(() => expect(signInEmail).toHaveBeenCalledWith('a@b.com', 'secret123'))
+    await waitFor(() => expect(signInEmail).toHaveBeenCalledWith('a@b.com', 'secret123', null))
   })
 
   it('switches to signup mode and calls signUpEmail', async () => {
@@ -37,7 +37,7 @@ describe('AuthPage', () => {
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@b.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret123' } })
     fireEvent.click(screen.getByText('Create Account'))
-    await waitFor(() => expect(signUpEmail).toHaveBeenCalledWith('new@b.com', 'secret123'))
+    await waitFor(() => expect(signUpEmail).toHaveBeenCalledWith('new@b.com', 'secret123', null))
   })
 
   it('shows auth errors', async () => {
@@ -90,7 +90,7 @@ describe('AuthPage', () => {
     expect(screen.queryByLabelText('Password')).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } })
     fireEvent.click(screen.getByText('Send reset link'))
-    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith('a@b.com'))
+    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith('a@b.com', null))
     expect(await screen.findByText(/reset link is on its way/)).toBeInTheDocument()
   })
 })

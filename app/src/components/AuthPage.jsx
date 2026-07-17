@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import Turnstile from './Turnstile'
 
 export default function AuthPage() {
   const { signInGoogle, signInEmail, signUpEmail, resetPassword } = useAuth()
@@ -10,19 +11,23 @@ export default function AuthPage() {
   const [error, setError] = useState(null)
   const [notice, setNotice] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState(null)
+  const turnstileRef = useRef(null)
 
   const submit = async (e) => {
     e.preventDefault()
     setError(null); setNotice(null); setBusy(true)
     if (mode === 'forgot') {
-      const { error } = await resetPassword(email)
+      const { error } = await resetPassword(email, captchaToken)
+      turnstileRef.current?.reset()
       setBusy(false)
       if (error) { setError(error.message); return }
       setNotice(`If an account exists for ${email}, a reset link is on its way. Check your inbox and spam.`)
       return
     }
     const fn = mode === 'login' ? signInEmail : signUpEmail
-    const { data, error } = await fn(email, password)
+    const { data, error } = await fn(email, password, captchaToken)
+    turnstileRef.current?.reset()
     setBusy(false)
     if (error) { setError(error.message); return }
     // Signup with email confirmation on: user exists but no session yet
@@ -83,6 +88,7 @@ export default function AuthPage() {
                 Forgot password?
               </button>
             )}
+            <Turnstile ref={turnstileRef} onVerify={setCaptchaToken} />
             {error && <div className="auth-error" role="alert">{error}</div>}
             {notice && <div className="auth-notice">{notice}</div>}
             <button className="btn-auth" type="submit" disabled={busy}>

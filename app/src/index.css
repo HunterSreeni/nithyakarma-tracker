@@ -304,6 +304,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .btn-auth { width: 100%; margin-top: 0.9rem; background: var(--action); color: #fff; border: none; border-radius: 100px; padding: 11px; font-weight: 700; font-size: 0.8rem; }
 .auth-switch { text-align: center; font-size: 0.74rem; color: var(--text-2); margin-top: 1rem; }
 .auth-forgot { display: block; margin: 0.5rem 0 0 auto; background: none; border: none; color: var(--action); font-size: 0.74rem; font-weight: 700; text-align: right; }
+.turnstile-widget { margin-top: 0.9rem; }
 
 /* Onboarding value-prop intro */
 .onboard-intro { width: 100%; max-width: 380px; }
