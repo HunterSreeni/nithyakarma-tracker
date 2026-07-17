@@ -31,6 +31,7 @@ vi.mock('../../utils/notifications', () => ({
 }))
 
 import { useToday } from '../useToday'
+import { supabase } from '../../lib/supabase'
 
 beforeEach(() => {
   h.ups = []; h.logs = []; h.failNext = false; h.rpcResult = null
@@ -87,6 +88,26 @@ describe('useToday submit - celebration only from a verified RPC response', () =
 
     h.rpcResult = { data: { saved: false }, error: null }
     await expect(result.current.submit('up1', { slot: 'morning' })).rejects.toThrow('Save could not be verified')
+  })
+})
+
+describe('useToday submit - awardStreak passthrough', () => {
+  it('defaults p_award_streak to true when not specified', async () => {
+    const { result } = renderHook(() => useToday('owner1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    h.rpcResult = { data: { saved: true }, error: null }
+    await result.current.submit('up1', { slot: 'morning' })
+    expect(supabase.rpc).toHaveBeenCalledWith('submit_practice_log', expect.objectContaining({ p_award_streak: true }))
+  })
+
+  it('passes p_award_streak: false through when awardStreak is disabled', async () => {
+    const { result } = renderHook(() => useToday('owner1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    h.rpcResult = { data: { saved: true }, error: null }
+    await result.current.submit('up1', { awardStreak: false })
+    expect(supabase.rpc).toHaveBeenCalledWith('submit_practice_log', expect.objectContaining({ p_award_streak: false }))
   })
 })
 

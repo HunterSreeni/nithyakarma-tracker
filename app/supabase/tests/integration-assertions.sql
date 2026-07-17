@@ -306,15 +306,16 @@ begin
   end if;
   declare v_kid2 uuid; v_kup uuid;
   begin
-    -- punya 95 + 1 practice log crosses to Sadhaka (100) -> cap 1->2 tops credits up;
-    -- last complete 2 days ago (1-day gap) with a credit -> streak continues and consumes.
+    -- punya 95 + 1 practice log (practice_id 2, vishnu-sahasranamam, punya_value 8)
+    -- crosses to Sadhaka (100) -> cap 1->2 tops credits up; last complete 2 days
+    -- ago (1-day gap) with a credit -> streak continues and consumes.
     insert into family_members (parent_id, name, gender, punya, current_streak, last_complete_date, freeze_credits)
       values (v_uid, 'Freeze Kid', 'female', 95, 5, current_date - 2, 1) returning id into v_kid2;
     insert into user_practices (owner_id, family_member_id, practice_id) values (v_uid, v_kid2, 2) returning id into v_kup;
     r := submit_practice_log(v_kup);
     if (r->>'overall_streak')::int <> 6 then raise exception 'FAIL: freeze did not continue kid streak (expected 6, got %)', r->>'overall_streak'; end if;
     if not (r->>'freeze_used')::boolean then raise exception 'FAIL: freeze_used not reported true'; end if;
-    if (r->>'punya')::int <> 100 then raise exception 'FAIL: kid punya not 100 after tier-up'; end if;
+    if (r->>'punya')::int <> 103 then raise exception 'FAIL: kid punya not 103 after tier-up (95 + punya_value 8)'; end if;
     -- started 1 credit, tier-up tops to 2, consume 1 -> 1 remaining
     if (r->>'freeze_credits')::int <> 1 then raise exception 'FAIL: freeze credits wrong after tier-up+consume (expected 1, got %)', r->>'freeze_credits'; end if;
   end;
@@ -396,6 +397,45 @@ begin
     end;
     if not v_failed then raise exception 'FAIL: duplicate (user_id, endpoint) was accepted'; end if;
   end;
+
+  -- 16. p_award_streak = false (learning-progress verse marks must not drive
+  -- streaks): a log can still award punya and mark the practice done-for-today,
+  -- but must not advance the per-practice streak or the subject's overall streak.
+  declare
+    v_up_award uuid;
+    v_overall_before int;
+    v_punya_before int;
+  begin
+    select current_streak, punya into v_overall_before, v_punya_before from profiles where id = v_uid;
+    insert into user_practices (owner_id, practice_id, current_streak, last_log_date)
+      values (v_uid, 11, 3, current_date - 1) returning id into v_up_award; -- soundarya-lahari, punya_value 8
+    r := submit_practice_log(v_up_award, null, null, null, false);
+    if not (r->>'practice_done_today')::boolean then
+      raise exception 'FAIL: award_streak=false log not marked done today';
+    end if;
+    if (r->>'practice_streak')::int <> 3 then
+      raise exception 'FAIL: award_streak=false advanced the per-practice streak (expected unchanged 3, got %)', r->>'practice_streak';
+    end if;
+    if (r->>'punya')::int <> v_punya_before + 8 then
+      raise exception 'FAIL: award_streak=false did not award punya (expected %, got %)', v_punya_before + 8, r->>'punya';
+    end if;
+    if (select current_streak from profiles where id = v_uid) <> v_overall_before then
+      raise exception 'FAIL: award_streak=false advanced the overall streak (expected unchanged %, got %)',
+        v_overall_before, (select current_streak from profiles where id = v_uid);
+    end if;
+  end;
+
+  -- 17. punya_value: seeded weights differ by tier (light/moderate/demanding),
+  -- not the old flat 5-for-everything.
+  if (select punya_value from practices where slug = 'hanuman-chalisa') <> 5 then
+    raise exception 'FAIL: hanuman-chalisa punya_value drifted from light tier (5)';
+  end if;
+  if (select punya_value from practices where slug = 'vishnu-sahasranamam') <> 8 then
+    raise exception 'FAIL: vishnu-sahasranamam punya_value drifted from moderate tier (8)';
+  end if;
+  if (select punya_value from practices where slug = 'sri-rudram') <> 12 then
+    raise exception 'FAIL: sri-rudram punya_value drifted from demanding tier (12)';
+  end if;
 
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;

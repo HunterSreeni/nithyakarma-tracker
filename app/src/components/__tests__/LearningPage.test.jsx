@@ -76,7 +76,7 @@ describe('LearningPage - marking a verse learned wires the dashboard', () => {
     render(<LearningPage />)
     fireEvent.click(screen.getByText('Mark Learned'))
     await waitFor(() => expect(h.addPractice).toHaveBeenCalledWith(42))
-    await waitFor(() => expect(h.submit).toHaveBeenCalledWith('up-new'))
+    await waitFor(() => expect(h.submit).toHaveBeenCalledWith('up-new', { awardStreak: false }))
     expect(await screen.findByTestId('celebration')).toHaveTextContent('5')
   })
 
@@ -88,7 +88,7 @@ describe('LearningPage - marking a verse learned wires the dashboard', () => {
     }]
     render(<LearningPage />)
     fireEvent.click(screen.getByText('Mark Learned'))
-    await waitFor(() => expect(h.submit).toHaveBeenCalledWith('up-existing'))
+    await waitFor(() => expect(h.submit).toHaveBeenCalledWith('up-existing', { awardStreak: false }))
     expect(h.addPractice).not.toHaveBeenCalled()
   })
 

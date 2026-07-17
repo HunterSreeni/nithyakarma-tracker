@@ -55,7 +55,7 @@ export default function LearningPage() {
         userPracticeId = up.id
       }
 
-      const result = await submit(userPracticeId)
+      const result = await submit(userPracticeId, { awardStreak: false })
       await refresh()
       setCelebration({ ...result, subjectName })
     } catch (err) {
@@ -77,7 +77,7 @@ export default function LearningPage() {
         <div>
           <div className="tc-label">Verses Learned</div>
           <div className="tc-big">{learnedCount} of {verses.length || 43}</div>
-          <div className="tc-hint">Marking a verse also completes today's anushtanam</div>
+          <div className="tc-hint">Marking a verse logs today's practice and earns punya (doesn't affect your streak)</div>
         </div>
         <div className="progress-ring" style={{
           background: `conic-gradient(#fff 0% ${verses.length ? (learnedCount / verses.length) * 100 : 0}%, rgba(255,255,255,0.25) 0% 100%)`,
