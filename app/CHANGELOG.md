@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.16.0...app-v0.17.0) (2026-07-17)
+
+
+### Features
+
+* add haptic feedback to the celebration modal (Intent 2.2, partial) ([b60a03f](https://github.com/HunterSreeni/nithyakarma-tracker/commit/b60a03f30237603b80b10cb9e56bc2182dec95cb))
+
 ## [0.16.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.4...app-v0.16.0) (2026-07-17)
 
 
