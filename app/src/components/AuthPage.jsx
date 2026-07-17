@@ -73,7 +73,7 @@ export default function AuthPage() {
               <>
                 <label className="field-label" htmlFor="auth-password">Password</label>
                 <input id="auth-password" className="field-input" type="password" value={password}
-                  onChange={e => setPassword(e.target.value)} required minLength={6}
+                  onChange={e => setPassword(e.target.value)} required minLength={8}
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
               </>
             )}

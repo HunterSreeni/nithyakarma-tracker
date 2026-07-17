@@ -21,7 +21,7 @@ test.describe('Auth edge cases', () => {
     await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible()
   })
 
-  test('requires a password of at least 6 chars (native form validation)', async ({ page }) => {
+  test('requires a password of at least 8 chars (native form validation)', async ({ page }) => {
     await page.goto('/')
     await page.fill('#auth-email', 'someone@nithyakarma.test')
     await page.fill('#auth-password', '123')
