@@ -7,6 +7,18 @@
 > Phase 2 product ideas (thithi observances, panchangam calendar) continue to
 > live in `docs/ROADMAP.md`. This document is the "how we ship it safely" plan.
 
+> **Status accuracy note (2026-07-18):** the statuses written inline below are the
+> author's intent at time of writing and have drifted from reality in both directions.
+> `docs/architecture/09-STATUS-LEDGER.md` holds the **verified** status of every Intent,
+> audited against code, migrations and the live database. Where the two disagree, the
+> ledger wins.
+>
+> Two findings from that audit worth reading before planning any work:
+> - **Intent 0.1 (app icon) is still open** - the launcher is the stock Capacitor
+>   blue-X placeholder. There are two launch blockers, not just AdMob.
+> - **Intent 1.2 is Partial, not done** - the 08:00 morning nudge has never fired in
+>   production. See the Intent for detail.
+
 **Owner:** Sreeni
 **Created:** 2026-07-12
 **Current version:** `0.0.0` (pre-versioning). First managed version: `0.1.0`.
@@ -116,16 +128,21 @@ gate is enforced by CI.
   - Component test asserts the Profile footer renders `v<version>`.
   - Manual: version shown matches the installed APK's `versionName`.
 
-### Intent R4 - Commit reconstructed migrations, close schema drift (B2)
+### Intent R4 - Commit reconstructed migrations, close schema drift (B2) - done
+
+> **Closed 2026-07-18.** All four reconstruction migrations are committed. Verified:
+> 31 migrations in `app/supabase/migrations/` and 31 in `list_migrations`, names
+> matching 1:1. One caveat documented in `docs/architecture/04-MIGRATIONS.md` - 10
+> migrations have differing timestamp prefixes between filename and remote version,
+> with identical relative ordering, so a clean replay is unaffected. Compare
+> **names**, not timestamps, when running the drift check.
 
 - **Intent:** Close B2 - the Learning tab, panchangam info box, and their
   backing tables were live in prod with no matching committed migration, so a
   clean rebuild from the repo would have produced a different database. The
   DDL has since been reconstructed and applied (`learning_content`,
   `panchangam_days`, `panchangam_service_role_grant`,
-  `drop_learning_content_list_policy` - confirmed present in
-  `mcp__supabase__list_migrations` against project `fkrifejzhnhknkuyhjhp` as of
-  2026-07-17), but the files are still untracked locally, not committed to git.
+  `drop_learning_content_list_policy`).
 - **Commit type:** `fix:` (repo now matches deployed state; no DB change,
   since these are already applied live).
 - **Changes:** commit the four reconstruction migrations to git.
@@ -385,7 +402,7 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
   Privacy Policy URL - **done**, `AuthPage`'s in-app `/privacy` route is live at
   `https://nithykarma.netlify.app/privacy` (confirmed 200) - Data Safety answers
   (from `docs/DATA-SAFETY.md`), content rating, release signing keystore,
-  verified `applicationId` (`in.co.sreeniverse.nithyakarma`), and an
+  verified `applicationId` (`org.nithyakarma.app`), and an
   incrementing `versionCode` strategy.
 - **Testing Gate:**
   - Signed release AAB builds, installs, and launches on a clean device/emulator.
@@ -450,7 +467,25 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
     shows the freeze message when `freeze_used`.
   - e2e + CI green; manual check of a simulated missed-day-with-credit.
 
-### Intent 1.2 - Streak-miss reminder notification (hardcoded) - done
+### Intent 1.2 - Streak-miss reminder notification (hardcoded) - PARTIAL
+
+> **Downgraded from "done" on 2026-07-18.** A production bug means half of this
+> Intent has never actually worked. `send-reminders/index.ts:45` emits the slot name
+> `nudge_morning`, but the `notification_deliveries.slot` CHECK constraint only allows
+> `morning`/`afternoon`/`evening`/`nudge`. The pre-send insert fails the constraint and
+> `if (dupErr) continue;` (`index.ts:128`) misreads the failure as "already sent",
+> skipping the user.
+>
+> Confirmed live: **zero `nudge_morning` delivery rows have ever been written**, while
+> the four permitted slots have 13-17 rows each. The 08:00 morning nudge has never
+> fired for anyone.
+>
+> **Fixed 2026-07-18.** Migration
+> `20260718170117_notification_deliveries_nudge_morning_slot` added `nudge_morning` to
+> the CHECK (applied to production), and the sender's error handling was narrowed to
+> Postgres code `23505` so a future constraint mismatch fails loudly. The edge-function
+> half needs a deploy to take effect. Only the on-device manual check below remains
+> outstanding.
 
 - **Intent:** Nudge a user who has not marked anything by a fixed time so they do
   not silently lose a streak. Push notifications stay **hardcoded** for now (no
@@ -578,7 +613,7 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
   has nowhere to land, not because it's broken.
 - **Commit type:** `feat:`
 - **Dependency (you):** a Google Cloud OAuth client registered for the Android
-  `applicationId` (`in.co.sreeniverse.nithyakarma`) + release/debug SHA-1
+  `applicationId` (`org.nithyakarma.app`) + release/debug SHA-1
   fingerprints; add the resulting redirect URL to the Supabase Auth allow-list.
 - **Changes:** a custom URL scheme (or App Link) intent-filter in
   `AndroidManifest.xml`; an `App.addListener('appUrlOpen', ...)` handler (via
@@ -856,6 +891,44 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
     kalam times, and the varsham name match what users expect.
   - **Annual maintenance task** (documented, matching the Feb/March publish
     cadence): regenerate next year's dataset before the current one runs out.
+
+**Addendum (2026-07-18) - dual Tamil/Malayalam source attempt, reverted:**
+Sreeni asked for a second, Malayalam-labeled panchangam alongside the
+existing one, switchable per-user, and sourced from the actual physical
+Pambu Panchangam + a Malayalam panchangam (not re-computed). Sreeni obtained
+a real copy: `parapava-varusham-pambu-panchangam-2026-2027_compress.pdf`
+(36-page scan, Manonmani Vilasam Press lineage). Attempted extraction hit two
+problems, one practical and one that matters more:
+- **Practical:** the scan has page warp (column x-positions drift with page
+  height since it's a photographed book, not a flat scan), dense small
+  cursive Tamil script, and six interleaved calendar systems per row
+  (Jyeshtha/Ashada lunar, Hindi, Tamil, Gregorian, Mithunam solar). Manual
+  crop-and-read wasn't reliable enough to trust for ritual-timing data
+  (Rahu Kalam etc.) without OCR tooling this box doesn't have installed.
+- **The actual blocker:** reproducing this book's specific calculated tables
+  is the exact scenario this Intent already ruled out above ("do NOT scrape
+  Pambu Panchangam's PDF directly" - IP concern, Manonmani Vilasam Press
+  since 1883). The extraction difficulty was a useful early warning, but even
+  a perfect OCR pipeline would still be reproducing a copyrighted
+  publication's exact tables, which was already the wrong call before any
+  new work started.
+- **Revised direction:** keep the existing self-computed dataset as the only
+  data source (already follows the doc's Option 2 above). Two independent,
+  legally-clean pieces remain worth doing:
+  1. Malayalam-script vocabulary for thithi names, all 27 nakshatra names,
+     and the Rahu Kalam/Yamagandam/Gulika Kalam labels (mirrors the existing
+     `TAMIL_MONTH_SCRIPT`/`MALAYALAM_MONTH_SCRIPT` pattern in
+     `panchangamScript.js`, which only covers month names today) - a display
+     toggle between Tamil-labeled and Malayalam-labeled views of the *same*
+     computed data, not two different datasets.
+  2. Spot-check accuracy: manually compare a handful of computed dates
+     against the real Pambu Panchangam PDF (reading only, never storing its
+     tables) to validate/tune the existing ayanamsa/convention choices - this
+     is exactly the Testing Gate's "manual cross-check" bullet above, already
+     planned, not new scope.
+  The `kollavarsham` npm package and Prokerala API mentioned in Option 1/2
+  above remain on the table if closer Malayalam-convention accuracy is wanted
+  later, but are not required for the label-switcher work.
 
 ---
 

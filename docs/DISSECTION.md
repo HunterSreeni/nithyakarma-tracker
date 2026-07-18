@@ -117,7 +117,7 @@ rejected, left unmonetized, or churning users on day one.
 - [ ] Play Store feature graphic (1024x500), phone screenshots, short + full desc
 - [ ] Hosted Privacy Policy URL (Play requires a public URL, not just in-app)
 - [ ] Data Safety form + content rating questionnaire
-- [ ] Release signing keystore + `applicationId` verified (`in.co.sreeniverse.nithyakarma`)
+- [ ] Release signing keystore + `applicationId` verified (`org.nithyakarma.app`)
 - [ ] Version name/code + a "What's new" habit (see UPGRADE-PLAN release engineering)
 
 **User flow**
