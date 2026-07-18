@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.4...app-v0.16.0) (2026-07-17)
+
+
+### Features
+
+* animate the celebration modal, recolor topbar/referral card to saffron ([dd4504e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/dd4504e062bfc359b32ed46645e93b4945e54d71))
+
+
+### Bug Fixes
+
+* derive Android versionCode from versionName instead of hardcoding it ([6115599](https://github.com/HunterSreeni/nithyakarma-tracker/commit/61155997ea83ea2b7d725b9f33eb546d7c3e4ac2))
+
 ## [0.15.4](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.15.3...app-v0.15.4) (2026-07-17)
 
 
