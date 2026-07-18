@@ -123,9 +123,18 @@ Deno.serve(async (req: Request) => {
     const title = TITLES[slot];
     const body = BODIES[slot];
     for (const sub of (subs ?? []).filter((s: any) => s.user_id === uid)) {
-      const { error: dupErr } = await supabase.from("notification_deliveries")
+      const { error: insErr } = await supabase.from("notification_deliveries")
         .insert({ user_id: uid, reminder_date: date, slot, endpoint: sub.endpoint.slice(0, 500) });
-      if (dupErr) continue; // already sent this slot today to this endpoint
+      if (insErr) {
+        // 23505 = unique violation: genuinely already sent this slot today to this
+        // endpoint, so skipping is correct. Anything else is a real fault (e.g. a
+        // slot name the CHECK constraint rejects) and must be loud - treating every
+        // insert error as "already sent" is what silently swallowed the
+        // 'nudge_morning' slot for months.
+        if (insErr.code === "23505") continue;
+        console.error("delivery insert failed", { slot, code: insErr.code, message: insErr.message });
+        continue;
+      }
       const ok = sub.platform === "android"
         ? await sendFCM(supabase, config, sub.endpoint, title, body, slot)
         : await sendWebPush(supabase, config, sub, title, body);
