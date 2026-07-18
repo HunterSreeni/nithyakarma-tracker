@@ -34,7 +34,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="in.co.sreeniverse.nithyakarma" android:host="auth-callback" />
+                <data android:scheme="org.nithyakarma.app" android:host="auth-callback" />
             </intent-filter>
 
         </activity>

@@ -90,7 +90,7 @@ describe('Google Sign-In', () => {
     result.current.signInGoogle()
     expect(signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: 'in.co.sreeniverse.nithyakarma://auth-callback' },
+      options: { redirectTo: 'org.nithyakarma.app://auth-callback' },
     })
   })
 
@@ -111,7 +111,7 @@ describe('Google Sign-In', () => {
     getSession.mockResolvedValue({ data: { session: null } })
     renderHook(() => useAuth(), { wrapper })
     await waitFor(() => expect(mockAddListener).toHaveBeenCalledWith('appUrlOpen', expect.any(Function)))
-    urlOpenCb({ url: 'in.co.sreeniverse.nithyakarma://auth-callback#access_token=tok123&refresh_token=ref456' })
+    urlOpenCb({ url: 'org.nithyakarma.app://auth-callback#access_token=tok123&refresh_token=ref456' })
     await waitFor(() => expect(setSession).toHaveBeenCalledWith({ access_token: 'tok123', refresh_token: 'ref456' }))
   })
 
@@ -120,7 +120,7 @@ describe('Google Sign-In', () => {
     getSession.mockResolvedValue({ data: { session: null } })
     renderHook(() => useAuth(), { wrapper })
     await waitFor(() => expect(mockAddListener).toHaveBeenCalledWith('appUrlOpen', expect.any(Function)))
-    urlOpenCb({ url: 'in.co.sreeniverse.nithyakarma://some-other-path' })
+    urlOpenCb({ url: 'org.nithyakarma.app://some-other-path' })
     expect(setSession).not.toHaveBeenCalled()
   })
 })

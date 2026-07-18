@@ -22,7 +22,7 @@ export function AboutPage() {
       <p>
         Nithyakarma is a daily tracker for <b>nitya karma anushtanam</b> - the day-to-day observances
         of the Hindu, Brahmin tradition: Sandhyavandhanam, parayanam, japam, and the practices that go
-        with them. It was built by <b>Sreeniverse</b> out of a simple, familiar problem - keeping up a
+        with them. It was built out of a simple, familiar problem - keeping up a
         daily practice is easy to start and easy to quietly let slip, and there was no tool made for
         this specific tradition that made it easy to see, at a glance, what's done and what's not.
       </p>

@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Nithyakarma</string>
     <string name="title_activity_main">Nithyakarma</string>
-    <string name="package_name">in.co.sreeniverse.nithyakarma</string>
-    <string name="custom_url_scheme">in.co.sreeniverse.nithyakarma</string>
+    <string name="package_name">org.nithyakarma.app</string>
+    <string name="custom_url_scheme">org.nithyakarma.app</string>
 </resources>

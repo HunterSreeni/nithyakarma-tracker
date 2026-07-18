@@ -1,4 +1,4 @@
-package in.co.sreeniverse.nithyakarma;
+package org.nithyakarma.app;
 
 import com.getcapacitor.BridgeActivity;
 

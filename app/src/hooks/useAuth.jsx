@@ -7,7 +7,7 @@ const AuthContext = createContext(null)
 
 // Custom scheme Google OAuth returns to on native (AndroidManifest.xml has the
 // matching intent-filter). Web keeps using window.location.origin.
-const NATIVE_OAUTH_REDIRECT = 'in.co.sreeniverse.nithyakarma://auth-callback'
+const NATIVE_OAUTH_REDIRECT = 'org.nithyakarma.app://auth-callback'
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
