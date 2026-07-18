@@ -167,6 +167,8 @@ export default function ProfilePage() {
       </div>
 
       <div className="profile-legal">
+        <Link to="/about">About</Link>
+        <Link to="/karma">How Punya &amp; Tiers Work</Link>
         <Link to="/terms">Terms &amp; Conditions</Link>
         <Link to="/privacy">Privacy Policy</Link>
       </div>

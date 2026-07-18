@@ -46,9 +46,9 @@ before each run). See memory.
   ```
   npm run build && npx cap sync android
   cd android && ./gradlew assembleDebug
-  adb uninstall in.co.sreeniverse.nithyakarma   # clean slate, optional
+  adb uninstall org.nithyakarma.app   # clean slate, optional
   adb install app/build/outputs/apk/debug/app-debug.apk
-  adb shell am start -n in.co.sreeniverse.nithyakarma/.MainActivity
+  adb shell am start -n org.nithyakarma.app/.MainActivity
   ```
   Gradle and a JDK are present in this environment (no Android Studio launch
   needed to build - `./gradlew` alone is sufficient).

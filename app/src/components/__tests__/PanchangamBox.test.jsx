@@ -35,8 +35,8 @@ describe('PanchangamBox', () => {
     }
     render(<PanchangamBox />)
     expect(screen.getByText('Parabhava Varsham')).toBeInTheDocument()
-    expect(screen.getByText(/Mithunam 31 \(Malayalam\)/)).toBeInTheDocument()
-    expect(screen.getByText(/Aani 31 \(Tamil\)/)).toBeInTheDocument()
+    expect(screen.getByText(/മിഥുനം \[Mithunam\] 31/)).toBeInTheDocument()
+    expect(screen.getByText(/ஆனி \[Aani\] 31/)).toBeInTheDocument()
     expect(screen.getByText(/Shukla Tritiya/)).toBeInTheDocument()
     expect(screen.getByText(/Ashlesha Nakshatram/)).toBeInTheDocument()
     expect(screen.getByText('Rahu Kalam 14:06-15:41')).toBeInTheDocument()

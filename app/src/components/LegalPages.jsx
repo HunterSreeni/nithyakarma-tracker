@@ -13,7 +13,7 @@ function LegalShell({ title, children }) {
         <div className="auth-logo" style={{ fontSize: '1rem', margin: 0 }}>Nithya<span>karma</span></div>
       </div>
       <h1 className="legal-title">{title}</h1>
-      <div className="legal-date">Effective {EFFECTIVE} · Sreeniverse</div>
+      <div className="legal-date">Effective {EFFECTIVE} · Nithyakarma</div>
       <div className="legal-body">{children}</div>
       <div className="legal-foot">Questions? <a href={`mailto:${CONTACT}`}>{CONTACT}</a></div>
     </div>
@@ -24,7 +24,7 @@ export function TermsPage() {
   return (
     <LegalShell title="Terms &amp; Conditions">
       <p>
-        Nithyakarma is a personal tool from <b>Sreeniverse</b> to help you track your own daily
+        <b>Nithyakarma</b> is a personal tool to help you track your own daily
         spiritual practices and rituals (nitya karma anushtanam) drawn from the Hindu, Brahmin
         tradition - Sandhyavandhanam, parayanam, japam and similar observances. It is a personal
         devotional aid. It respects every faith and community and is not a statement about, or
@@ -68,7 +68,7 @@ export function TermsPage() {
       <h3>Availability &amp; liability</h3>
       <p>
         The service is provided "as is" and may be changed or interrupted. To the extent permitted
-        by law, Sreeniverse is not liable for indirect or consequential losses arising from use of
+        by law, Nithyakarma is not liable for indirect or consequential losses arising from use of
         the app.
       </p>
 
@@ -91,7 +91,7 @@ export function PrivacyPage() {
   return (
     <LegalShell title="Privacy Policy">
       <p>
-        This policy explains what <b>Sreeniverse</b> collects in the Nithyakarma app and how it is
+        This policy explains what <b>Nithyakarma</b> collects in the app and how it is
         used. The app is a personal tracker for your Hindu, Brahmin-tradition daily practices; we
         collect only what is needed to run it.
       </p>

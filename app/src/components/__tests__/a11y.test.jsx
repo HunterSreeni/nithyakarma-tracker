@@ -43,6 +43,18 @@ describe('accessibility (axe-core, WCAG 2.1 AA subset)', () => {
     expect(await seriousViolations(container, STANDALONE_CONFIG)).toEqual([])
   })
 
+  it('About page', async () => {
+    const { AboutPage } = await import('../InfoPages')
+    const { container } = render(<MemoryRouter><AboutPage /></MemoryRouter>)
+    expect(await seriousViolations(container, STANDALONE_CONFIG)).toEqual([])
+  })
+
+  it('Karma page', async () => {
+    const { KarmaPage } = await import('../InfoPages')
+    const { container } = render(<MemoryRouter><KarmaPage /></MemoryRouter>)
+    expect(await seriousViolations(container, STANDALONE_CONFIG)).toEqual([])
+  })
+
   it('TodayPage inside Layout (real nav/main landmarks, region enabled)', async () => {
     vi.resetModules()
     const profile = {

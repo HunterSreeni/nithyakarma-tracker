@@ -7,7 +7,7 @@ const AuthContext = createContext(null)
 
 // Custom scheme Google OAuth returns to on native (AndroidManifest.xml has the
 // matching intent-filter). Web keeps using window.location.origin.
-const NATIVE_OAUTH_REDIRECT = 'in.co.sreeniverse.nithyakarma://auth-callback'
+const NATIVE_OAUTH_REDIRECT = 'org.nithyakarma.app://auth-callback'
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
@@ -86,14 +86,17 @@ export function AuthProvider({ children }) {
       options: { redirectTo: Capacitor.isNativePlatform() ? NATIVE_OAUTH_REDIRECT : window.location.origin },
     })
 
-  const signInEmail = (email, password) => supabase.auth.signInWithPassword({ email, password })
-  const signUpEmail = (email, password) => supabase.auth.signUp({ email, password })
+  const signInEmail = (email, password, captchaToken) =>
+    supabase.auth.signInWithPassword({ email, password, options: { captchaToken } })
+  const signUpEmail = (email, password, captchaToken) =>
+    supabase.auth.signUp({ email, password, options: { captchaToken } })
   const signOut = () => supabase.auth.signOut()
 
   // Recovery: email a reset link that returns to /reset, then set the new password.
-  const resetPassword = (email) =>
+  const resetPassword = (email, captchaToken) =>
     supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${import.meta.env.VITE_APP_URL ?? window.location.origin}/reset`,
+      captchaToken,
     })
   const updatePassword = (password) => supabase.auth.updateUser({ password })
 

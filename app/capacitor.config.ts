@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'in.co.sreeniverse.nithyakarma',
+  appId: 'org.nithyakarma.app',
   appName: 'Nithyakarma',
   webDir: 'dist'
 };
