@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.18.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.17.0...app-v0.18.0) (2026-07-18)
+
+
+### Features
+
+* add About and Karma-calculation info pages ([c1725db](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c1725db0a5455574550d750d6300e77f9d4e6821))
+* rename Android applicationId and drop Sreeniverse branding ([1019981](https://github.com/HunterSreeni/nithyakarma-tracker/commit/101998152e4ded8779e006106c0601f8f9a15ac0))
+* show native-script month names in the panchangam box ([502dd3e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/502dd3eb135d48577c433f3e000c6c49e1edc059))
+* wire Cloudflare Turnstile captcha into the auth flow ([21eca2e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/21eca2ef6ad115fea2be478bd1e152ea5c57f6b2))
+
+
+### Bug Fixes
+
+* deliver the 08:00 morning nudge that the slot CHECK silently blocked ([4499060](https://github.com/HunterSreeni/nithyakarma-tracker/commit/44990602407da1176e78639f8faf00ecd2f90c6f))
+* move the Today-page panchangam box below the Namaskaram greeting ([0f917c2](https://github.com/HunterSreeni/nithyakarma-tracker/commit/0f917c2d8a00018089591d051324fb1478e27521))
+
 ## [0.17.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.16.0...app-v0.17.0) (2026-07-17)
 
 
