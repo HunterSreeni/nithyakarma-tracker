@@ -37,7 +37,12 @@ beforeEach(() => {
   h.progressRows = []
   h.insertError = null
   insertMock.mockImplementation(() => Promise.resolve({ error: h.insertError }))
-  global.fetch = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve(VERSES) }))
+  // loadContent reads the body as text so it can compare against the cached copy
+  // byte for byte and skip a pointless re-render when the file has not changed.
+  global.fetch = vi.fn(() => Promise.resolve({
+    ok: true,
+    text: () => Promise.resolve(JSON.stringify(VERSES)),
+  }))
 })
 
 describe('useLearning content loading', () => {
@@ -45,16 +50,38 @@ describe('useLearning content loading', () => {
     const { result } = renderHook(() => useLearning('owner1', null, 'hanuman-chalisa'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.verses).toEqual(VERSES)
-    expect(fetch).toHaveBeenCalledWith('https://cdn.test/learning-content/hanuman-chalisa.json')
+    expect(fetch).toHaveBeenCalledWith(
+      'https://cdn.test/learning-content/hanuman-chalisa.json', { cache: 'no-cache' })
     expect(JSON.parse(localStorage.getItem('nk_learning_content_hanuman-chalisa'))).toEqual(VERSES)
   })
 
-  it('serves from cache on a later mount without re-fetching', async () => {
+  it('paints from cache immediately and still revalidates', async () => {
+    // This previously asserted `expect(fetch).not.toHaveBeenCalled()` - a cached
+    // copy was treated as permanent, so a corrected stotram never reached anyone
+    // who had already loaded the old one. Cache-first is still the render path;
+    // the fetch behind it is what makes corrections land.
     localStorage.setItem('nk_learning_content_hanuman-chalisa', JSON.stringify(VERSES))
     const { result } = renderHook(() => useLearning('owner1', null, 'hanuman-chalisa'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.verses).toEqual(VERSES)
-    expect(fetch).not.toHaveBeenCalled()
+    await waitFor(() => expect(fetch).toHaveBeenCalled())
+  })
+
+  it('picks up corrected content and rewrites the cache', async () => {
+    const STALE = [{ id: 'doha-1', type: 'doha', english: 'old text', malayalam: 'm1', sanskrit: 's1' }]
+    localStorage.setItem('nk_learning_content_hanuman-chalisa', JSON.stringify(STALE))
+    const { result } = renderHook(() => useLearning('owner1', null, 'hanuman-chalisa'))
+    await waitFor(() => expect(result.current.verses).toEqual(VERSES))
+    expect(JSON.parse(localStorage.getItem('nk_learning_content_hanuman-chalisa'))).toEqual(VERSES)
+  })
+
+  it('keeps showing cached content when revalidation fails', async () => {
+    localStorage.setItem('nk_learning_content_hanuman-chalisa', JSON.stringify(VERSES))
+    global.fetch = vi.fn(() => Promise.reject(new Error('offline')))
+    const { result } = renderHook(() => useLearning('owner1', null, 'hanuman-chalisa'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.verses).toEqual(VERSES)
+    expect(result.current.error).toBe('')
   })
 
   it('surfaces a friendly error when the fetch fails', async () => {
