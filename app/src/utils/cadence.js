@@ -25,13 +25,25 @@ export const SANDHYA_SLOTS = [
   { key: 'evening', label: 'Saayamkala', short: 'Evening' },
 ]
 
-// Done-state for a practice given today's logs for it.
+// Done-state for a practice given today's logs for it. "Has this been logged
+// today at all" - used for the per-practice tick and as LearningPage's
+// already-logged guard. NOT the same question as day completion; see below.
 export function isDoneToday(practice, logs) {
   if (practice.is_sandhyavandhanam) {
     const slots = new Set(logs.map(l => l.slot))
     return SANDHYA_SLOTS.every(s => slots.has(s.key))
   }
   return logs.length > 0
+}
+
+// Mirrors the per-practice branch of the day-completion bool_and inside the SQL
+// submit_practice_log. The difference from isDoneToday is the counts_toward_streak
+// filter: a Learning-page log is written with counts_toward_streak = false, so it
+// is a real log (isDoneToday true) that does not advance the streak (this false).
+// Using isDoneToday for the day counter made the UI claim a day was complete while
+// the server disagreed. See utils/__tests__/logic-mirrors.test.js.
+export function countsTowardDayCompletion(practice, logs) {
+  return isDoneToday(practice, logs.filter(l => l.counts_toward_streak !== false))
 }
 
 export function localDateString(date = new Date()) {

@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
-import { isDoneToday, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
+import { isDoneToday, countsTowardDayCompletion, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
 import CelebrationModal from './CelebrationModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import PanchangamBox from './PanchangamBox'
@@ -28,7 +28,9 @@ export default function TodayPage() {
   const subjectName = selectedMember?.name ?? profile.display_name
   const subjectStreak = selectedMember?.current_streak ?? profile.current_streak
   const subjectFreezes = selectedMember?.freeze_credits ?? profile.freeze_credits ?? 0
-  const doneCount = items.filter(i => isDoneToday(i.practice, i.logs)).length
+  // Day counter must mirror the server's day-completion rule, not "was it logged".
+  // The per-practice tick below still uses isDoneToday.
+  const doneCount = items.filter(i => countsTowardDayCompletion(i.practice, i.logs)).length
   const dateLine = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
   })
