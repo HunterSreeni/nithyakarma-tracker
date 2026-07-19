@@ -22,6 +22,20 @@ It POSTs to `https://fkrifejzhnhknkuyhjhp.supabase.co/functions/v1/send-reminder
 with an `Authorization: Bearer <cron_secret>` header, reading `cron_secret` from
 `app_config`.
 
+> ### ⚠️ `send-reminders` must stay `verify_jwt: false`
+>
+> The cron job authenticates with a bearer **`cron_secret`**, not a JWT. The function
+> implements that check itself, in its first six lines. If `verify_jwt` is ever set to
+> `true`, Supabase rejects every cron request at the platform gate before the function
+> body runs, and **all push notifications stop silently** - the cron job still reports
+> success, nothing errors in the app, and the only symptom is that reminders never
+> arrive.
+>
+> This is easy to trip: the Supabase MCP `deploy_edge_function` tool **defaults
+> `verify_jwt` to `true`**, so omitting the parameter flips it on. That happened during
+> the 2026-07-19 deploy (version 8) and was caught and corrected in version 9 within a
+> minute. Always pass `verify_jwt: false` explicitly when deploying this function.
+
 The 15-minute cadence means the function must be **idempotent** - it can run up to 4
 times inside any notification window. `notification_deliveries` provides that
 idempotency (see below).
@@ -74,6 +88,16 @@ the send is skipped, so a fault cannot masquerade as a duplicate.
 >
 > Closed by migration `20260718170117_notification_deliveries_nudge_morning_slot` plus
 > the narrowed error handling described above.
+>
+> **Confirmed working 2026-07-19.** `nudge_morning` now has real delivery rows, the
+> first ever written. The migration alone was enough to restore delivery, since the
+> already-deployed function emitted the right slot name all along.
+>
+> The narrowed error handling reached production separately, in **version 9**
+> (2026-07-19). Versions 1-7 still carried `if (dupErr) continue;`. That deploy also
+> shipped the emoji removal from `TITLES` that commit `0f2d7aa` made on 2026-07-15 -
+> the repo and the deployed function had drifted for four days, so push titles carried
+> emoji the app itself had already dropped.
 
 ### Transports
 

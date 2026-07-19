@@ -4,7 +4,8 @@ Every Intent from `docs/UPGRADE-PLAN.md` and `docs/ROADMAP.md`, with a status **
 against code, migrations or the live database** - not copied from the checkboxes in those
 documents.
 
-Audited 18 July 2026 against app version `0.15.4`.
+Audited 18 July 2026 against app version `0.15.4`. Revised 19 July 2026 after a full
+device and web test pass (see "19 July verification pass" below).
 
 Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 
@@ -51,7 +52,7 @@ Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 | Intent | Status | Evidence |
 |---|---|---|
 | 1.1 Streak freeze | ✅ Done | `freeze_credits` on both subject tables, `freeze_cap_for`, `streak_after_completion`, migration `20260712094627` |
-| 1.2 Streak-miss reminder | 🟡 **Partial** | Server nudges built (`send-reminders`), client suppression built (`suppressTodayNudgesIfScheduled`). **But the 08:00 `nudge_morning` has never fired** - see the bug below. On-device manual check still pending |
+| 1.2 Streak-miss reminder | ✅ **Done** | Server nudges (`send-reminders`), client suppression (`suppressTodayNudgesIfScheduled`). `nudge_morning` confirmed delivering 2026-07-19; on-device push verified end to end on the emulator |
 | 1.3 Analytics + crash | ✅ Done | `analytics_events` table (151 rows), `utils/analytics.js`, `utils/sentry.js` |
 | 1.4 In-app review | ✅ Done | `utils/review.js` with `isMilestone` + rate limiting |
 | 1.5a Women's scope decision | ✅ Done | Decided narrow, 17 July 2026 |
@@ -163,6 +164,54 @@ differentiator has no real-world usage. Worth a usability pass before marketing 
 Root sets `base = "app"` and has **no headers block**; `app/netlify.toml` carries the real
 CSP and HSTS. Any change to the deploy topology risks silently dropping the security
 headers.
+
+---
+
+## 19 July verification pass
+
+A full test pass on the Android emulator and the live Netlify deploy, after the
+appId rename and Firebase/OAuth re-registration.
+
+### Verified working
+
+| Check | Evidence |
+|---|---|
+| Google sign-in under the new appId | Real sign-in on device; proves the new OAuth web client and the `org.nithyakarma.app://auth-callback` allow-list entry |
+| FCM registration under the new Firebase app | 142-char token in `push_subscriptions`, `platform='android'` |
+| Push delivered end to end | Test notification arrived; `id=600` = `FOREGROUND_PUSH_ID`, so the B6 foreground listener fired too |
+| `nudge_morning` delivering | First real rows ever written for that slot |
+| Practice log + streak | `morning` slot persisted, UI updated |
+| Sreeniverse removal | `/terms` and `/privacy` show only the contact email; `/about`, `/karma` clean |
+| Security headers | CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy all live |
+
+### ✅ B11 - Webfonts were blocked by our own CSP (fixed 2026-07-19)
+
+`src/index.css` imported Sora and DM Sans from `fonts.googleapis.com`, but
+`app/netlify.toml` pins `style-src` and `font-src` to `'self'`. Production blocked the
+stylesheet and **every page rendered in the system sans fallback**. Measured against
+the live deploy: `document.fonts.size === 0`, one CSP violation in console.
+
+Fixed by self-hosting into `app/public/fonts/` (commit `ca49fa6`). Google serves these
+as **variable** fonts, so the 20 URLs its CSS lists are only 6 distinct files - shipped
+as 6 with `font-weight` ranges, ~150KB instead of ~430KB.
+
+Android was never affected: the CSP is a Netlify response header and the WebView loads
+from local assets. **That asymmetry is the lesson** - a CSP regression is invisible on
+device and only shows up on the web.
+
+### ✅ B12 - Capacitor logged OAuth tokens to logcat (fixed 2026-07-19)
+
+Default `loggingBehavior` echoed the full `appUrlOpen` callback - `access_token`,
+`refresh_token`, Google `provider_token` - in cleartext on debuggable builds. Fixed by
+`loggingBehavior: 'none'` (commit `0e87021`). Release builds were never affected. The
+leaked refresh token was revoked by signing out and confirmed dead
+(`refresh_token_not_found`).
+
+### ⚠️ Near-miss worth remembering
+
+The 2026-07-19 edge-function deploy briefly shipped `verify_jwt: true` (version 8),
+which would have silently killed **all** push. See
+[03-EDGE-FUNCTIONS.md](03-EDGE-FUNCTIONS.md) for why and how to avoid it.
 
 ---
 

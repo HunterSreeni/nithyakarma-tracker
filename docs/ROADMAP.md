@@ -9,6 +9,54 @@ needs its own design + test pass when picked up.
 > `docs/architecture/09-STATUS-LEDGER.md` records what is actually built versus planned.
 > Start there rather than scanning the codebase.
 
+## Domain and public identity
+
+**`nithyakarma.org` was registered on 2026-07-19.** Nothing is pointed at it yet.
+
+Planned layout:
+
+| Host | Serves | Status |
+|---|---|---|
+| `nithyakarma.org` | Marketing site - About as the landing page, features, karma explainer, roadmap, reviews | Not built |
+| `app.nithyakarma.org` | The existing React app | Not pointed |
+| `nithykarma.netlify.app` | Current app origin - **keep alive and 301-redirecting** | Live |
+
+> ### ⚠️ Do not retire the Netlify origin
+>
+> Web push subscriptions are keyed to the **origin** that created them. The three live
+> rows in `push_subscriptions` with `platform='web'` are bound to
+> `nithykarma.netlify.app`. If that host stops resolving, those subscriptions die
+> silently and those users simply stop receiving push with no error anywhere.
+>
+> Note the existing origin is **misspelled** (`nithykarma`, missing the second `a`).
+> That is part of why the domain matters, and also why the redirect has to stay.
+
+Migration checklist when this is picked up:
+
+- Add both new origins to the Supabase Auth redirect allow-list
+- Update the CSP `connect-src` in `app/netlify.toml` (currently hardcoded to the
+  Supabase origin) - and mind that **two `netlify.toml` files exist**; the root one
+  sets `base = "app"` and carries no headers block, `app/netlify.toml` carries the real
+  CSP and HSTS. Splitting into two Netlify sites risks silently dropping the headers
+- Swap `CONTACT` in `src/components/LegalPages.jsx` from `support@sreeniverse.co.in`
+  to `support@nithyakarma.org` - the last intentional Sreeniverse reference in the app
+- Update `APP_URL` in `supabase/functions/_shared/push.ts`, which is what push
+  notifications deep-link to
+- Update the Play Store listing URLs
+
+### support@nithyakarma.org
+
+A **free** Gmail account cannot own a custom domain - that needs Google Workspace
+(paid per user). Two free routes exist instead:
+
+| Option | Receives | Sends as support@ | Catch |
+|---|---|---|---|
+| **Zoho Mail free** | Yes | Yes | 5 users, 5GB each, 1 domain, **no IMAP/POP** so no Outlook/Apple Mail |
+| **Cloudflare Email Routing** → existing Gmail | Yes | **No** - inbound only | Needs a separate SMTP relay for Gmail "Send mail as"; requires DNS on Cloudflare |
+
+Zoho is the simpler single answer if support@ needs to send replies. Cloudflare is
+better if forwarding into an existing inbox is enough and sending can wait.
+
 ## Phase 2 (post first Play Store release)
 
 ### Thithi-based observances (lunar days)
