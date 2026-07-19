@@ -3,6 +3,7 @@ dist/
 dev-dist/
 test-results/
 playwright-report/
+.playwright-cli/
 *.log
 .DS_Store
 *.apk
@@ -10,6 +11,7 @@ playwright-report/
 google-services.json
 fcm-service-account.json
 *firebase-adminsdk*.json
+client_secret_*.json
 
 # supabase CLI temp (project uses Supabase MCP only)
 app/supabase/.temp/
