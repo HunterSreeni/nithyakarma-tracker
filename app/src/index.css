@@ -50,6 +50,25 @@
   src: url('/fonts/DMSans-italic-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* Wordmark only. Devanagari-derived display face - the Latin is drawn on a
+   Devanagari brush angle with the shirorekha-style top stroke. Single weight
+   (400) by design, so it must never be used for body copy. OFL 1.1. */
+@font-face {
+  font-family: 'Yatra One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/YatraOne-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Yatra One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/YatraOne-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 :root {
   /* Primary - saffron ramp, the brand accent */
@@ -95,7 +114,9 @@ input, select { font-family: 'DM Sans', sans-serif; }
 /* topbar */
 .topbar { background: var(--saffron-950); padding: 0 1.2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
 .wordmark { display: flex; align-items: center; gap: 7px; text-decoration: none; }
-.wordmark .name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.95rem; color: #fff; letter-spacing: -0.02em; }
+/* Yatra One is a single-weight display face: no 700 to ask for, and its wide
+   brush forms need positive tracking rather than the tightening Sora wanted. */
+.wordmark .name { font-family: 'Yatra One', 'Sora', sans-serif; font-weight: 400; font-size: 1.02rem; color: #fff; letter-spacing: 0.01em; }
 .wordmark .name span { color: var(--saffron-500); }
 .top-right { display: flex; align-items: center; gap: 10px; }
 .streak-pill { display: flex; align-items: center; gap: 4px; background: rgba(255,153,51,0.12); border: 1px solid rgba(255,153,51,0.35); border-radius: 100px; padding: 3px 10px; font-weight: 700; font-size: 0.75rem; color: var(--saffron-400); }
@@ -166,7 +187,13 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .pb-line { font-size: 0.76rem; color: var(--text-2); }
 .pb-line b { color: var(--ink); font-weight: 700; }
 .pb-line + .pb-line { margin-top: 3px; }
-.pb-kalams { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 5px; font-size: 0.68rem; color: var(--text-2); }
+/* Three kalams, each stacking English / native / time. Grid rather than flex so
+   the three columns stay aligned once the native line wraps on narrow screens. */
+.pb-kalams { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--cream); font-size: 0.68rem; color: var(--text-2); }
+.pb-kalam { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pb-kalam-name { font-weight: 700; color: var(--ink); }
+.pb-kalam-native { font-size: 0.62rem; line-height: 1.35; }
+.pb-kalam-time { font-variant-numeric: tabular-nums; }
 
 /* learning page */
 .lang-select { display: flex; align-items: center; gap: 6px; margin: 1rem 0 0.8rem; color: var(--text-2); }
@@ -346,7 +373,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 
 /* auth */
 .auth-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; background: var(--paper); }
-.auth-logo { font-family: 'Sora', sans-serif; font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
+.auth-logo { font-family: 'Yatra One', 'Sora', sans-serif; font-size: 1.5rem; font-weight: 400; letter-spacing: 0.01em; margin-bottom: 0.3rem; }
 .auth-logo span { color: var(--action); }
 .auth-sub { color: var(--text-2); font-size: 0.8rem; font-weight: 300; margin-bottom: 1.8rem; }
 .auth-card { width: 100%; max-width: 380px; background: #fff; border-radius: 18px; padding: 1.6rem 1.4rem; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
