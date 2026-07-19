@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.18.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.18.0...app-v0.18.1) (2026-07-19)
+
+
+### Bug Fixes
+
+* self-host Sora and DM Sans so the CSP stops blocking them ([ca49fa6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ca49fa671e6d0519b81257a473fc288a3caaa2b7))
+* stop Capacitor echoing OAuth tokens into logcat ([0e87021](https://github.com/HunterSreeni/nithyakarma-tracker/commit/0e870211b7e3b0d0f36d16ce3fe04c7f82cf2ecb))
+
 ## [0.18.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.17.0...app-v0.18.0) (2026-07-18)
 
 
