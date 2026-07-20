@@ -63,6 +63,16 @@ describe('generated panchangam-2026.json sanity', () => {
     expect(rows.find(r => r.date === '2026-06-16').malayalam_day).toBe(2)
   })
 
+  // Thai sankranti is 14 Jan 2026, 3:13 PM IST - well before sunset (~6:01 PM,
+  // per DrikPanchang's Punya Kala window). The sunset rule Tamil Nadu actually
+  // uses puts Thai 1 on the 14th; the old noon-sampling this script used
+  // before the rule split wrongly put it on the 15th.
+  it('Thai 1 (Pongal) is 2026-01-14 under the sunset rule, not the 15th', () => {
+    expect(rows.find(r => r.date === '2026-01-14').tamil_month).toBe('Thai')
+    expect(rows.find(r => r.date === '2026-01-14').tamil_day).toBe(1)
+    expect(rows.find(r => r.date === '2026-01-13').tamil_month).toBe('Margazhi')
+  })
+
   it('1 January continues the month that began the previous December', () => {
     const jan1 = rows.find(r => r.date === '2026-01-01')
     expect(jan1.malayalam_month).toBe('Dhanu')

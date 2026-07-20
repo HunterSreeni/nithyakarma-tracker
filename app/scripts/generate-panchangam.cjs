@@ -42,14 +42,15 @@ const MALAYALAM_MONTHS = ['Medam', 'Edavam', 'Mithunam', 'Karkidakam', 'Chingam'
 //   aparahna - Kerala. Sunrise + 3/5 of daylight. This is the documented
 //              Malayalam rule and is verified against Prokerala and
 //              DrikPanchang for all twelve 2026 months.
-//   noon     - what this script did for every tradition before the rule split.
-//              Retained for Tamil ONLY as a deliberate hold: Tamil Nadu
-//              actually uses a sunset rule, which would move Thai 1 (Pongal)
-//              2026 from 15 Jan to 14 Jan. Published sources disagree on that
-//              date, so it stays on the old behaviour until the printed Pambu
-//              Panchangam settles it. Switch to 'sunset' once confirmed.
+//   sunset   - Tamil Nadu's actual rule. Verified 2026-07-20 against two
+//              independent sources for the Pongal 2026 test case: DrikPanchang
+//              gives the Makar Sankranti moment as 14 Jan 2026, 3:13 PM IST
+//              (Chennai), with Punya Kala running to 6:01 PM - well before
+//              sunset, so Thai 1 falls the same day, 14 Jan, not 15 Jan as the
+//              old noon-sampling produced. dailycalendartamil.com
+//              independently corroborates 14 Jan as the main Thai Pongal day.
 const MONTH_START_RULE = {
-  tamil: 'noon', // TODO: verify against printed Pambu Panchangam, then -> 'sunset'
+  tamil: 'sunset',
   malayalam: 'aparahna',
 }
 
