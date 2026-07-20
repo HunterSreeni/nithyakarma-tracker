@@ -194,6 +194,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 /* Three kalams, each stacking English / native / time. Grid rather than flex so
    the three columns stay aligned once the native line wraps on narrow screens. */
 .pb-kalams { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--cream); font-size: 0.68rem; color: var(--text-2); }
+.pb-kalams-label { grid-column: 1 / -1; font-size: 0.6rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-2); margin-bottom: 2px; }
 .pb-kalam { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .pb-kalam-name { font-weight: 700; color: var(--ink); }
 .pb-kalam-native { font-size: 0.62rem; line-height: 1.35; }
