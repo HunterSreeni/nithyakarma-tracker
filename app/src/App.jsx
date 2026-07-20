@@ -17,6 +17,7 @@ const PrivacyPage = lazy(() => import('./components/LegalPages').then(m => ({ de
 const AboutPage = lazy(() => import('./components/InfoPages').then(m => ({ default: m.AboutPage })))
 const KarmaPage = lazy(() => import('./components/InfoPages').then(m => ({ default: m.KarmaPage })))
 const ResetPassword = lazy(() => import('./components/ResetPassword'))
+const RamayanaMasamPage = lazy(() => import('./components/RamayanaMasamPage'))
 
 // Lazy: verse content + page code only download when Learning is opened,
 // not on every app load (Intent 2.1a - the first code-split route).
@@ -68,6 +69,7 @@ function Gate() {
           <Route path="/sabha" element={<SabhaPage />} />
           <Route path="/referrals" element={<ReferralsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/ramayana-masam" element={<RamayanaMasamPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

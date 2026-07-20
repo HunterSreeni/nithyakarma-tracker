@@ -184,6 +184,10 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .done-check { width: 30px; height: 30px; border-radius: 50%; background: var(--success); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
 /* panchangam box */
 .panchangam-box { background: #fff; border-radius: 12px; padding: 0.7rem 0.9rem; margin-top: 0.6rem; border: 1.5px solid var(--cream); }
+.monthly-special { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; background: var(--saffron-50); border: 1.5px solid var(--saffron-200); border-radius: 12px; padding: 0.7rem 0.9rem; margin-top: 0.6rem; text-decoration: none; color: inherit; }
+.ms-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.ms-subtitle { font-size: 0.74rem; color: var(--text-2); margin-top: 2px; }
+.ms-dismiss { flex-shrink: 0; background: none; border: none; color: var(--text-2); padding: 4px; }
 .pb-line { font-size: 0.76rem; color: var(--text-2); }
 .pb-line b { color: var(--ink); font-weight: 700; }
 .pb-line + .pb-line { margin-top: 3px; }
