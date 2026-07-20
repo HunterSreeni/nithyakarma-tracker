@@ -1,0 +1,200 @@
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/Sora-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/Sora-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/DMSans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/DMSans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Yatra One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/YatraOne-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Yatra One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/YatraOne-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --saffron-50: #FFF7ED;
+  --saffron-500: #FF9933;
+  --saffron-600: #F37C02;
+  --saffron-700: #C2410C;
+  --action: #C2410C;
+
+  --neutral-0: #ffffff;
+  --neutral-50: #f5f0e8;
+  --neutral-100: #ede8dc;
+  --neutral-200: #e4dbc9;
+  --neutral-500: #8a7a5c;
+  --neutral-600: #6f6558;
+  --neutral-700: #4a4033;
+  --neutral-900: #0d0d0d;
+
+  --paper: #f5f0e8;
+  --ink: #0d0d0d;
+  --text-2: #6f6558;
+  --border: #ede8dc;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+a { color: var(--action); }
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+header.site-head {
+  border-bottom: 1px solid var(--border);
+  background: var(--neutral-0);
+}
+
+.site-head .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wordmark {
+  font-family: 'Yatra One', 'Sora', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  color: var(--ink);
+}
+.wordmark span { color: var(--action); }
+
+nav.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  font-size: 0.95rem;
+}
+nav.site-nav a {
+  color: var(--text-2);
+  text-decoration: none;
+  font-weight: 500;
+}
+nav.site-nav a:hover, nav.site-nav a[aria-current="page"] { color: var(--ink); }
+
+.btn {
+  display: inline-block;
+  background: var(--action);
+  color: #fff;
+  padding: 0.6rem 1.3rem;
+  border-radius: 100px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.btn:hover { background: var(--saffron-600); }
+
+.platform-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+.badge {
+  display: inline-block;
+  padding: 0.6rem 1.1rem;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+main { padding: 2.5rem 0 3.5rem; }
+
+h1 {
+  font-family: 'Sora', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.6rem;
+}
+.lede {
+  font-size: 1.1rem;
+  color: var(--text-2);
+  margin: 0 0 2rem;
+}
+h3 {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 1.8rem 0 0.5rem;
+}
+p { margin: 0 0 1rem; }
+ul { margin: 0 0 1rem; padding-left: 1.3rem; }
+li { margin-bottom: 0.4rem; }
+
+.card {
+  background: var(--neutral-0);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.6rem 1.4rem;
+  margin-bottom: 1.2rem;
+}
+
+footer.site-foot {
+  border-top: 1px solid var(--border);
+  padding: 1.6rem 0;
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+footer.site-foot .wrap {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+footer.site-foot a { color: var(--text-2); }

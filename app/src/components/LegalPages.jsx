@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 
 const EFFECTIVE = '11 July 2026'
-const CONTACT = 'support@sreeniverse.co.in'
+const CONTACT = 'support@nithyakarma.org'
 
 function LegalShell({ title, children }) {
   const navigate = useNavigate()
@@ -137,6 +137,12 @@ export function PrivacyPage() {
         Passwords are hashed and row-level security restricts your data to you. Family-member
         profiles are managed entirely by the parent/guardian - children do not log in and we do not
         collect data directly from them.
+      </p>
+
+      <h3>Marketing site (nithyakarma.org)</h3>
+      <p>
+        The marketing site at nithyakarma.org uses Cloudflare Web Analytics for basic visit counts.
+        It does not use cookies or collect any personal or identifying information.
       </p>
 
       <h3>Changes &amp; contact</h3>
