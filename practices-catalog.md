@@ -14,7 +14,7 @@ Jijnasu -> Sadhaka -> Tapasvi -> Rishi -> Brahmarishi
 - Rishi: sage
 - Brahmarishi: highest earned title (Vishwamitra's ladder - instantly recognizable)
 
-## General category practices (14)
+## General category practices (15)
 
 No seasonal practices - keeping it simple with daily, weekly, count, and sequence types only.
 
@@ -34,6 +34,7 @@ No seasonal practices - keeping it simple with daily, weekly, count, and sequenc
 | 12 | Subrahmanya Bhujangam | Tuesdays | Subrahmanya devotion runs deep in Kerala |
 | 13 | Dakshinamurthy Stotram | Thursdays | Guru-vara cadence |
 | 14 | Bhagavatam Parayanam | Daily reading | Open-ended reading practice |
+| 15 | Temple Visit | Daily | Open to everyone, no gender/upanayanam gating - an accessible daily anchor practice |
 
 ## Cadence types the schema must support
 
@@ -45,6 +46,8 @@ No seasonal practices - keeping it simple with daily, weekly, count, and sequenc
 ## Sandhyavandhanam rules (the constant practice)
 
 - Shown only for **male** profiles (post-upanayanam); always daily, 3 sandhya slots.
+- Day completion (streak) requires marking at least 1 of the 3 sandhya slots; all 3
+  can still be marked for the extra punya (changed 2026-07-20).
 - Interstitial ad after **every** submit - sandhya (up to 3/day) and general practices
   (1 per submit). The ad fires only after the submit API call succeeds and the log is
   verified as saved, never before - a failed save must never show an ad.

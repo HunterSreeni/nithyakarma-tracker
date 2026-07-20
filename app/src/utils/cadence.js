@@ -15,7 +15,7 @@ export function cadenceLabel(practice) {
     case 'daily_count': return `daily ${practice.target_count}`
     case 'sequence':
       return practice.sequence_length ? `1 of ${practice.sequence_length} / day` : 'daily reading'
-    default: return practice.is_sandhyavandhanam ? '3 sandhyas daily' : 'daily'
+    default: return practice.is_sandhyavandhanam ? '1 sandhya today' : 'daily'
   }
 }
 
@@ -29,10 +29,8 @@ export const SANDHYA_SLOTS = [
 // today at all" - used for the per-practice tick on the Today page. NOT the
 // same question as day completion; see below.
 export function isDoneToday(practice, logs) {
-  if (practice.is_sandhyavandhanam) {
-    const slots = new Set(logs.map(l => l.slot))
-    return SANDHYA_SLOTS.every(s => slots.has(s.key))
-  }
+  // Any 1 log is enough - for sandhyavandhanam that means any 1 of the 3
+  // slots (SANDHYA_SLOTS is still used elsewhere to render the 3 buttons).
   return logs.length > 0
 }
 

@@ -30,8 +30,8 @@ export function buildSteps(showSandhya) {
     steps.push({
       element: '[data-tour="sandhya-slots"]',
       popover: {
-        title: 'Sandhyavandhanam is three sandhyas',
-        description: 'Perform it thrice a day - Prathakala (morning), Madhyanika (noon) and Saayamkala (evening). Mark all three here to complete the day; only then does it count towards your streak.',
+        title: 'Sandhyavandhanam has three times',
+        description: 'Perform it thrice a day - Prathakala (morning), Madhyanika (noon) and Saayamkala (evening). Marking even one keeps your streak alive; mark more here when you can for extra punya.',
         side: 'top', align: 'center',
       },
     })

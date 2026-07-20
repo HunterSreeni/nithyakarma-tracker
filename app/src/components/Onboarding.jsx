@@ -76,6 +76,7 @@ export default function Onboarding() {
           {gender === 'male' && (
             <div className="greet-sub" style={{ marginTop: 8 }}>
               Sandhyavandhanam (3 sandhyas + Gaayatri) will be added to your daily list.
+              Mark even one to keep your streak going.
             </div>
           )}
           <label className="field-label">Referral code (optional)</label>

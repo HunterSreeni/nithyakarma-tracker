@@ -54,17 +54,17 @@ beforeEach(() => {
 })
 
 describe('TodayPage - Sandhyavandhanam UX', () => {
-  it('shows "1 of 3 sandhyas done" after a single slot (the reported 0-not-1 case, surfaced clearly)', () => {
+  it('marking a single slot completes the day (2026-07-20: 1 of 3 is enough)', () => {
     h.items = [sandhyaItem(['morning'])]
     render(<TodayPage />)
-    expect(screen.getByText('1 of 3 sandhyas done')).toBeInTheDocument()
-    expect(screen.getByText('0 of 1 anushtanams done.')).toBeInTheDocument()
+    expect(screen.getByText('1 of 3 sandhyas done · streak kept')).toBeInTheDocument()
+    expect(screen.getByText('1 of 1 anushtanams done.')).toBeInTheDocument()
   })
 
-  it('shows "2 of 3" after two slots and still not done', () => {
+  it('shows "2 of 3" after two slots, still counted as day-complete', () => {
     h.items = [sandhyaItem(['morning', 'afternoon'])]
     render(<TodayPage />)
-    expect(screen.getByText('2 of 3 sandhyas done')).toBeInTheDocument()
+    expect(screen.getByText('2 of 3 sandhyas done · streak kept')).toBeInTheDocument()
   })
 
   it('shows completion once all 3 slots are marked', () => {
@@ -77,7 +77,7 @@ describe('TodayPage - Sandhyavandhanam UX', () => {
   it('the "!" info button toggles the 3-slot explainer', () => {
     h.items = [sandhyaItem([])]
     render(<TodayPage />)
-    const info = screen.getByRole('button', { name: /Why does Sandhyavandhanam need three marks/ })
+    const info = screen.getByRole('button', { name: /Why are there three Sandhyavandhanam times/ })
     expect(info).toHaveAttribute('aria-expanded', 'false')
     fireEvent.click(info)
     expect(info).toHaveAttribute('aria-expanded', 'true')
