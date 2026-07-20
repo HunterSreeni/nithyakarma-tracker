@@ -11,31 +11,45 @@ native UI - `dist/` is copied into the WebView.
 {
   appId: 'org.nithyakarma.app',
   appName: 'Nithyakarma',
-  webDir: 'dist'
+  webDir: 'dist',
+  loggingBehavior: 'none'
 }
 ```
 
-> **Renamed 2026-07-18** from `org.nithyakarma.app`, before first publish -
+`loggingBehavior: 'none'` is a security setting, not a preference. Capacitor's default
+(`'debug'`) echoes every plugin payload to logcat on a debuggable build, which included
+the whole `appUrlOpen` OAuth callback - `access_token`, `refresh_token` and the Google
+`provider_token` in cleartext. Anyone with adb on a test device could lift a live
+session. Release builds were never affected. Set to `'none'` on 2026-07-19.
+
+> **Renamed 2026-07-18** from `in.co.sreeniverse.nithyakarma`, before first publish -
 > the last point at which this was possible. The `applicationId` becomes permanent the
 > moment the app is published to Play; changing it afterwards means a brand-new listing
 > with zero installs and zero reviews.
 >
-> ### ⚠️ Two external re-registrations are required before the rename works
+> ### ✅ Both external re-registrations completed 2026-07-19
 >
-> The rename is complete in the repo but **breaks two Google integrations until these
-> are done in their respective consoles**:
+> The rename broke two Google integrations until they were re-registered. Both are
+> now done and verified on the emulator:
 >
-> 1. **Firebase / FCM.** `android/app/google-services.json` binds the FCM sender to
->    `org.nithyakarma.app` (project `huntersreeni`,
->    `mobilesdk_app_id 1:751164509093:android:2011b1660044bb9d69764c`). Register a new
->    Android app for `org.nithyakarma.app` in the Firebase console, download the fresh
->    `google-services.json`, and replace the file. **Until then, Android push
->    registration fails.** This file cannot be hand-edited - the IDs are issued by
->    Firebase.
-> 2. **Google Cloud OAuth.** The Sign-In client is registered against the old package
->    name and its SHA-1. Create a new OAuth client for `org.nithyakarma.app` with the
->    debug and release SHA-1 fingerprints, then add the new redirect URL to the
->    Supabase Auth allow-list. **Until then, "Continue with Google" fails on Android.**
+> 1. **Firebase / FCM.** A new Android app for `org.nithyakarma.app` was registered in
+>    Firebase project `huntersreeni`
+>    (`mobilesdk_app_id 1:751164509093:android:8c232c1b3f79ee1269764c`) and a fresh
+>    `google-services.json` installed. Verified: a 142-char FCM token now lands in
+>    `push_subscriptions` with `platform='android'`, and a test push was delivered
+>    end to end. The old app entry was deleted from Firebase - harmless, since zero
+>    Android subscriptions had ever existed under the old package.
+> 2. **Google Cloud OAuth.** The old web client was deleted and replaced with
+>    `751164509093-tceui5026bgpu51os77imh7io80qsgpo`, single authorized redirect URI
+>    `https://fkrifejzhnhknkuyhjhp.supabase.co/auth/v1/callback`, and
+>    `org.nithyakarma.app://auth-callback` added to the Supabase redirect allow-list.
+>    Verified by a real Google sign-in on device.
+>
+> **No Android OAuth client or SHA-1 is required.** This app uses Supabase's
+> browser-redirect flow (`useAuth.jsx` `NATIVE_OAUTH_REDIRECT`), not the native Google
+> Sign-In SDK, so Google only ever authenticates against the **web** client and hands
+> back to the custom scheme. An earlier version of this document wrongly claimed an
+> Android client and SHA-1 were needed.
 
 ## Version numbering
 

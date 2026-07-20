@@ -23,6 +23,7 @@ month names render in their native scripts.
 | Mobile | Capacitor 8.4 (Android) | WebView wrapper, 9 plugins |
 | Push | FCM (Android) + Web Push/VAPID (web) | Dual transport, one scheduler |
 | Web host | Netlify | `nithykarma.netlify.app` (note: misspelled, see 09) |
+| Domain | Registered 2026-07-19 | `nithyakarma.org` - **not pointed at anything yet**, see `ROADMAP.md` |
 | Errors | Sentry (`@sentry/react` 10.65) | |
 | Analytics | First-party, own Postgres table | No third-party vendor, no PII in props |
 | Ads | AdMob via `@capacitor-community/admob` | Still on Google **test** IDs |
