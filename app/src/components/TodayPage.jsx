@@ -52,7 +52,9 @@ export default function TodayPage() {
       const milestone = result.day_complete && isMilestone(result.overall_streak ?? 0)
       const reviewed = milestone ? await maybeRequestReview() : false
       if (!reviewed) await showInterstitial(profile)
-      setCelebration({ ...result, subjectName })
+      if (result.day_complete && (result.overall_streak ?? 0) >= 1) {
+        setCelebration({ ...result, subjectName })
+      }
     } catch (err) {
       setError(err.message)
     } finally {

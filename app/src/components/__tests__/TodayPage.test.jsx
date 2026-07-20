@@ -154,6 +154,24 @@ describe('TodayPage - celebration only from a verified RPC response', () => {
     expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
     expect(h.showInterstitial).not.toHaveBeenCalled()
   })
+
+  it('never shows the celebration modal when the day is complete but the streak is 0', async () => {
+    h.items = [singleItem]
+    h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 0, practice_streak: 1 })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+    expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
+  })
+
+  it('never shows the celebration modal for a partial mark (day not complete yet)', async () => {
+    h.items = [singleItem]
+    h.submit.mockResolvedValue({ saved: true, day_complete: false, overall_streak: 1, practice_streak: 1 })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+    expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
+  })
 })
 
 describe('TodayPage - Sandhyavandhanam hidden from Add dropdown', () => {
