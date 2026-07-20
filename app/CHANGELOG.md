@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.19.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.18.2...app-v0.19.0) (2026-07-20)
+
+
+### Features
+
+* **site:** add static marketing site for nithyakarma.org ([7845062](https://github.com/HunterSreeni/nithyakarma-tracker/commit/784506297669e679373fa0c9d781ca1d627ff657))
+
+
+### Bug Fixes
+
+* gate the celebration modal on a real streak, fix a punya typo ([1b42a8b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/1b42a8bdfc9943c8d1de8fb6caf55770f324d696))
+
 ## [0.18.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.18.1...app-v0.18.2) (2026-07-20)
 
 
