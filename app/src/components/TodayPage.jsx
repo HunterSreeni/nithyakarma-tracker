@@ -70,7 +70,9 @@ export default function TodayPage() {
       <div className="greet-sub">
         {loading ? ' '
           : items.length === 0 ? 'Start with a suggested anushtanam below'
-          : `${doneCount} of ${items.length} anushtanams done.`}
+          : doneCount === 0 ? "0 anushtanams done today. Let's begin."
+          : doneCount === items.length ? `${doneCount} anushtanam${doneCount === 1 ? '' : 's'} done today. Wonderful, all done!`
+          : `${doneCount} anushtanam${doneCount === 1 ? '' : 's'} done today. Keep it up!`}
       </div>
       <PanchangamBox />
       <MonthlySpecialBanner />
@@ -86,10 +88,9 @@ export default function TodayPage() {
             {' · '}<Snowflake size={12} strokeWidth={2.5} /> {subjectFreezes} freeze{subjectFreezes === 1 ? '' : 's'}
           </div>
         </div>
-        <div className="progress-ring" style={{
-          background: `conic-gradient(#fff 0% ${items.length ? (doneCount / items.length) * 100 : 0}%, rgba(255,255,255,0.25) 0% 100%)`,
-        }}>
-          <div className="pr-core">{doneCount}/{items.length}</div>
+        <div className="pr-wrap">
+          <div className="pr-core">{doneCount}</div>
+          <div className="pr-caption">Today</div>
         </div>
       </div>
 
