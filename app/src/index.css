@@ -184,12 +184,17 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .done-check { width: 30px; height: 30px; border-radius: 50%; background: var(--success); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
 /* panchangam box */
 .panchangam-box { background: #fff; border-radius: 12px; padding: 0.7rem 0.9rem; margin-top: 0.6rem; border: 1.5px solid var(--cream); }
+.monthly-special { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; background: var(--saffron-50); border: 1.5px solid var(--saffron-200); border-radius: 12px; padding: 0.7rem 0.9rem; margin-top: 0.6rem; text-decoration: none; color: inherit; }
+.ms-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.ms-subtitle { font-size: 0.74rem; color: var(--text-2); margin-top: 2px; }
+.ms-dismiss { flex-shrink: 0; background: none; border: none; color: var(--text-2); padding: 4px; }
 .pb-line { font-size: 0.76rem; color: var(--text-2); }
 .pb-line b { color: var(--ink); font-weight: 700; }
 .pb-line + .pb-line { margin-top: 3px; }
 /* Three kalams, each stacking English / native / time. Grid rather than flex so
    the three columns stay aligned once the native line wraps on narrow screens. */
 .pb-kalams { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--cream); font-size: 0.68rem; color: var(--text-2); }
+.pb-kalams-label { grid-column: 1 / -1; font-size: 0.6rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-2); margin-bottom: 2px; }
 .pb-kalam { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .pb-kalam-name { font-weight: 700; color: var(--ink); }
 .pb-kalam-native { font-size: 0.62rem; line-height: 1.35; }
@@ -203,6 +208,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .verse-card { background: #fff; border-radius: 14px; padding: 0.9rem 1rem; display: flex; align-items: center; gap: 0.85rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04); border: 1.5px solid transparent; }
 .verse-card.done { border-color: #bbe3c8; background: #f4fbf6; }
 .verse-card .v-body { flex: 1; min-width: 0; }
+a.verse-card { text-decoration: none; color: inherit; }
 .verse-type { font-family: 'Sora', sans-serif; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); }
 .verse-text { font-size: 0.88rem; line-height: 1.5; white-space: pre-line; margin-top: 0.3rem; }
 
@@ -294,8 +300,8 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .sc-days { font-family: 'Sora', sans-serif; font-size: 2rem; font-weight: 700; margin-top: 0.5rem; line-height: 1; }
 .sc-days span { font-size: 0.9rem; color: #fff; font-weight: 500; }
 .sc-practice { font-size: 0.74rem; color: #fff; margin-top: 6px; font-weight: 300; }
-.sc-foot { display: flex; justify-content: space-between; margin-top: 0.9rem; font-size: 0.6rem; color: #fff; }
 .btn-whatsapp { display: inline-flex; align-items: center; gap: 8px; margin-top: 1rem; background: #25D366; color: #fff; border: none; border-radius: 100px; padding: 11px 22px; font-weight: 700; font-size: 0.76rem; }
+.btn-youtube { display: inline-flex; align-items: center; gap: 8px; margin: 0.9rem 0; background: #FF0000; color: #fff; text-decoration: none; border: none; border-radius: 100px; padding: 11px 22px; font-weight: 700; font-size: 0.76rem; }
 .btn-plain { margin-top: 0.7rem; background: none; border: none; color: var(--text-2); font-size: 0.72rem; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
 
 /* leaderboard */

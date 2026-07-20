@@ -49,6 +49,13 @@ describe('PanchangamBox', () => {
     expect(screen.getByText('14:06-15:41')).toBeInTheDocument()
   })
 
+  it('labels the kalam windows as IST, since the times are always Indian Standard Time regardless of viewer location', () => {
+    h.loading = false
+    h.day = fullDay
+    render(<PanchangamBox />)
+    expect(screen.getByText('Kalam windows (IST)')).toBeInTheDocument()
+  })
+
   it('omits the Kollavarsham half for rows predating the kollavarsham_year column', () => {
     h.loading = false
     h.day = { ...fullDay, kollavarsham_year: null }

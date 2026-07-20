@@ -5,9 +5,9 @@ const profile = { referral_code: 'ref123', ad_free_until: null }
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ profile }),
 }))
-const shareToWhatsApp = vi.fn()
+const shareCardToWhatsApp = vi.fn().mockResolvedValue(undefined)
 vi.mock('../../utils/share', () => ({
-  shareToWhatsApp: (...a) => shareToWhatsApp(...a),
+  shareCardToWhatsApp: (...a) => shareCardToWhatsApp(...a),
 }))
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
 
@@ -25,7 +25,11 @@ describe('CelebrationModal', () => {
     render(<CelebrationModal data={data} onClose={() => {}} />)
     expect(screen.getByText('48 Days')).toBeInTheDocument()
     expect(screen.getByText(/Hanuman Chalisa completed/)).toBeInTheDocument()
-    expect(screen.getByText('/r/ref123')).toBeInTheDocument()
+  })
+
+  it('does not show the referral code/link on the card itself (kept in the share caption instead)', () => {
+    render(<CelebrationModal data={data} onClose={() => {}} />)
+    expect(screen.queryByText(/ref123/)).not.toBeInTheDocument()
   })
 
   it('keeps "Day" singular at a streak of 1', () => {
@@ -45,12 +49,31 @@ describe('CelebrationModal', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   })
 
-  it('shares to WhatsApp with streak, practice, and referral code', () => {
+  it('shares the rendered card with streak and referral code', async () => {
     render(<CelebrationModal data={data} onClose={() => {}} />)
     fireEvent.click(screen.getByText('Share to WhatsApp'))
-    expect(shareToWhatsApp).toHaveBeenCalledWith(expect.objectContaining({
-      streak: 48, practiceName: 'Hanuman Chalisa', referralCode: 'ref123',
-    }))
+    await waitFor(() => expect(shareCardToWhatsApp).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.objectContaining({ streak: 48, referralCode: 'ref123' }),
+    ))
+  })
+
+  it('shows "Preparing..." while the share is in flight, then resets', async () => {
+    let resolveShare
+    shareCardToWhatsApp.mockReturnValueOnce(new Promise(r => { resolveShare = r }))
+    render(<CelebrationModal data={data} onClose={() => {}} />)
+    fireEvent.click(screen.getByText('Share to WhatsApp'))
+    await waitFor(() => expect(screen.getByText('Preparing...')).toBeInTheDocument())
+    resolveShare()
+    await waitFor(() => expect(screen.getByText('Share to WhatsApp')).toBeInTheDocument())
+  })
+
+  it('swallows an AbortError from a cancelled native share sheet without surfacing an error', async () => {
+    const abortErr = Object.assign(new Error('cancelled'), { name: 'AbortError' })
+    shareCardToWhatsApp.mockRejectedValueOnce(abortErr)
+    render(<CelebrationModal data={data} onClose={() => {}} />)
+    fireEvent.click(screen.getByText('Share to WhatsApp'))
+    await waitFor(() => expect(screen.getByText('Share to WhatsApp')).toBeInTheDocument())
   })
 
   it('shows the freeze message only when a freeze was used', () => {

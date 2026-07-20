@@ -8,6 +8,7 @@ import { isDoneToday, countsTowardDayCompletion, cadenceLabel, SANDHYA_SLOTS } f
 import CelebrationModal from './CelebrationModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import PanchangamBox from './PanchangamBox'
+import MonthlySpecialBanner from './MonthlySpecialBanner'
 import ErrorBanner from './ErrorBanner'
 import PracticeIcon from '../utils/practiceIcons'
 import { track } from '../utils/analytics'
@@ -72,6 +73,7 @@ export default function TodayPage() {
           : `${doneCount} of ${items.length} anushtanams done.`}
       </div>
       <PanchangamBox />
+      <MonthlySpecialBanner />
 
       <ProfileSwitcher />
 

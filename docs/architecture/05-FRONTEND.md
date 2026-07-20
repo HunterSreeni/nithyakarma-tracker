@@ -22,7 +22,8 @@ code across 19 components, 6 hooks and 15 utils.
 | Route | Component | Loading |
 |---|---|---|
 | `/` | `TodayPage` | Eager |
-| `/learning` | `LearningPage` | Lazy |
+| `/learning` | `LearningHub` - lists every practice with Learning content | Lazy |
+| `/learning/:slug` | `LearningPage` - the reader for one practice | Lazy |
 | `/history` | `HistoryPage` | Lazy |
 | `/sabha` | `SabhaPage` | Lazy |
 | `/referrals` | `ReferralsPage` | Lazy |
@@ -44,7 +45,8 @@ the 553 KB single-bundle warning (B5).
 | `TodayPage` | 288 | The core screen: today's practices, marking, suggestions |
 | `ProfilePage` | 226 | Identity, tier progress, settings, version, delete account |
 | `LegalPages` | 149 | `TermsPage` + `PrivacyPage` |
-| `LearningPage` | 133 | Verse-by-verse study, language toggle (Intent 2.1a) |
+| `LearningPage` | ~75 | Reading reference for one practice - language toggle, YouTube link. No completion tracking of its own (reworked 2026-07-20 - see below) |
+| `LearningHub` | ~20 | Lists every practice with Learning content, links to `/learning/:slug` |
 | `InfoPages` | 125 | `AboutPage` + `KarmaPage` |
 | `SabhaPage` | 122 | Leaderboards - global, friends, kids |
 | `AuthPage` | 120 | Sign in/up, Google OAuth, password reset entry |
@@ -82,9 +84,14 @@ Three properties worth preserving in any refactor:
 2. **Verified save only.** `submit()` throws unless `data.saved` is true. Callers show
    the celebration and fire the ad *only* from this return value - never optimistically.
    This is what guarantees "no ad on a failed save".
-3. **Suppression is centralized.** `if (data.day_complete) suppressTodayNudgesIfScheduled()`
-   lives here rather than in the pages, so `TodayPage` and `LearningPage` both get it
-   for free.
+3. **Celebration is gated on a real streak.** Callers only show `CelebrationModal` when
+   `data.day_complete && data.overall_streak >= 1` - fixed 2026-07-20, it used to fire on
+   every successful submit including partial marks and 0-streak completions.
+4. **Suppression is centralized.** `if (data.day_complete) suppressTodayNudgesIfScheduled()`
+   lives here rather than in the pages, so every caller of `useToday` gets it for free.
+   As of 2026-07-20, `LearningPage` is no longer one of those callers - it's pure reading,
+   with no `submit()` call of its own; completion happens from `TodayPage` like any other
+   practice.
 
 Sandhyavandhanam sorts to the top of the list.
 
@@ -93,9 +100,31 @@ Sandhyavandhanam sorts to the top of the list.
 | Hook | Lines | Role |
 |---|---|---|
 | `useNotifications` | 173 | Permission, subscribe/unsubscribe, web + Android transports |
-| `useLearning` | 59 | Verse content fetch and `learning_progress` |
+| `useLearning` | ~55 | Verse content fetch only (stale-while-revalidate). No longer tracks `learning_progress` - reading is decoupled from completion as of 2026-07-20 |
 | `usePanchangam` | 21 | Today's `panchangam_days` row |
 | `useFocusTrap` | 39 | Modal focus containment (a11y) |
+
+### Learning content sourcing convention
+
+`app/scripts/content/*.json` files (e.g. `hanuman-chalisa.json`,
+`vishnu-sahasranamam.json`) have a per-language field for each verse (`english`,
+`malayalam`, `tamil`, `sanskrit`, etc.).
+
+**Each field must be the actual verses as genuinely published and practiced in that
+language/script by real communities - sourced from real references, never a
+mechanical transliteration or translation generated from the Sanskrit.** Real
+published Malayalam and Tamil editions of these stotras already exist and are widely
+printed; the job is finding and using those genuine sources, not computationally
+deriving a script rendering from the Sanskrit. A self-generated transliteration is
+not the same thing as how the text is actually published and read in that language,
+even if phonetically similar. This applies to every language field, including
+`english` (should be an established transliteration convention, not an ad hoc one)
+and retroactively to already-shipped content - don't assume an existing field is
+correct sourcing just because it shipped.
+
+Content of this kind should also be flagged for a human accuracy review (someone
+fluent, a priest, or a family elder) before being treated as production-final - this
+is sacred text, and sourcing method alone doesn't substitute for that pass.
 
 ---
 
@@ -121,8 +150,10 @@ Sandhyavandhanam sorts to the top of the list.
 
 ### Logic mirrored between client and server
 
-Three pairs must be changed together. **None has a test asserting the two agree** - a
-standing fragility:
+Three pairs must be changed together. `utils/__tests__/logic-mirrors.test.js` pins all
+three against the actual Postgres source (added 2026-07-19 alongside the B13 fix - see
+[09-STATUS-LEDGER.md](09-STATUS-LEDGER.md)), closing what used to be a standing
+fragility with no test coverage:
 
 | Client | Server |
 |---|---|

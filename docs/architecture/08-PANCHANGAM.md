@@ -62,10 +62,16 @@ to 16 June. Prokerala and DrikPanchang both publish 15 June.
 `MONTH_START_RULE` in the generator holds one rule per tradition, so this is the extension
 point for further regional solar calendars.
 
-> **Tamil is deliberately still on the `noon` rule.** The correct Tamil rule is sunset,
-> which would move Thai 1 (Pongal) 2026 from 15 January to 14 January. Published sources
-> disagree on that date, so the old behaviour is held until the printed Pambu Panchangam
-> settles it. There is a `TODO` on the constant.
+> **Tamil is on the `sunset` rule, switched from `noon` 2026-07-20.** Verified against two
+> independent sources for the Pongal 2026 test case: DrikPanchang gives the Makar Sankranti
+> moment as 14 January 2026, 3:13 PM IST (Chennai), with Punya Kala running to 6:01 PM -
+> well before sunset, so Thai 1 falls the same day, 14 January, not 15 January as the old
+> noon-sampling produced. dailycalendartamil.com independently corroborates 14 January as
+> the main Thai Pongal day. `panchangam-2026.json` was regenerated and reloaded; the shift
+> ripples forward as a one-day offset in the Tamil day count from 14 January through
+> 16 July, until the already-independently-verified Aadi 1 (17 July) boundary re-anchors it -
+> expected, not a bug, confirmed against every other pinned test date in
+> `panchangam-output.test.js`.
 
 | Rashi | Tamil | Malayalam |
 |---|---|---|
@@ -150,9 +156,10 @@ nakshatras, the 30 thithi names (via `malayalamThithi()`, which recomposes the s
    computed Makaram sankranti (14 Jan 15:07 IST) matches the published moment to the
    minute, which is the strongest single check on the ephemeris itself.
 
-   Still open: the **Tamil** day-1 rule (see the `MONTH_START_RULE` note above), which the
-   Intent 2.7 gate's printed Pambu Panchangam is the authority for. Pongal 2026 is the
-   test case - 14 or 15 January.
+   **Tamil day-1 rule resolved 2026-07-20** (see the `MONTH_START_RULE` note above) - Pongal
+   2026 confirmed as 14 January against DrikPanchang and dailycalendartamil.com. The printed
+   Pambu Panchangam remains the eventual authority per the Intent 2.7 gate; revisit if it
+   disagrees once published.
 
 ## Annual maintenance
 

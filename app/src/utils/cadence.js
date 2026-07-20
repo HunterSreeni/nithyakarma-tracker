@@ -26,8 +26,8 @@ export const SANDHYA_SLOTS = [
 ]
 
 // Done-state for a practice given today's logs for it. "Has this been logged
-// today at all" - used for the per-practice tick and as LearningPage's
-// already-logged guard. NOT the same question as day completion; see below.
+// today at all" - used for the per-practice tick on the Today page. NOT the
+// same question as day completion; see below.
 export function isDoneToday(practice, logs) {
   if (practice.is_sandhyavandhanam) {
     const slots = new Set(logs.map(l => l.slot))

@@ -49,6 +49,7 @@ export default function PanchangamBox() {
         {mlNakshatra ?? day.nakshatra} · {taNakshatra ?? day.nakshatra} [{day.nakshatra}] Nakshatram
       </div>
       <div className="pb-kalams">
+        <div className="pb-kalams-label">Kalam windows (IST)</div>
         {KALAMS.map(({ key, english, start, end }) => (
           <div className="pb-kalam" key={key}>
             <span className="pb-kalam-name">{english}</span>
