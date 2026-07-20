@@ -29,10 +29,11 @@ export function AboutPage() {
 
       <h3>What it's for</h3>
       <p>
-        Mark your Sandhyavandhanam (all three sandhyas), your parayanams, and your japam as you
-        complete them. The app tracks your streak, tops up your punya, and moves you up a tier as you
-        keep at it - a missed day here and there doesn't have to reset months of practice, thanks to
-        streak freezes that build up as you go.
+        Mark your Sandhyavandhanam, parayanams and japam as you complete them - even one sandhya of
+        the day keeps your streak alive, and a temple visit counts too, so a packed day never has to
+        mean an empty one. The app tracks your streak, tops up your punya, and moves you up a tier as
+        you keep at it - a missed day here and there doesn't have to reset months of practice, thanks
+        to streak freezes that build up as you go.
       </p>
 
       <h3>Family, too</h3>
@@ -77,8 +78,9 @@ export function KarmaPage() {
         <li><b>+12</b> - the longest (Sri Rudram, Devi Mahatmyam)</li>
       </ul>
       <p>
-        Sandhyavandhanam only counts the day complete once all three sandhyas (Prathakala, Madhyanika,
-        Saayamkala) are marked - each sandhya earns punya on its own as you mark it.
+        Sandhyavandhanam only needs one sandhya marked to count the day complete - Prathakala,
+        Madhyanika or Saayamkala, whichever fits your day. Each sandhya still earns its own punya, so
+        marking more than one adds up if you have the time.
       </p>
 
       <h3>Tiers</h3>

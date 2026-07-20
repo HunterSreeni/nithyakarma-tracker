@@ -97,42 +97,45 @@ begin
     raise exception 'FAIL: anon can execute delete_account';
   end if;
 
-  -- 8. Sandhyavandhanam 3-slot flow through submit_practice_log (the reported area).
-  -- Impersonate integtest via the JWT claim auth.uid() reads. 1-2 slots must NOT
-  -- complete the day or advance the streak; the 3rd slot completes it (+1 streak,
-  -- 15 punya over the three logs). Hanuman-chalisa was already logged today in
-  -- section 4, so completing sandhya also completes the day -> overall streak 1.
+  -- 8. Sandhyavandhanam 1-of-3-slot flow through submit_practice_log (2026-07-20:
+  -- meet-users-where-they-are change - marking just 1 slot now completes the day
+  -- and advances the streak; the 2nd/3rd slots only add punya, they don't
+  -- double-advance anything). Impersonate integtest via the JWT claim auth.uid()
+  -- reads. Hanuman-chalisa was logged directly in section 4 (bypassing the RPC,
+  -- so it earned no punya and has affects_streak=false), so day completion here
+  -- depends on sandhya alone.
   insert into user_practices (owner_id, practice_id) values (v_uid, v_sandhya) returning id into v_sup;
   perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
 
   -- Leaderboard baseline: hanuman-chalisa (section 4) already logged today, so
-  -- score = 1 completed practice-day before any sandhya slot is marked.
+  -- score = 1 distinct (date, practice) pair before any sandhya slot is marked.
   select score into v_lb_score from get_leaderboard('week', 'global') where subject_id = v_uid;
   if v_lb_score <> 1 then raise exception 'FAIL: leaderboard baseline score wrong (expected 1, got %)', v_lb_score; end if;
 
   r := submit_practice_log(v_sup, 'morning');
-  if (r->>'practice_done_today')::boolean then raise exception 'FAIL: sandhya reported done after 1 slot'; end if;
-  if (r->>'practice_streak')::int <> 0 then raise exception 'FAIL: sandhya streak advanced on slot 1 (the reported 0-not-1 case)'; end if;
-  if (r->>'day_complete')::boolean then raise exception 'FAIL: day complete after 1 sandhya slot'; end if;
+  if not (r->>'practice_done_today')::boolean then raise exception 'FAIL: sandhya not reported done after 1 slot (1-of-3 should be enough)'; end if;
+  if (r->>'practice_streak')::int <> 1 then raise exception 'FAIL: sandhya streak did not advance on slot 1 (expected 1, got %)', r->>'practice_streak'; end if;
+  if not (r->>'day_complete')::boolean then raise exception 'FAIL: day not complete after 1 sandhya slot'; end if;
+  if (r->>'overall_streak')::int <> 1 then raise exception 'FAIL: overall streak not 1 after completing the day on slot 1'; end if;
+  if (r->>'punya')::int <> 5 then raise exception 'FAIL: punya not 5 after 1 sandhya log (got %)', r->>'punya'; end if;
   select score into v_lb_score from get_leaderboard('week', 'global') where subject_id = v_uid;
-  if v_lb_score <> 1 then raise exception 'FAIL: leaderboard score counted an incomplete (1-slot) sandhya day (got %)', v_lb_score; end if;
+  if v_lb_score <> 2 then raise exception 'FAIL: leaderboard score did not count the completed sandhya day (expected 2, got %)', v_lb_score; end if;
 
   r := submit_practice_log(v_sup, 'afternoon');
-  if (r->>'practice_done_today')::boolean then raise exception 'FAIL: sandhya reported done after 2 slots'; end if;
-  if (r->>'practice_streak')::int <> 0 then raise exception 'FAIL: sandhya streak advanced on slot 2'; end if;
+  if not (r->>'practice_done_today')::boolean then raise exception 'FAIL: sandhya reported not done after 2 slots'; end if;
+  if (r->>'practice_streak')::int <> 1 then raise exception 'FAIL: sandhya streak double-advanced on slot 2 (expected still 1, got %)', r->>'practice_streak'; end if;
+  if (r->>'punya')::int <> 10 then raise exception 'FAIL: punya not 10 after 2 sandhya logs (got %)', r->>'punya'; end if;
   select score into v_lb_score from get_leaderboard('week', 'global') where subject_id = v_uid;
-  if v_lb_score <> 1 then raise exception 'FAIL: leaderboard score counted an incomplete (2-slot) sandhya day (got %)', v_lb_score; end if;
+  if v_lb_score <> 2 then raise exception 'FAIL: leaderboard score double-counted the 2nd sandhya slot (expected still 2, got %)', v_lb_score; end if;
 
   r := submit_practice_log(v_sup, 'evening');
   if not (r->>'practice_done_today')::boolean then raise exception 'FAIL: sandhya NOT done after all 3 slots'; end if;
-  if (r->>'practice_streak')::int <> 1 then raise exception 'FAIL: sandhya streak not 1 after completing 3 slots'; end if;
+  if (r->>'practice_streak')::int <> 1 then raise exception 'FAIL: sandhya streak not still 1 after completing all 3 slots'; end if;
   if (r->>'punya')::int <> 15 then raise exception 'FAIL: punya not 15 after 3 sandhya logs (got %)', r->>'punya'; end if;
-  if not (r->>'day_complete')::boolean then raise exception 'FAIL: day not complete though hanuman + sandhya both done'; end if;
-  if (r->>'overall_streak')::int <> 1 then raise exception 'FAIL: overall streak not 1 on first fully complete day'; end if;
-  -- Score = completed practice-days, so the sandhya day collapses to +1 total
-  -- (2 -> not 4) once all 3 slots land on the same day.
+  if not (r->>'day_complete')::boolean then raise exception 'FAIL: day not complete on the 3rd slot'; end if;
+  if (r->>'overall_streak')::int <> 1 then raise exception 'FAIL: overall streak not still 1 after the 3rd slot'; end if;
   select score into v_lb_score from get_leaderboard('week', 'global') where subject_id = v_uid;
-  if v_lb_score <> 2 then raise exception 'FAIL: leaderboard score did not collapse a completed sandhya day to +1 (expected 2, got %)', v_lb_score; end if;
+  if v_lb_score <> 2 then raise exception 'FAIL: leaderboard score changed after marking all 3 slots (expected still 2, got %)', v_lb_score; end if;
 
   -- Re-marking an already-done slot is rejected (unique same-day slot)
   v_failed := false;

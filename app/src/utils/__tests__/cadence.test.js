@@ -23,13 +23,11 @@ describe('isScheduled', () => {
 
 describe('isDoneToday', () => {
   const sandhya = { is_sandhyavandhanam: true }
-  it('sandhyavandhanam needs all 3 slots', () => {
-    expect(isDoneToday(sandhya, [{ slot: 'morning' }, { slot: 'afternoon' }])).toBe(false)
-    expect(isDoneToday(sandhya, [{ slot: 'morning' }, { slot: 'afternoon' }, { slot: 'evening' }])).toBe(true)
-  })
-  it('a single sandhya slot is NOT done (the reported 0-not-1 case is correct)', () => {
+  it('sandhyavandhanam is done once any 1 of 3 slots is marked (2026-07-20: meet-users-where-they-are change)', () => {
     expect(isDoneToday(sandhya, [])).toBe(false)
-    expect(isDoneToday(sandhya, [{ slot: 'morning' }])).toBe(false)
+    expect(isDoneToday(sandhya, [{ slot: 'morning' }])).toBe(true)
+    expect(isDoneToday(sandhya, [{ slot: 'morning' }, { slot: 'afternoon' }])).toBe(true)
+    expect(isDoneToday(sandhya, [{ slot: 'morning' }, { slot: 'afternoon' }, { slot: 'evening' }])).toBe(true)
   })
   it('general practice done with a single log', () => {
     expect(isDoneToday({ is_sandhyavandhanam: false }, [])).toBe(false)
@@ -43,7 +41,7 @@ describe('cadenceLabel', () => {
     expect(cadenceLabel({ cadence: 'daily_count', target_count: 108 })).toBe('daily 108')
     expect(cadenceLabel({ cadence: 'sequence', sequence_length: 100 })).toBe('1 of 100 / day')
     expect(cadenceLabel({ cadence: 'sequence', sequence_length: null })).toBe('daily reading')
-    expect(cadenceLabel({ cadence: 'daily', is_sandhyavandhanam: true })).toBe('3 sandhyas daily')
+    expect(cadenceLabel({ cadence: 'daily', is_sandhyavandhanam: true })).toBe('1 sandhya today')
     expect(cadenceLabel({ cadence: 'daily' })).toBe('daily')
   })
 })

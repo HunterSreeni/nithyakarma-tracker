@@ -177,7 +177,7 @@ function PracticeCard({ item, busy, onMark }) {
           {practice.name}
           {practice.is_sandhyavandhanam && (
             <button type="button" className="info-btn" aria-expanded={showInfo}
-              aria-label="Why does Sandhyavandhanam need three marks?"
+              aria-label="Why are there three Sandhyavandhanam times?"
               onClick={() => setShowInfo(v => !v)}>!</button>
           )}
         </div>
@@ -192,12 +192,14 @@ function PracticeCard({ item, busy, onMark }) {
             {showInfo && (
               <div className="sandhya-info" role="note">
                 Sandhyavandhanam is performed 3 times a day - <b>Prathakala</b> (morning),
-                <b> Madhyanika</b> (noon) and <b>Saayamkala</b> (evening). Mark all three to
-                complete the day and grow your streak.
+                <b> Madhyanika</b> (noon) and <b>Saayamkala</b> (evening). Marking even one
+                keeps your streak alive; mark more when your day allows, for extra punya.
               </div>
             )}
             <div className="sandhya-progress">
-              {done ? 'All 3 sandhyas done' : `${slotsDone.size} of 3 sandhyas done`}
+              {slotsDone.size === 0 && '0 of 3 sandhyas done'}
+              {slotsDone.size > 0 && slotsDone.size < 3 && `${slotsDone.size} of 3 sandhyas done · streak kept`}
+              {slotsDone.size === 3 && 'All 3 sandhyas done'}
             </div>
             <div className="slot-row" data-tour="sandhya-slots">
               {SANDHYA_SLOTS.map(s => (

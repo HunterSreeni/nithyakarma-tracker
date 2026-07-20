@@ -14,7 +14,10 @@
 //   where n.nspname = 'public'
 //     and proname in ('is_scheduled', 'tier_for', 'freeze_cap_for', 'submit_practice_log');
 //
-// Verified against the live database on 2026-07-19.
+// Verified against the live database on 2026-07-20 (sandhya day-completion
+// threshold moved from >= 3 slots to >= 1 - marking just 1 of the 3 sandhyas
+// now completes the day; get_leaderboard's independent slot-count check moved
+// with it, see migration 20260720160000_sandhya_one_slot_completes_day).
 
 import { describe, it, expect } from 'vitest'
 import { isScheduled, isDoneToday, countsTowardDayCompletion, SANDHYA_SLOTS } from '../cadence'
@@ -64,7 +67,7 @@ const sqlFreezeCapFor = (punya) =>
 //   case when p2.is_sandhyavandhanam then
 //     (select count(*) from practice_logs pl
 //       where pl.user_practice_id = up2.id and pl.log_date = v_today
-//         and pl.counts_toward_streak) >= 3
+//         and pl.counts_toward_streak) >= 1
 //   else
 //     exists (select 1 from practice_logs pl
 //       where pl.user_practice_id = up2.id and pl.log_date = v_today
@@ -72,7 +75,7 @@ const sqlFreezeCapFor = (punya) =>
 //   end
 const sqlPracticeComplete = (practice, logs) => {
   const counting = logs.filter(l => l.counts_toward_streak)
-  return practice.is_sandhyavandhanam ? counting.length >= 3 : counting.length > 0
+  return practice.is_sandhyavandhanam ? counting.length >= 1 : counting.length > 0
 }
 
 // ---------------------------------------------------------------------------
@@ -165,15 +168,14 @@ describe('isDoneToday vs the SQL day-completion bool_and', () => {
     expect(isDoneToday(daily, [log(null)])).toBe(sqlPracticeComplete(daily, [log(null)]))
   })
 
-  it('the unique index is what keeps "3 rows" equivalent to "3 distinct slots"', () => {
-    // JS checks for the three named slots; SQL only counts rows. Those agree solely
-    // because practice_logs_unique on (user_practice_id, log_date, coalesce(slot,'day'))
-    // makes a duplicate slot impossible. Documented so that anyone relaxing that index
-    // sees why it matters.
-    const duplicated = [log('morning'), log('morning'), log('morning')]
-    expect(sqlPracticeComplete(sandhya, duplicated)).toBe(true)
-    expect(isDoneToday(sandhya, duplicated)).toBe(false)
-    expect(SANDHYA_SLOTS.map(s => s.key)).toEqual(['morning', 'afternoon', 'evening'])
+  // 2026-07-20: sandhya day-completion no longer requires all 3 distinct slots
+  // (that used to depend on practice_logs_unique making "3 rows" == "3 distinct
+  // slots" - now any 1 row/slot is enough, so that distinction stopped mattering).
+  it('any single slot satisfies sandhya completion (only 1 of 3 is required)', () => {
+    for (const s of SANDHYA_SLOTS) {
+      expect(isDoneToday(sandhya, [log(s.key)])).toBe(true)
+      expect(sqlPracticeComplete(sandhya, [log(s.key)])).toBe(true)
+    }
   })
 
   // isDoneToday deliberately does NOT filter counts_toward_streak - it answers
@@ -198,7 +200,7 @@ describe('isDoneToday vs the SQL day-completion bool_and', () => {
       log('evening'),
     ]
     expect(countsTowardDayCompletion(sandhya, mixed)).toBe(sqlPracticeComplete(sandhya, mixed))
-    expect(countsTowardDayCompletion(sandhya, mixed)).toBe(false)
+    expect(countsTowardDayCompletion(sandhya, mixed)).toBe(true)
   })
 
   // Logs loaded from older rows may predate the column; treat missing as counting,
