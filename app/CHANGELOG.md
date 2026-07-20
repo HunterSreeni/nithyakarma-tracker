@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.20.0...app-v0.21.0) (2026-07-20)
+
+
+### Features
+
+* **streak:** let 1 sandhya complete the day, add Temple Visit practice ([cfd4bbf](https://github.com/HunterSreeni/nithyakarma-tracker/commit/cfd4bbf03edcdac2aeade9f9cc113e5a37257675))
+
 ## [0.20.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.19.0...app-v0.20.0) (2026-07-20)
 
 
