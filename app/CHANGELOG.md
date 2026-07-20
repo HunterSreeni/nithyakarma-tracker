@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.20.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.19.0...app-v0.20.0) (2026-07-20)
+
+
+### Features
+
+* **learning:** add a general monthly-specials framework, seed Karkidakam ([20d3f3b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/20d3f3ba85caaf55bb73cc5e629c87fce3cda1d2))
+* **learning:** add Vishnu Sahasranamam, rebuild Hanuman Chalisa from real sources ([67477c8](https://github.com/HunterSreeni/nithyakarma-tracker/commit/67477c83a786a3807291149569bd9c315c69e41b))
+* **learning:** decouple reading from completion, add a content hub ([77a42f4](https://github.com/HunterSreeni/nithyakarma-tracker/commit/77a42f4c845af091f6032b795bbdac9f83659b68))
+* **share:** share the streak card as an image, not just text ([b2b037a](https://github.com/HunterSreeni/nithyakarma-tracker/commit/b2b037acdb3069acad03d5486dbfb332a3701456))
+
+
+### Bug Fixes
+
+* **panchangam:** label the kalam windows as IST ([19544b9](https://github.com/HunterSreeni/nithyakarma-tracker/commit/19544b99c9e600f19504f63dee681ed09a92d97d))
+* **panchangam:** switch Tamil month-start to the sunset rule ([0ad155a](https://github.com/HunterSreeni/nithyakarma-tracker/commit/0ad155a12a4cf327d9c9eb45fc7506543f82fdb9))
+* **test:** mock useLearning in LearningHub test to avoid real supabase import ([672297b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/672297b375a2fef04cca71b48480d2478c9c86c0))
+
 ## [0.19.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.18.2...app-v0.19.0) (2026-07-20)
 
 
