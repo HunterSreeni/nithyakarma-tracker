@@ -1,6 +1,7 @@
 # 02 - Postgres Functions and RPCs
 
-All 13 functions in schema `public`, verified against `pg_proc` on 18 July 2026.
+All 13 functions in schema `public`, verified against `pg_proc` on 18 July 2026,
+`submit_practice_log`'s day-completion step re-verified 20 July 2026.
 
 | Function | Security | Lang | Called from |
 |---|---|---|---|
@@ -63,8 +64,17 @@ this SECURITY DEFINER function is the only way a log can be created.
 10. **Award punya** to the subject (`profiles` or `family_members`) by `punya_value`.
 11. **Tier-up top-up** - if `freeze_cap_for(new_punya) > freeze_cap_for(old_punya)`, raise
     `freeze_credits` to the new cap.
-12. **Day completion** - `bool_and` across *every scheduled practice for that subject*,
-    counting only logs with `counts_toward_streak = true`.
+12. **Day completion** - `bool_and` across *every scheduled practice for that subject*
+    **where `practices.affects_streak = true`**, counting only logs with
+    `counts_toward_streak = true`. The `affects_streak` filter (added `20260719060618`)
+    fixes a real bug: `hanuman-chalisa` (Learning page) is a daily-cadence practice logged
+    with `p_award_streak = false`, so its logs never satisfy `counts_toward_streak`. Before
+    this filter existed, that practice still joined the `bool_and` every day and could never
+    be satisfied - marking a single verse permanently froze the subject's day completion
+    and overall streak, even though the UI's `isDoneToday` (which doesn't filter
+    `counts_toward_streak`) showed the day as done. `affects_streak = false` now excludes
+    Learning-style practices from the day-completion check entirely - they earn punya but
+    neither advance nor block the streak.
 13. **Subject streak** - if the day just completed and `last_complete_date` is not today,
     delegate to `streak_after_completion`, then persist streak, best, date and credits.
 

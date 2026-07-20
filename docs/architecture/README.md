@@ -7,7 +7,8 @@ instead of scanning the codebase cold. Every claim in these documents was verifi
 against the repo, the live Supabase project (`fkrifejzhnhknkuyhjhp`) or a running
 build - not copied from older prose docs.
 
-**Last verified:** 18 July 2026, against app version `0.15.4`.
+**Last verified:** 18 July 2026, against app version `0.15.4`. Extended 20 July 2026
+with the marketing site, live schema/RPC refresh, and the folder-tree/code-map docs.
 
 ## Index
 
@@ -23,6 +24,8 @@ build - not copied from older prose docs.
 | [07-NOTIFICATIONS.md](07-NOTIFICATIONS.md) | Push architecture end to end |
 | [08-PANCHANGAM.md](08-PANCHANGAM.md) | Panchangam data pipeline and annual maintenance |
 | [09-STATUS-LEDGER.md](09-STATUS-LEDGER.md) | Verified status of every planned Intent |
+| [10-FOLDER-TREE.md](10-FOLDER-TREE.md) | Full, unabridged repo tree - every file, annotated by directory |
+| [11-MARKETING-SITE.md](11-MARKETING-SITE.md) | `/site`: structure, brand tokens, analytics, AI-crawler policy, deploy plan |
 
 ## Relationship to the other docs
 
@@ -47,3 +50,5 @@ refresh path is the Supabase MCP:
 - `pg_proc` query for `02`
 - `mcp__supabase__list_migrations` for `04`
 - `cron.job` query for `03`
+- `find . -maxdepth 5 -type d ...` (see `10-FOLDER-TREE.md`'s header for the exact
+  command) for `10`, whenever the top-level structure changes
