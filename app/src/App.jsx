@@ -20,6 +20,7 @@ const ResetPassword = lazy(() => import('./components/ResetPassword'))
 
 // Lazy: verse content + page code only download when Learning is opened,
 // not on every app load (Intent 2.1a - the first code-split route).
+const LearningHub = lazy(() => import('./components/LearningHub'))
 const LearningPage = lazy(() => import('./components/LearningPage'))
 
 function Gate() {
@@ -61,7 +62,8 @@ function Gate() {
       <Suspense fallback={<div className="spinner-wrap">Loading...</div>}>
         <Routes>
           <Route path="/" element={<TodayPage />} />
-          <Route path="/learning" element={<LearningPage />} />
+          <Route path="/learning" element={<LearningHub />} />
+          <Route path="/learning/:slug" element={<LearningPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/sabha" element={<SabhaPage />} />
           <Route path="/referrals" element={<ReferralsPage />} />
