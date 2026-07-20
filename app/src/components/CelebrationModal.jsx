@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Flame, Snowflake } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useFocusTrap } from '../hooks/useFocusTrap'
-import { shareToWhatsApp } from '../utils/share'
+import { shareCardToWhatsApp } from '../utils/share'
 import { track } from '../utils/analytics'
 import { celebrationHaptic } from '../utils/haptics'
 
@@ -12,6 +12,8 @@ import { celebrationHaptic } from '../utils/haptics'
 export default function CelebrationModal({ data, onClose }) {
   const { profile } = useAuth()
   const modalRef = useRef(null)
+  const cardRef = useRef(null)
+  const [sharing, setSharing] = useState(false)
   useFocusTrap(modalRef, true)
 
   const close = () => onClose()
@@ -42,7 +44,7 @@ export default function CelebrationModal({ data, onClose }) {
           <div className="cel-freeze"><Snowflake size={13} strokeWidth={2.5} /> A freeze saved your streak</div>
         )}
 
-        <div className="share-card">
+        <div className="share-card" ref={cardRef}>
           <Flame className="sc-mark" size={80} strokeWidth={1.5} />
           <div className="sc-brand">Nithyakarma</div>
           <div className="sc-days">{streak} <span>day{streak === 1 ? '' : 's'} streak</span></div>
@@ -50,21 +52,22 @@ export default function CelebrationModal({ data, onClose }) {
             {data.practice_name}<br />
             {data.subjectName} · {data.tier} tier
           </div>
-          <div className="sc-foot">
-            <span>Join me on Nithyakarma</span>
-            <span>/r/{profile.referral_code}</span>
-          </div>
         </div>
 
-        <button className="btn-whatsapp" onClick={() => {
+        <button className="btn-whatsapp" disabled={sharing} onClick={async () => {
           track('share_clicked', { from: 'celebration' })
-          shareToWhatsApp({
-            streak, practiceName: data.practice_name,
-            displayName: data.subjectName, tier: data.tier,
-            referralCode: profile.referral_code,
-          })
+          setSharing(true)
+          try {
+            await shareCardToWhatsApp(cardRef.current, { streak, referralCode: profile.referral_code })
+          } catch (err) {
+            // AbortError = user closed the native share sheet without picking
+            // anything - not a failure, nothing to surface.
+            if (err?.name !== 'AbortError') console.error('Share failed', err)
+          } finally {
+            setSharing(false)
+          }
         }}>
-          Share to WhatsApp
+          {sharing ? 'Preparing...' : 'Share to WhatsApp'}
         </button>
         <button className="btn-plain" onClick={close}>Continue</button>
       </div>
