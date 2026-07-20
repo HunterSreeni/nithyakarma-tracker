@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.18.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.18.1...app-v0.18.2) (2026-07-20)
+
+
+### Bug Fixes
+
+* revalidate cached Learning content instead of caching it forever ([dcd007e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/dcd007e945628cf8594d9303bf55c51041b1a86a))
+* stop a learning practice permanently blocking the daily streak ([7bb8311](https://github.com/HunterSreeni/nithyakarma-tracker/commit/7bb83118399bc8ee2036b157f2cee2a4cdb34808))
+
 ## [0.18.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.18.0...app-v0.18.1) (2026-07-19)
 
 
