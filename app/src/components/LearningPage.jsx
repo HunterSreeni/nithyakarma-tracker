@@ -28,7 +28,7 @@ export const LEARNING_CONTENT = {
       { key: 'tamil', label: 'Tamil' },
       { key: 'sanskrit', label: 'Sanskrit' },
     ],
-    typeLabel: { shloka: 'Shloka' },
+    typeLabel: { dhyanam: 'Dhyanam', shloka: 'Shloka' },
     youtubeUrl: 'https://www.youtube.com/watch?v=5aHeprNOU3s',
   },
 }
