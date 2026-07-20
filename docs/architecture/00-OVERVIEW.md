@@ -23,7 +23,7 @@ month names render in their native scripts.
 | Mobile | Capacitor 8.4 (Android) | WebView wrapper, 9 plugins |
 | Push | FCM (Android) + Web Push/VAPID (web) | Dual transport, one scheduler |
 | Web host | Netlify | `nithykarma.netlify.app` (note: misspelled, see 09) |
-| Domain | Registered 2026-07-19 | `nithyakarma.org` - **not pointed at anything yet**, see `ROADMAP.md` |
+| Domain | Registered 2026-07-19 | `nithyakarma.org` - marketing site built (`/site`) but **DNS not pointed yet**, see `ROADMAP.md` |
 | Errors | Sentry (`@sentry/react` 10.65) | |
 | Analytics | First-party, own Postgres table | No third-party vendor, no PII in props |
 | Ads | AdMob via `@capacitor-community/admob` | Still on Google **test** IDs |
@@ -35,24 +35,32 @@ month names render in their native scripts.
 
 ```
 nithyakarma-tracker/
-├── app/                        # everything shippable
+├── app/                        # the React app - everything shippable to Play/web
 │   ├── src/                    # React source
-│   │   ├── components/         # 17 components + __tests__
+│   │   ├── components/         # 19 components + __tests__
 │   │   ├── hooks/              # 6 hooks + __tests__
 │   │   ├── utils/              # 15 utils + __tests__
 │   │   ├── lib/supabase.js     # the single Supabase client
 │   │   └── App.jsx             # routing + auth gate
 │   ├── supabase/
-│   │   ├── migrations/         # 31 SQL migrations
+│   │   ├── migrations/         # 35 SQL migrations
 │   │   └── functions/          # Deno edge functions
 │   ├── android/                # Capacitor Android project
 │   ├── e2e/                    # Playwright specs
 │   ├── scripts/                # panchangam generation, content
 │   └── netlify.toml            # build + security headers
+├── site/                       # static (non-SPA) marketing site for nithyakarma.org
+│   ├── index.html              # About/landing, karma.html, support.html
+│   ├── style.css                 # matches app's brand tokens (saffron, DM Sans/Sora/Yatra One)
+│   ├── robots.txt, sitemap.xml # AI-crawler policy: block training, allow answer/search bots
+│   └── netlify.toml            # deploys as a SECOND, separate Netlify site
 ├── docs/                       # planning + this architecture tree
 ├── design-prototypes/
-└── netlify.toml                # root: sets base = "app"
+└── netlify.toml                # root: sets base = "app" (only builds /app, not /site)
 ```
+
+See [11-MARKETING-SITE.md](11-MARKETING-SITE.md) for `/site` detail, and
+[10-FOLDER-TREE.md](10-FOLDER-TREE.md) for the full, unabridged repo tree.
 
 ## Deploy topology
 
@@ -79,6 +87,12 @@ nithyakarma-tracker/
               │  (Deno edge fn)  │──►│  WebPush  │──► Browser
               └──────────────────┘   └───────────┘
 ```
+
+**A second, independent surface exists as of 2026-07-20:** `/site`, a static
+marketing site with no backend calls of its own, deployed as its own Netlify site
+(not the one shown above). It links out to the app for sign-in/tracking and to the
+app's existing `/privacy` and `/terms` routes rather than duplicating them. See
+[11-MARKETING-SITE.md](11-MARKETING-SITE.md).
 
 ## Core data flow: marking a practice done
 

@@ -1,7 +1,8 @@
 # 01 - Database
 
 Supabase project `fkrifejzhnhknkuyhjhp`, Postgres 17.6.1.141, schema `public`.
-**RLS is enabled on all 13 tables.** Verified 18 July 2026.
+**RLS is enabled on all 13 tables.** Verified 18 July 2026, columns refreshed 20 July 2026
+against a live schema pull (see `README.md`'s "Keeping this current" for the regen query).
 
 Row counts below are production values at verification time and are indicative only.
 
@@ -105,6 +106,7 @@ The catalog. Read-only to clients; seeded and extended by migration.
 | `active` | boolean | `true` - inactive rows are invisible via RLS |
 | `has_learning_content` | boolean | `false` |
 | `punya_value` | integer | `5` |
+| `affects_streak` | boolean | `true` - `false` for `hanuman-chalisa`; excluded from the day-completion `bool_and` in `submit_practice_log` so a Learning-page log can't permanently block the streak (migration `20260719060618`) |
 
 **Indexes:** `practices_pkey (id)`, `practices_slug_key (slug)` UNIQUE
 
@@ -241,6 +243,7 @@ it is generated.
 | `tamil_month` / `tamil_day` | text / integer |
 | `malayalam_month` / `malayalam_day` | text / integer |
 | `varsham_name` | text |
+| `kollavarsham_year` | integer, NOT NULL | Kerala's own year count (Malayalam Era), separate from `varsham_name`'s 60-cycle name - rolls over at Chingam 1, not Mesha Sankranti. Added `20260719110709`, backfilled and made NOT NULL in `20260719110828` |
 
 **Indexes:** `panchangam_days_pkey (date)`
 

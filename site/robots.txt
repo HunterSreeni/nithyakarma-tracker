@@ -1,0 +1,31 @@
+# AI training crawlers - blocked, this content isn't for training datasets
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+# AI answer/search crawlers - allowed, so the app can be cited in AI answers
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+# Everyone else (Googlebot, Bingbot, etc.) - allowed
+User-agent: *
+Allow: /
+
+Sitemap: https://nithyakarma.org/sitemap.xml

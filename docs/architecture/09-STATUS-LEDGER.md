@@ -5,7 +5,9 @@ against code, migrations or the live database** - not copied from the checkboxes
 documents.
 
 Audited 18 July 2026 against app version `0.15.4`. Revised 19 July 2026 after a full
-device and web test pass (see "19 July verification pass" below).
+device and web test pass (see "19 July verification pass" below). Revised again
+20 July 2026 - see "20 July additions" below for the marketing site, support email
+cutover, and the B13 streak-freeze fix.
 
 Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 
@@ -94,7 +96,7 @@ Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 | S3 | `apply_referral` farmable | 🟡 Mitigated | 5-per-24h cap (`20260716144330`). A patient attacker still compounds |
 | S4 | Leaderboard opt-out default | ✅ Fixed | `leaderboard_opt_in` default `false` (`20260716144249`) |
 | S5 | `tier_for` mutable search_path | ✅ Fixed | `20260716144213` |
-| S6 | HIBP disabled, min length 6 | 🟡 Partial | Client raised to 8. HIBP still off (Pro-only, won't-fix) |
+| S6 | HIBP disabled, min length 6 | 🟡 Partial | Client raised to 8. HIBP still off (Pro-only, won't-fix). Reconfirmed via live Supabase advisors 2026-07-20 - `auth_leaked_password_protection` still WARN, unchanged |
 | S7 | No security headers | ✅ Fixed | `app/netlify.toml` has CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy |
 | S8 | `allowBackup="true"` | ✅ Fixed | Now `false`; `POST_NOTIFICATIONS` declared |
 | S9 | `app_config` RLS with no policy | ✅ Intentional | Service-role only by grant |
@@ -212,6 +214,61 @@ leaked refresh token was revoked by signing out and confirmed dead
 The 2026-07-19 edge-function deploy briefly shipped `verify_jwt: true` (version 8),
 which would have silently killed **all** push. See
 [03-EDGE-FUNCTIONS.md](03-EDGE-FUNCTIONS.md) for why and how to avoid it.
+
+---
+
+## Database advisory findings (Supabase linter, 20 July 2026)
+
+Live security + performance advisors pulled via `mcp__supabase__get_advisors`. Severity
+scale: Info / Low / Medium / High / Severe.
+
+| ID | Finding | Severity | Status | Notes |
+|---|---|---|---|---|
+| D1 | `auth_leaked_password_protection` disabled | Medium | 🟡 Won't-fix (Pro-only) | Same as **S6** above. Client `minLength={8}` partially mitigates. Reconfirmed live 2026-07-20 |
+| D2 | `app_config` RLS enabled, no policy | Info | ✅ Intentional | Same as **S9** above - service-role only by grant, by design |
+| D3 | 5 `SECURITY DEFINER` RPCs callable by `authenticated` | Info | ✅ Reviewed, no action | Generic advisory; none of the 5 (`apply_referral`, `delete_account`, `get_leaderboard`, `get_my_referrals`, `submit_practice_log`) take a target-user-id parameter, so no IDOR path exists |
+| D4 | Unindexed FK: `learning_progress.family_member_id` | Low | ⬜ Open, deferred | Purely additive fix (new index), zero behavior risk. Not yet applied - low urgency at current row counts |
+| D5 | 4 RLS policies re-evaluate `auth.uid()` per row instead of `(select auth.uid())` | Low | ⬜ Open, deferred | Tables: `analytics_events`, `learning_progress` (×3 policies). Query-planner rewrite only, semantically identical access control - safe whenever picked up |
+| D6 | 3 unused indexes (`idx_practice_logs_owner`, `idx_user_practices_family_member`, `idx_user_practices_practice`) | Info | ⬜ No action planned | No measurable benefit at current row counts (single/double/triple digits per table); revisit post-launch if usage patterns confirm they're truly dead |
+
+None of D4-D6 change query results or RLS access semantics - D4 and D5 are safe,
+low-priority performance fixes; D6 is genuinely optional at this data volume.
+
+---
+
+## 20 July additions
+
+### ✅ B13 - A single Learning-page log could permanently freeze the day/streak (fixed 2026-07-20)
+
+`LearningPage` submits with `p_award_streak = false`, so `hanuman-chalisa` logs write
+`counts_toward_streak = false`. But marking a verse also calls `addPractice`, creating a
+permanent `user_practices` row with `cadence = 'daily'`. That row then joined the
+day-completion `bool_and` every day going forward, on a branch (`counts_toward_streak`)
+its own logs could never satisfy - so once a user marked a single verse, their day could
+never complete again and the overall streak froze. The UI's `isDoneToday` doesn't filter
+`counts_toward_streak`, so `TodayPage` cheerfully showed the day as done while the streak
+silently stopped advancing underneath. Production user `e9fdea69` was in exactly this
+state.
+
+**Fixed by:** `practices.affects_streak` (default `true`, `false` for `hanuman-chalisa`)
+plus `and p2.affects_streak` in the day-completion query, migration
+`20260719060618_practices_affects_streak`. See [01-DATABASE.md](01-DATABASE.md) and
+[02-RPCS.md](02-RPCS.md). Client-side, `countsTowardDayCompletion()` in `utils/cadence.js`
+mirrors the same rule. New test: `utils/__tests__/logic-mirrors.test.js`, pinning all
+three client/server pairs (`isScheduled`/`is_scheduled`, `tierFor`/`tier_for`,
+`isDoneToday` vs the day-completion `bool_and`) against the Postgres source directly -
+closes the "no agreement tests" gap noted above for at least these three.
+
+### Marketing site and support email
+
+- `support@nithyakarma.org` is live both directions (Cloudflare Email Routing in, Gmail's
+  own SMTP + App Password out - no third-party relay). Replaces
+  `support@sreeniverse.co.in` in `LegalPages.jsx`.
+- A static (non-SPA) marketing site was built at `/site` for `nithyakarma.org` - not yet
+  DNS-pointed. See [11-MARKETING-SITE.md](11-MARKETING-SITE.md).
+- **Release status unchanged: still not released anywhere.** No Play Store listing, no
+  App Store/iOS platform. Android testing-track release planned for the week of
+  2026-07-27; iOS is Phase 3, not started. See `docs/ROADMAP.md`'s "Release status" callout.
 
 ---
 

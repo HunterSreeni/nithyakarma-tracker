@@ -1,7 +1,7 @@
 # 04 - Migration Ledger
 
-31 migrations in `app/supabase/migrations/`, 31 applied to project
-`fkrifejzhnhknkuyhjhp`. Verified 18 July 2026.
+35 migrations in `app/supabase/migrations/`, 35 applied to project
+`fkrifejzhnhknkuyhjhp`. Verified 18 July 2026, ledger extended 20 July 2026.
 
 ## Drift status: closed, with a caveat
 
@@ -128,6 +128,15 @@ Migrations closing findings from the 16 July project analysis:
 |---|---|---|
 | `20260717055954` | `punya_weighting_and_streak_exempt_logs` | `practices.punya_value`, `practice_logs.counts_toward_streak` |
 | `20260717060635` | `fix_leaderboard_score_ambiguity` | Wrapped the leaderboard query to disambiguate `score`/`streak` |
+
+### Streak-freeze and calendar fixes - 18-19 July 2026
+
+| Version | Name | What it did |
+|---|---|---|
+| `20260718170117` | `notification_deliveries_nudge_morning_slot` | Added `nudge_morning` to the `slot` CHECK - fixes **B9**, the 08:00 nudge that had silently never sent (see [09-STATUS-LEDGER.md](09-STATUS-LEDGER.md)) |
+| `20260719060618` | `practices_affects_streak` | `practices.affects_streak` (default `true`, `false` for `hanuman-chalisa`); adds `and p2.affects_streak` to `submit_practice_log`'s day-completion `bool_and`. Fixes a Learning-page log permanently blocking day completion |
+| `20260719110709` | `panchangam_kollavarsham_year` | `panchangam_days.kollavarsham_year int`, nullable first (365 existing rows to backfill) |
+| `20260719110828` | `panchangam_kollavarsham_year_not_null` | Same column, flipped `NOT NULL` after backfill/verification against `scripts/panchangam-2026.json` |
 
 ---
 

@@ -53,10 +53,39 @@ describe('generated panchangam-2026.json sanity', () => {
     expect(day.tamil_day).toBe(1)
   })
 
-  it('the varsham transitions from Vishvavasu to Parabhava at Mesha Sankranti (mid-April)', () => {
-    const before = rows.find(r => r.date === '2026-04-01')
-    const after = rows.find(r => r.date === '2026-05-01')
-    expect(before.varsham_name).toBe('Vishvavasu')
-    expect(after.varsham_name).toBe('Parabhava')
+  // Mithunam sankranti is 15 June 2026 12:53 IST - after local solar noon
+  // (12:25) but before aparahna (~13:36). Noon-sampling put Mithunam 1 on the
+  // 16th; the aparahna rule Kerala actually uses puts it on the 15th, which is
+  // what Prokerala and DrikPanchang both publish.
+  it('Mithunam 1 is 2026-06-15 under the aparahna rule, not the 16th', () => {
+    expect(rows.find(r => r.date === '2026-06-15').malayalam_month).toBe('Mithunam')
+    expect(rows.find(r => r.date === '2026-06-15').malayalam_day).toBe(1)
+    expect(rows.find(r => r.date === '2026-06-16').malayalam_day).toBe(2)
+  })
+
+  it('1 January continues the month that began the previous December', () => {
+    const jan1 = rows.find(r => r.date === '2026-01-01')
+    expect(jan1.malayalam_month).toBe('Dhanu')
+    expect(jan1.malayalam_day).toBe(17)
+    expect(jan1.tamil_month).toBe('Margazhi')
+    expect(jan1.tamil_day).toBe(17)
+  })
+
+  it('Parabhava begins ON Chithirai 1 (2026-04-14), not the day after', () => {
+    expect(rows.find(r => r.date === '2026-04-13').varsham_name).toBe('Vishvavasu')
+    expect(rows.find(r => r.date === '2026-04-14').varsham_name).toBe('Parabhava')
+    expect(rows.find(r => r.date === '2026-04-14').tamil_day).toBe(1)
+  })
+
+  it('Kollavarsham rolls 1201 -> 1202 at Chingam 1 (2026-08-17)', () => {
+    expect(rows.find(r => r.date === '2026-08-16').kollavarsham_year).toBe(1201)
+    const chingam1 = rows.find(r => r.date === '2026-08-17')
+    expect(chingam1.kollavarsham_year).toBe(1202)
+    expect(chingam1.malayalam_month).toBe('Chingam')
+    expect(chingam1.malayalam_day).toBe(1)
+  })
+
+  it('every row carries a plausible Kollavarsham year', () => {
+    for (const r of rows) expect([1201, 1202]).toContain(r.kollavarsham_year)
   })
 })

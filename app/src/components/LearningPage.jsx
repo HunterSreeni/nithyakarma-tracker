@@ -57,7 +57,9 @@ export default function LearningPage() {
 
       const result = await submit(userPracticeId, { awardStreak: false })
       await refresh()
-      setCelebration({ ...result, subjectName })
+      if (result.day_complete && (result.overall_streak ?? 0) >= 1) {
+        setCelebration({ ...result, subjectName })
+      }
     } catch (err) {
       setMarkError(err.message)
     } finally {
