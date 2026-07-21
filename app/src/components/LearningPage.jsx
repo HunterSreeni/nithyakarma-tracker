@@ -31,6 +31,15 @@ export const LEARNING_CONTENT = {
     typeLabel: { dhyanam: 'Dhyanam', shloka: 'Shloka' },
     youtubeUrl: 'https://www.youtube.com/watch?v=5aHeprNOU3s',
   },
+  // The full Ramayanam (6 kandams, hundreds of sargas each) is too large for
+  // this flat-list reader - its own route (/learning/ramayanam) goes to the
+  // kandam picker (RamayanamPage) instead, which leads to the sarga-aware
+  // KandamPage. This entry only feeds the LearningHub card; LearningPage
+  // itself never renders for this slug.
+  ramayanam: {
+    title: 'Ramayanam',
+    subtitle: 'Read Valmiki’s Ramayanam, kandam by kandam.',
+  },
 }
 
 export default function LearningPage() {

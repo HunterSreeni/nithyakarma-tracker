@@ -23,6 +23,8 @@ const RamayanaMasamPage = lazy(() => import('./components/RamayanaMasamPage'))
 // not on every app load (Intent 2.1a - the first code-split route).
 const LearningHub = lazy(() => import('./components/LearningHub'))
 const LearningPage = lazy(() => import('./components/LearningPage'))
+const RamayanamPage = lazy(() => import('./components/RamayanamPage'))
+const KandamPage = lazy(() => import('./components/KandamPage'))
 
 function Gate() {
   const { session, profile, loading } = useAuth()
@@ -64,6 +66,9 @@ function Gate() {
         <Routes>
           <Route path="/" element={<TodayPage />} />
           <Route path="/learning" element={<LearningHub />} />
+          <Route path="/learning/ramayanam" element={<RamayanamPage />} />
+          <Route path="/learning/ramayanam/:kandam" element={<KandamPage />} />
+          <Route path="/learning/ramayanam/:kandam/:sarga" element={<KandamPage />} />
           <Route path="/learning/:slug" element={<LearningPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/sabha" element={<SabhaPage />} />

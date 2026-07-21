@@ -4,6 +4,10 @@ tour-*.png
 .playwright-cli/
 test-results/
 
+# download-ramayanam-pdfs.cjs staging output - already uploaded to the
+# learning-content Supabase Storage bucket, not read by the app itself.
+scripts/content/ramayanam-pdfs/
+
 # Logs
 logs
 *.log

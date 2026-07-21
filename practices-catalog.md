@@ -36,6 +36,32 @@ No seasonal practices - keeping it simple with daily, weekly, count, and sequenc
 | 14 | Bhagavatam Parayanam | Daily reading | Open-ended reading practice |
 | 15 | Temple Visit | Daily | Open to everyone, no gender/upanayanam gating - an accessible daily anchor practice |
 
+## Learning tab (verse-by-verse readers)
+
+Separate from the general category list above - each of these has real
+published verse text (never generated/transliterated by Claude, per the
+sourcing convention in `docs/architecture/05-FRONTEND.md`) served from the
+`learning-content` Supabase Storage bucket, one JSON file per slug.
+
+| Practice | Content | Sourcing status |
+|---|---|---|
+| Hanuman Chalisa | 43 verses (doha/chaupai) | Fully sourced - English/Malayalam/Sanskrit |
+| Vishnu Sahasranamam | 110 verses (dhyanam/shloka) | Fully sourced - English/Malayalam/Tamil/Sanskrit |
+| Ramayanam | 6 kandams, 534 sargas total (Bala 77, Ayodhya 119, Aranya 75, Kishkindha 67, Sundara 68, Yuddha 128) | Sanskrit + Malayalam PDFs (Sunder Kidambi's edition, prapatti.com), downloaded via `app/scripts/download-ramayanam-pdfs.cjs` and re-hosted (prapatti.com's own PDFs send `X-Frame-Options: SAMEORIGIN` and can't be iframed directly) in the `learning-content` Storage bucket. Uttara Kandam isn't published by this source under any name tried, so it's not included. No English - an earlier attempt sourced a meaning-translation from valmikiramayan.net (K.M.K. Murthy) for Sundara Kandam alone but it read as stiff, word-order-literal English even in its "fluent" field; dropped rather than ship a bad translation. |
+
+Ramayanam is read via a kandam picker (`RamayanamPage.jsx`, route
+`/learning/ramayanam`) that leads into a dedicated chaptered page
+(`KandamPage.jsx`, route `/learning/ramayanam/:kandam/:sarga`), not the
+flat-list `LearningPage.jsx` every other Learning practice uses - at
+hundreds of sargas per kandam it needs sarga-level navigation, not one long
+scroll, and kandam-level navigation on top of that. Unlike the other two
+Learning practices, content is PDF pages embedded per sarga, not verse
+JSON. It's one `practices` row for the whole epic (originally seeded as
+just Sundara Kandam, renamed/repurposed - see the
+rename_sundara_kandam_to_ramayanam migration), not one per kandam.
+`affects_streak = false` (like Hanuman Chalisa) - read-only reference
+content, never gates or blocks the streak.
+
 ## Cadence types the schema must support
 
 - `daily` (most)

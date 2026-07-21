@@ -206,12 +206,21 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .lang-btn { font-size: 0.72rem; font-weight: 600; padding: 6px 12px; border-radius: 100px; border: 1.5px solid var(--warm); background: #fff; color: var(--text-2); }
 .lang-btn.on { background: var(--action); border-color: var(--action); color: #fff; }
 .verse-list { display: flex; flex-direction: column; gap: 0.7rem; }
-.verse-card { background: #fff; border-radius: 14px; padding: 0.9rem 1rem; display: flex; align-items: center; gap: 0.85rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04); border: 1.5px solid transparent; }
+.verse-card { background: #fff; border-radius: 14px; padding: 0.9rem 1rem; display: flex; align-items: center; gap: 0.85rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04); border: 1.5px solid var(--warm); }
 .verse-card.done { border-color: #bbe3c8; background: #f4fbf6; }
 .verse-card .v-body { flex: 1; min-width: 0; }
 a.verse-card { text-decoration: none; color: inherit; }
 .verse-type { font-family: 'Sora', sans-serif; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); }
 .verse-text { font-size: 0.88rem; line-height: 1.5; white-space: pre-line; margin-top: 0.3rem; }
+
+/* sundara kandam sarga nav (chaptered PDF reader, 68 sargas) */
+.sk-sarga-nav { display: flex; align-items: center; gap: 8px; margin: 1rem 0 0.4rem; }
+.sk-nav-btn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--warm); background: #fff; color: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sk-nav-btn:disabled { opacity: 0.35; }
+.sk-sarga-select { flex: 1; font-family: 'Sora', sans-serif; font-size: 0.8rem; font-weight: 600; padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--warm); background: #fff; color: var(--ink); }
+.sk-sarga-title { font-size: 0.8rem; color: var(--text-2); line-height: 1.45; margin-bottom: 0.4rem; }
+.sk-pdf-frame { width: 100%; height: 70vh; border: 1.5px solid var(--warm); border-radius: 14px; background: #fff; }
+.sk-pdf-attribution { display: block; font-size: 0.7rem; color: var(--text-2); margin-top: 0.5rem; text-align: right; }
 
 .slot-row { display: flex; gap: 5px; margin-top: 6px; }
 .slot-btn { font-size: 0.6rem; font-weight: 700; padding: 4px 10px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 100px; border: 1.5px solid var(--warm); background: #fff; color: var(--text-2); }

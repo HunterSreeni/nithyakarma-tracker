@@ -7,7 +7,7 @@ export default function LearningHub() {
     <>
       <div className="eyebrow">Learning</div>
       <h1 className="greet">Read along</h1>
-      <div className="greet-sub">Pick a practice to read in the language you read best.</div>
+      <div className="greet-sub" style={{ marginBottom: '1rem' }}>Pick a practice to read in the language you read best.</div>
 
       <div className="verse-list">
         {Object.entries(LEARNING_CONTENT).map(([slug, meta]) => (
