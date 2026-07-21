@@ -167,8 +167,9 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .tc-label { font-family: 'Sora', sans-serif; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; }
 .tc-big { display: flex; align-items: center; gap: 5px; font-family: 'Sora', sans-serif; font-size: 1.35rem; font-weight: 700; margin-top: 3px; }
 .tc-hint { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; font-size: 0.72rem; opacity: 0.9; margin-top: 2px; font-weight: 300; }
-.progress-ring { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.pr-core { width: 54px; height: 54px; border-radius: 50%; background: var(--action); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.88rem; }
+.pr-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.pr-core { width: 54px; height: 54px; border-radius: 50%; background: var(--action); border: 3px solid rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; }
+.pr-caption { font-family: 'Sora', sans-serif; font-size: 0.58rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.85; }
 
 /* practice cards */
 .practice-card { background: #fff; border-radius: 14px; padding: 0.85rem 1rem; margin-bottom: 0.7rem; display: flex; align-items: center; gap: 0.85rem; box-shadow: 0 1px 10px rgba(0,0,0,0.04); border: 1.5px solid transparent; }
