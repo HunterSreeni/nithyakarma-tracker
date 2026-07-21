@@ -58,7 +58,7 @@ describe('TodayPage - Sandhyavandhanam UX', () => {
     h.items = [sandhyaItem(['morning'])]
     render(<TodayPage />)
     expect(screen.getByText('1 of 3 sandhyas done · streak kept')).toBeInTheDocument()
-    expect(screen.getByText('1 of 1 anushtanams done.')).toBeInTheDocument()
+    expect(screen.getByText('1 anushtanam done today. Wonderful, all done!')).toBeInTheDocument()
   })
 
   it('shows "2 of 3" after two slots, still counted as day-complete', () => {
@@ -71,7 +71,7 @@ describe('TodayPage - Sandhyavandhanam UX', () => {
     h.items = [sandhyaItem(['morning', 'afternoon', 'evening'])]
     render(<TodayPage />)
     expect(screen.getByText('All 3 sandhyas done')).toBeInTheDocument()
-    expect(screen.getByText('1 of 1 anushtanams done.')).toBeInTheDocument()
+    expect(screen.getByText('1 anushtanam done today. Wonderful, all done!')).toBeInTheDocument()
   })
 
   it('the "!" info button toggles the 3-slot explainer', () => {

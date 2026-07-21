@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.21.0...app-v0.21.1) (2026-07-21)
+
+
+### Bug Fixes
+
+* **today:** clarify the daily-progress ring and greeting text ([fd93dfb](https://github.com/HunterSreeni/nithyakarma-tracker/commit/fd93dfb08fc5f937417a2a51d8370bb6e666bb10))
+
 ## [0.21.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.20.0...app-v0.21.0) (2026-07-20)
 
 
