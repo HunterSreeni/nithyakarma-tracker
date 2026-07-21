@@ -13,5 +13,6 @@ describe('LearningHub', () => {
     render(<MemoryRouter><LearningHub /></MemoryRouter>)
     expect(screen.getByText('Hanuman Chalisa').closest('a')).toHaveAttribute('href', '/learning/hanuman-chalisa')
     expect(screen.getByText('Vishnu Sahasranamam').closest('a')).toHaveAttribute('href', '/learning/vishnu-sahasranamam')
+    expect(screen.getByText('Ramayanam').closest('a')).toHaveAttribute('href', '/learning/ramayanam')
   })
 })
