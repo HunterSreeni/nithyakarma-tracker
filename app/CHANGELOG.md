@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.22.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.22.0...app-v0.22.1) (2026-07-21)
+
+
+### Bug Fixes
+
+* **learning:** render Ramayanam PDFs via pdf.js instead of iframe ([e1ed143](https://github.com/HunterSreeni/nithyakarma-tracker/commit/e1ed143287e5388bb0e325720cf25838c0825e02))
+* **learning:** render Ramayanam PDFs via pdf.js instead of iframe ([d0fe61b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/d0fe61bd8be652241ea6a2ec2d03aea53890eddb))
+
 ## [0.22.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.21.1...app-v0.22.0) (2026-07-21)
 
 
