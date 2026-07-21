@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.23.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.22.1...app-v0.23.0) (2026-07-21)
+
+
+### Features
+
+* **onboarding:** prompt to enable notifications right after signup ([ccd7bbc](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ccd7bbc42f0b49dc53f46f66630fe65060c7494f))
+* **onboarding:** prompt to enable notifications right after signup ([38e7dc9](https://github.com/HunterSreeni/nithyakarma-tracker/commit/38e7dc93acba2202613c374782ae317ee3bf8822))
+
 ## [0.22.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.22.0...app-v0.22.1) (2026-07-21)
 
 
