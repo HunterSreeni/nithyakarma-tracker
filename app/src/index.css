@@ -219,7 +219,9 @@ a.verse-card { text-decoration: none; color: inherit; }
 .sk-nav-btn:disabled { opacity: 0.35; }
 .sk-sarga-select { flex: 1; font-family: 'Sora', sans-serif; font-size: 0.8rem; font-weight: 600; padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--warm); background: #fff; color: var(--ink); }
 .sk-sarga-title { font-size: 0.8rem; color: var(--text-2); line-height: 1.45; margin-bottom: 0.4rem; }
-.sk-pdf-frame { width: 100%; height: 70vh; border: 1.5px solid var(--warm); border-radius: 14px; background: #fff; }
+.pdf-viewer { border: 1.5px solid var(--warm); border-radius: 14px; background: #fff; overflow: hidden; }
+.pdf-page-list { max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px; }
+.pdf-page-canvas { max-width: 100%; height: auto; }
 .sk-pdf-attribution { display: block; font-size: 0.7rem; color: var(--text-2); margin-top: 0.5rem; text-align: right; }
 
 .slot-row { display: flex; gap: 5px; margin-top: 6px; }

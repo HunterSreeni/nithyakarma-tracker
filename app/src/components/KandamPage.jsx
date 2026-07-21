@@ -4,6 +4,7 @@ import { Languages, ChevronLeft, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { findKandam } from '../utils/ramayanam'
 import ErrorBanner from './ErrorBanner'
+import PdfViewer from './PdfViewer'
 
 const LANGUAGES = [
   { key: 'sanskrit', label: 'Sanskrit' },
@@ -12,12 +13,14 @@ const LANGUAGES = [
 
 // Every kandam of the Ramayanam (Bala through Yuddha) is too large for the
 // flat, single-scroll reader every other Learning practice uses. Rather
-// than a custom verse-by-verse card reader, this embeds the actual sarga
+// than a custom verse-by-verse card reader, this shows the actual sarga
 // PDFs (Sanskrit + Malayalam, compiled by Sunder Kidambi at prapatti.com)
-// page by page - see scripts/download-ramayanam-pdfs.cjs for how they're
-// fetched. prapatti.com's own copies send `X-Frame-Options: SAMEORIGIN` and
-// can't be framed directly, so these are re-hosted (with attribution below
-// the reader) in the learning-content Storage bucket.
+// page by page via PdfViewer - see scripts/download-ramayanam-pdfs.cjs for
+// how they're fetched. prapatti.com's own copies send
+// `X-Frame-Options: SAMEORIGIN` and can't be framed directly, so these are
+// re-hosted (with attribution below the reader) in the learning-content
+// Storage bucket. PdfViewer renders via pdf.js/canvas rather than an
+// <iframe>, since Android's WebView has no native PDF plugin to render one.
 function pdfUrl(kandamSlug, language, sarga) {
   const path = `ramayanam-pdfs/${kandamSlug}/${language}/${sarga}.pdf`
   return supabase.storage.from('learning-content').getPublicUrl(path).data.publicUrl
@@ -88,7 +91,7 @@ export default function KandamPage() {
         ))}
       </div>
 
-      <iframe key={src} className="sk-pdf-frame" src={src}
+      <PdfViewer key={src} src={src}
         title={`${kandam.name} Sarga ${currentSarga} (${language})`} />
 
       <a className="sk-pdf-attribution" href={src} target="_blank" rel="noopener noreferrer">

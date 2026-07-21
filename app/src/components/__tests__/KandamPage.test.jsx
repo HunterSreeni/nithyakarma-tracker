@@ -17,6 +17,13 @@ vi.mock('../../lib/supabase', () => ({
     },
   },
 }))
+// PdfViewer's real rendering (pdf.js + canvas + a web worker) isn't
+// meaningfully testable in jsdom - see PdfViewer.test.jsx for that. Here
+// it's stubbed so KandamPage's own logic (sarga nav, url building) can be
+// asserted against a plain, inspectable element.
+vi.mock('../PdfViewer', () => ({
+  default: ({ src, title }) => <div data-testid="pdf-viewer" title={title} data-src={src} />,
+}))
 
 import KandamPage from '../KandamPage'
 
@@ -39,7 +46,7 @@ describe('KandamPage', () => {
     render(<KandamPage />)
     expect(screen.getByLabelText('Jump to sarga')).toHaveValue('1')
     expect(screen.getByTitle('Sundara Kandam Sarga 1 (sanskrit)'))
-      .toHaveAttribute('src', 'https://storage.example/learning-content/ramayanam-pdfs/sundara/sanskrit/1.pdf')
+      .toHaveAttribute('data-src', 'https://storage.example/learning-content/ramayanam-pdfs/sundara/sanskrit/1.pdf')
   })
 
   it('reads the :sarga param and builds the matching PDF url', () => {
@@ -47,7 +54,7 @@ describe('KandamPage', () => {
     render(<KandamPage />)
     expect(screen.getByLabelText('Jump to sarga')).toHaveValue('7')
     expect(screen.getByTitle('Sundara Kandam Sarga 7 (sanskrit)'))
-      .toHaveAttribute('src', 'https://storage.example/learning-content/ramayanam-pdfs/sundara/sanskrit/7.pdf')
+      .toHaveAttribute('data-src', 'https://storage.example/learning-content/ramayanam-pdfs/sundara/sanskrit/7.pdf')
   })
 
   it('keeps per-kandam last-read progress separate', () => {
@@ -93,7 +100,7 @@ describe('KandamPage', () => {
     render(<KandamPage />)
     fireEvent.click(screen.getByText('Malayalam'))
     expect(screen.getByTitle('Sundara Kandam Sarga 3 (malayalam)'))
-      .toHaveAttribute('src', 'https://storage.example/learning-content/ramayanam-pdfs/sundara/malayalam/3.pdf')
+      .toHaveAttribute('data-src', 'https://storage.example/learning-content/ramayanam-pdfs/sundara/malayalam/3.pdf')
   })
 
   it('links attribution to the currently displayed PDF', () => {
