@@ -26,6 +26,11 @@ test.describe('Referral applied at signup', () => {
     await page.getByRole('button', { name: 'Female', exact: true }).click()
     await expect(page.getByPlaceholder("From a friend's invite link")).toHaveValue(REFERRAL_CODE)
     await page.getByRole('button', { name: /Begin/ }).click()
+
+    // Notification prompt runs once, right after profile creation.
+    await expect(page.getByText('Turn on reminders?')).toBeVisible({ timeout: 15000 })
+    await page.getByRole('button', { name: 'Maybe later' }).click()
+
     await expect(page.getByText(/Namaskaram, Referral/)).toBeVisible({ timeout: 15000 })
 
     // Self-cleanup: this is a throwaway account, delete it now that the

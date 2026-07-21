@@ -24,6 +24,12 @@ test('female onboarding reaches an actionable Today via the suggested-practices 
   // the auto-add-Sandhyavandhanam line is male-only copy
   await expect(page.getByText(/Sandhyavandhanam .* will be added/)).toHaveCount(0)
   await page.getByRole('button', { name: /Begin/ }).click()
+
+  // Notification prompt runs once, right after profile creation - exercise
+  // the skip path here (journey.spec.js's male path exercises Enable).
+  await expect(page.getByText('Turn on reminders?')).toBeVisible({ timeout: 15000 })
+  await page.getByRole('button', { name: 'Maybe later' }).click()
+
   await expect(page.getByText(/Namaskaram, E2E/)).toBeVisible({ timeout: 15000 })
 
   // Empty-day activation (Intent 1.5): no Sandhyavandhanam card, "Suggested to

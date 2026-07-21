@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import AuthPage from './components/AuthPage'
@@ -8,6 +8,7 @@ import TodayPage from './components/TodayPage'
 // Deferred: only fetched when actually navigated to, keeping them out of the
 // initial bundle everyone downloads just to see Today.
 const Onboarding = lazy(() => import('./components/Onboarding'))
+const NotificationPrompt = lazy(() => import('./components/NotificationPrompt'))
 const HistoryPage = lazy(() => import('./components/HistoryPage'))
 const SabhaPage = lazy(() => import('./components/SabhaPage'))
 const ReferralsPage = lazy(() => import('./components/ReferralsPage'))
@@ -33,6 +34,22 @@ function Gate() {
   // something upstream still manages to hang despite the guards in useAuth,
   // don't leave the user staring at a spinner forever.
   const [stuck, setStuck] = useState(false)
+  // Fires the notification prompt exactly once, right as profile flips from
+  // absent to present (i.e. onboarding just completed) - not on every app
+  // load for an already-onboarded returning user. Gated on `!loading` so the
+  // ref doesn't arm during the initial auth fetch, where profile is
+  // momentarily null for returning users too, before their existing profile
+  // has loaded.
+  const wasOnboardingRef = useRef(false)
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false)
+  useEffect(() => {
+    if (loading) return
+    if (session && !profile) { wasOnboardingRef.current = true; return }
+    if (profile && wasOnboardingRef.current) {
+      wasOnboardingRef.current = false
+      setShowNotifPrompt(true)
+    }
+  }, [loading, session, profile])
   useEffect(() => {
     if (!loading) { setStuck(false); return }
     const t = setTimeout(() => setStuck(true), 15000)
@@ -60,6 +77,13 @@ function Gate() {
   if (pathname === '/reset') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><ResetPassword /></Suspense>
   if (!session) return <AuthPage />
   if (!profile) return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><Onboarding /></Suspense>
+  if (showNotifPrompt) {
+    return (
+      <Suspense fallback={<div className="spinner-wrap">Loading...</div>}>
+        <NotificationPrompt onDone={() => setShowNotifPrompt(false)} />
+      </Suspense>
+    )
+  }
   return (
     <Layout>
       <Suspense fallback={<div className="spinner-wrap">Loading...</div>}>

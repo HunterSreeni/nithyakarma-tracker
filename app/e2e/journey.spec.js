@@ -53,6 +53,15 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await page.getByRole('button', { name: 'Male', exact: true }).click()
     await expect(page.getByText(/Sandhyavandhanam .* will be added/)).toBeVisible()
     await page.getByRole('button', { name: /Begin/ }).click()
+
+    // Notification prompt runs once, right after profile creation - exercise
+    // the real enable + test-push path (permission is pre-granted, see
+    // playwright.config.js) rather than skipping past it.
+    await expect(page.getByText('Turn on reminders?')).toBeVisible({ timeout: 15000 })
+    await page.getByRole('button', { name: 'Enable notifications' }).click()
+    await expect(page.getByText('Notifications enabled!')).toBeVisible({ timeout: 15000 })
+    await page.getByRole('button', { name: 'Continue' }).click()
+
     await expect(page.getByText(/Namaskaram, E2E/)).toBeVisible({ timeout: 15000 })
 
     // driver.js first-run tour auto-runs: welcome -> sandhya slots -> add-practice.
@@ -153,11 +162,14 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await page.getByRole('link', { name: /Profile/ }).first().click()
   })
 
-  test('notification toggle enables and saves the preference', async () => {
+  test('notification toggle disables and re-enables, saving the preference', async () => {
     const toggle = page.getByRole('checkbox', { name: /Reminder notifications/ })
     await expect(toggle).toBeEnabled({ timeout: 15000 })
-    await expect(toggle).not.toBeChecked()
-    await toggle.click() // state flips after async permission+save
+    // Already on: the onboarding step above enabled notifications.
+    await expect(toggle).toBeChecked()
+    await toggle.click() // turn off
+    await expect(toggle).not.toBeChecked({ timeout: 15000 })
+    await toggle.click() // turn back on - state flips after async permission+save
     await expect(toggle).toBeChecked({ timeout: 15000 })
     await page.reload()
     await expect(page.getByRole('checkbox', { name: /Reminder notifications/ }))
