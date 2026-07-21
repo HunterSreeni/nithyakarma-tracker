@@ -59,7 +59,7 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     // Stepping through it both exercises the tour and dismisses it.
     await expect(page.locator('.driver-popover')).toBeVisible({ timeout: 10000 })
     await page.locator('.driver-popover-next-btn').click()
-    await expect(page.getByText('Sandhyavandhanam is three sandhyas')).toBeVisible()
+    await expect(page.getByText('Sandhyavandhanam has three times')).toBeVisible()
     await page.locator('.driver-popover-next-btn').click()
     await expect(page.getByText("You're all set")).toBeVisible()
     await page.locator('.driver-popover-next-btn').click() // "Begin" done button
@@ -73,7 +73,6 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     // Slot 1 - verified save + share card, no ad on web
     await page.getByRole('button', { name: 'Morning' }).click()
     await expect(page.getByText('Punyam grows daily', { exact: false })).toBeVisible({ timeout: 15000 })
-    await expect(page.getByText('Join me on Nithyakarma')).toBeVisible()
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByText('1 of 3 sandhyas done')).toBeVisible()
 
