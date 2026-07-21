@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.21.1...app-v0.22.0) (2026-07-21)
+
+
+### Features
+
+* **learning:** add sarga-by-sarga Ramayanam reader (6 kandams) ([8659f7c](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8659f7c27524a164defefa72572ac5ed66400c6a))
+
 ## [0.21.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.21.0...app-v0.21.1) (2026-07-21)
 
 
