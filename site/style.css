@@ -124,6 +124,7 @@ nav.site-nav a {
   font-weight: 500;
 }
 nav.site-nav a:hover, nav.site-nav a[aria-current="page"] { color: var(--ink); }
+nav.site-nav a.btn, nav.site-nav a.btn:hover { color: #fff; }
 
 .btn {
   display: inline-block;
