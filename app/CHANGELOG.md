@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.24.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.24.1...app-v0.24.2) (2026-07-23)
+
+
+### Bug Fixes
+
+* notification prompt re-shown on every sign-in, plus Android e2e script fixes ([f941869](https://github.com/HunterSreeni/nithyakarma-tracker/commit/f941869adeb20741f627a4efbca79be36e94ec06))
+* notification prompt re-shown on every sign-in, plus Android e2e script fixes ([2df985a](https://github.com/HunterSreeni/nithyakarma-tracker/commit/2df985a1d3d7c7495da279a45951366ae4ecf8cc))
+
 ## [0.24.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.24.0...app-v0.24.1) (2026-07-23)
 
 
