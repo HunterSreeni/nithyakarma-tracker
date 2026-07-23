@@ -14,5 +14,6 @@ describe('LearningHub', () => {
     expect(screen.getByText('Hanuman Chalisa').closest('a')).toHaveAttribute('href', '/learning/hanuman-chalisa')
     expect(screen.getByText('Vishnu Sahasranamam').closest('a')).toHaveAttribute('href', '/learning/vishnu-sahasranamam')
     expect(screen.getByText('Ramayanam').closest('a')).toHaveAttribute('href', '/learning/ramayanam')
+    expect(screen.getByText('Sai Baba Aarti').closest('a')).toHaveAttribute('href', '/learning/sai-baba-aarti')
   })
 })

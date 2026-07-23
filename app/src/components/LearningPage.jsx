@@ -31,6 +31,15 @@ export const LEARNING_CONTENT = {
     typeLabel: { dhyanam: 'Dhyanam', shloka: 'Shloka' },
     youtubeUrl: 'https://www.youtube.com/watch?v=5aHeprNOU3s',
   },
+  'sai-baba-aarti': {
+    title: 'Sai Baba Aarti',
+    subtitle: 'Thursday (Guruvar) is Sai Baba’s day - the aarti sung at Shirdi.',
+    languages: [
+      { key: 'english', label: 'English' },
+    ],
+    typeLabel: { refrain: 'Refrain', stanza: 'Stanza' },
+    youtubeUrl: 'https://www.youtube.com/watch?v=UpYEUdZBNRo',
+  },
   // The full Ramayanam (6 kandams, hundreds of sargas each) is too large for
   // this flat-list reader - its own route (/learning/ramayanam) goes to the
   // kandam picker (RamayanamPage) instead, which leads to the sarga-aware

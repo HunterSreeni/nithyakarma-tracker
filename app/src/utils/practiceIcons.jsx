@@ -1,6 +1,6 @@
 import {
   Sunrise, Sun, Waves, BookOpen, TreeDeciduous, Library, Sparkles,
-  Flag, Feather, Sword, Music2, Landmark, Flame,
+  Flag, Feather, Sword, Music2, Landmark, Flame, Lamp,
 } from 'lucide-react'
 
 // Custom marks for practices with no good stock-icon match, drawn in Lucide's
@@ -82,6 +82,7 @@ export const PRACTICE_ICONS = {
   'bhagavatam': Library,
   'temple-visit': Landmark,
   'ramayanam': Flame,
+  'sai-baba-aarti': Lamp,
 }
 
 export default function PracticeIcon({ slug, ...props }) {

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "refrain",
+    "type": "refrain",
+    "english": "Aarti Sai Baba, saukhyadaataara jeeva.\nCharana rajaatalee, dhyaava daasaan visaawaa, bhaktaa visaawaa."
+  },
+  {
+    "id": "stanza-1",
+    "type": "stanza",
+    "english": "Jaaluniyaan aananng swaswaroopee raahe dhanga,\nMumukshu janaan daavee nija dolaan Sreeranga."
+  },
+  {
+    "id": "stanza-2",
+    "type": "stanza",
+    "english": "Jayaa manee jaisaa bhaava tayaa taisaa anubhava,\nDaawisee dayaaghanaa aisee tujee hee maava."
+  },
+  {
+    "id": "stanza-3",
+    "type": "stanza",
+    "english": "Tumache naama dhyaataan hare sansrithi vyathaa,\nAgaadha tava karanee maarga daawisee anaadhaa."
+  },
+  {
+    "id": "stanza-4",
+    "type": "stanza",
+    "english": "Kaliyugee avataara saguna parabrahm saachara,\nAvateerna jhaalase swami Datta digambara."
+  },
+  {
+    "id": "stanza-5",
+    "type": "stanza",
+    "english": "Aattan divasaan guruwaaree bhakta karitee waaree,\nPrabhupada pahaavayaa bhavabhaya niwaree."
+  },
+  {
+    "id": "stanza-6",
+    "type": "stanza",
+    "english": "Maajan nija dravya tteewaa tav charan rajasevaa,\nMaagane hechiyaataa tumhan devaadhideva."
+  },
+  {
+    "id": "stanza-7",
+    "type": "stanza",
+    "english": "Ichchita deena chaatak nirmala toya nijasookha,\nPaajaawe maadhavaa yaa saambhal aapulee bhaaka."
+  }
+]

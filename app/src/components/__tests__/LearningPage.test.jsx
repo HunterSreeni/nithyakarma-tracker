@@ -62,3 +62,21 @@ describe('LearningPage - Vishnu Sahasranamam has its own language set and video'
       .toHaveAttribute('href', 'https://www.youtube.com/watch?v=5aHeprNOU3s')
   })
 })
+
+describe('LearningPage - Sai Baba Aarti is English-only and labels refrain/stanza', () => {
+  it('renders the refrain and stanza types, offers only English, links its own video', () => {
+    h.slug = 'sai-baba-aarti'
+    h.verses = [
+      { id: 'refrain', type: 'refrain', english: 'refrain text' },
+      { id: 'stanza-1', type: 'stanza', english: 'stanza text' },
+    ]
+    render(<LearningPage />)
+    expect(screen.getByText('Refrain')).toBeInTheDocument()
+    expect(screen.getByText('refrain text')).toBeInTheDocument()
+    expect(screen.getByText('Stanza')).toBeInTheDocument()
+    expect(screen.getByText('stanza text')).toBeInTheDocument()
+    expect(screen.queryByText('Malayalam')).not.toBeInTheDocument()
+    expect(screen.getByText('Watch on YouTube').closest('a'))
+      .toHaveAttribute('href', 'https://www.youtube.com/watch?v=UpYEUdZBNRo')
+  })
+})

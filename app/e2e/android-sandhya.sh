@@ -37,6 +37,7 @@ PASSWORD="AndroidSandhya2026xyz"
 cd "$APP_DIR"
 
 tap() { adb shell input tap "$1" "$2"; }
+key() { adb shell input keyevent "$1"; }
 shot() { adb exec-out screencap -p > "$SCRATCH/$1"; }
 
 echo "==> 0. Preconditions"
@@ -61,50 +62,65 @@ adb shell am start -n "$PKG/.MainActivity" >/dev/null
 sleep 8
 
 echo "==> 3. Log in"
-# NOTE (found + fixed 2026-07-23): tapping the email field brings up the
-# on-screen keyboard, which makes the page scroll up to keep the focused
-# field visible above it - so the password-field and Sign In coordinates
-# are NOT the same as their no-keyboard positions used for the first tap.
-# Using the no-keyboard coordinates here previously missed both, landing on
-# empty space/the keyboard itself, garbling the email field and eventually
-# mis-tapping into a signed-in Google account already cached on this
-# emulator instead of the throwaway account - verified via Supabase MCP that
-# no real data was affected, but this needs the keyboard-shown coordinates.
-tap 557 1562           # email field (no keyboard shown yet)
+# NOTE (found + fixed 2026-07-23, re-verified same day): tapping the email
+# field brings up the on-screen keyboard, which scrolls the page to keep the
+# focused field visible - and that scroll amount is NOT reliably reproducible
+# run to run (sometimes the keyboard stays up after typing, sometimes it
+# closes on its own), so ANY hardcoded coordinate for the password field or
+# the Sign In button is inherently flaky. Two miscalibrated attempts landed
+# on a real personal Google account cached on this emulator instead of the
+# throwaway account - confirmed via Supabase MCP both times that no data was
+# written to it, but this is exactly the kind of mistake that could reach
+# real data. Fixed properly: after the one coordinate-based tap to focus the
+# email field, use KEYCODE_TAB to move focus to the password field and
+# KEYCODE_ENTER to submit - both are DOM focus-order operations, not
+# screen-position taps, so they're immune to the keyboard-reflow problem
+# entirely.
+tap 557 1562            # email field (the only coordinate-based tap left)
 sleep 1
 adb shell input text "$EMAIL"
 sleep 1
-tap 540 954             # password field (keyboard now shown, page scrolled up)
+key KEYCODE_TAB          # move focus to the password field - no coordinate needed
 sleep 1
 adb shell input text "$PASSWORD"
 sleep 1
-tap 540 1214             # Sign In (keyboard-shown position - KEYCODE_BACK does not
-                          # reliably dismiss the keyboard here, so tap through it)
+key KEYCODE_ENTER         # submit - no coordinate needed, works regardless of keyboard state
 sleep 5
-# The following coordinates (OS notification prompt, tour dismiss, sandhya
-# slots) were NOT re-verified against a real run in this session - the login
-# fix above was confirmed by hand up through a clean Today page, but the
-# post-login sequence should be re-checked interactively (with eyes on the
-# emulator, not blind screenshot round-trips) before trusting this script's
-# PASS again.
-tap 557 1474             # dismiss the OS "Allow notifications?" prompt (Don't allow) -
-                          # no-op tap on the Today card if the prompt didn't appear
+
+echo "==> 4. Dismiss the OS notification prompt (if it appears) and the guided tour"
+# The OS "Allow notifications?" permission dialog did not appear in either
+# 2026-07-23 test run (permission grant state appears to survive `pm clear`,
+# unlike app data) - this tap is a no-op-safe fallback in case it does.
+tap 540 1470              # "Don't allow" on the OS notification dialog, harmless no-op otherwise
 sleep 1
-tap 917 1085             # dismiss the driver.js first-run guided tour (its "x" close
-                          # button) - no-op tap on the Today card if the tour didn't run
+# This throwaway account is freshly seeded every run, so the driver.js
+# first-run tour DOES run (3 steps: welcome -> sandhya-slots -> add-practice),
+# not a single dismiss - verified 2026-07-23. "Next" and "Begin" are in the
+# same screen position across all 3 steps.
+tap 842 1348               # tour step 1/3: Next
+sleep 1
+tap 917 1873               # tour step 2/3: Next
+sleep 1
+tap 836 1287               # tour step 3/3: Begin
 sleep 1
 shot "01-today.png"
 
-echo "==> 4. Mark all 3 sandhya slots"
-for slot_x in 312 467 619; do
-  tap "$slot_x" 1276
+echo "==> 5. Mark all 3 sandhya slots"
+# Coordinates re-measured and verified 2026-07-23: the Morning/Noon/Evening
+# pill row sits INSIDE the Sandhyavandhanam card (y~2058), well below the
+# "Me / + Add child" profile-switcher row (y~1288) that an earlier version of
+# this script mistook it for - that mistake tapped "+ Add child" and
+# navigated to /profile instead of marking anything, twice, in two different
+# sessions, before being caught.
+for slot_x in 312 495 680; do
+  tap "$slot_x" 2058
   sleep 3
-  tap 540 1727            # dismiss celebration via Continue (no-op if absent)
+  tap 540 1643            # dismiss celebration via Continue (no-op if absent)
   sleep 1
 done
 shot "02-after-3-slots.png"
 
-echo "==> 5. Assertions"
+echo "==> 6. Assertions"
 fail=0
 LOG="$(adb logcat -d 2>&1)"
 if echo "$LOG" | grep -qiE "AndroidRuntime: FATAL"; then
@@ -113,7 +129,7 @@ else
   echo "  ok: no fatal crash"
 fi
 adb shell pidof "$PKG" >/dev/null && echo "  ok: process alive" || { echo "  FAIL: process not running"; fail=1; }
-echo "  screenshots saved to $SCRATCH (02-after-3-slots.png should show '1 Day Streak!')"
+echo "  screenshots saved to $SCRATCH (02-after-3-slots.png should show 'ALL 3 SANDHYAS DONE')"
 echo "  cross-check server state (streak/punya/slot count) via Supabase MCP against $EMAIL, then delete the throwaway user"
 
 [ "$fail" = 0 ] && echo "ANDROID SANDHYA E2E: PASS" || { echo "ANDROID SANDHYA E2E: FAIL"; exit 1; }
