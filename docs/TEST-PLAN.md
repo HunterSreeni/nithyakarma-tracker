@@ -172,9 +172,10 @@ running things manually.** Nothing in CI would catch a regression in either area
     toggle (master + tharpanam/observance sub-toggles, sub-toggles disabled unless
     master on); web push (VAPID) vs Android FCM transport split; self-heal on mount
     (re-subscribe silently if lost, show blocked-guidance if permission revoked,
-    never auto-prompt on a reset/`default` permission); "Send test notification";
-    **`Layout.jsx` independently calls `scheduleAllReminders()` on every mount tied
-    to `profile.gender`, regardless of the user's saved opt-in** (see Known Gaps).
+    never auto-prompt on a reset/`default` permission); "Send test notification".
+    The first-run prompt's arming logic (`justOnboarded` flag) fires exactly once,
+    right when `createProfile()` completes - not on ordinary sign-ins (fixed
+    2026-07-23, see Known Gaps).
 11. **Monthly Special Banner** - DB-driven per-month nudge on Today, silent no-op if
     no row for the current month, per-month localStorage dismiss.
 12. **Panchangam display** - today's row by local date, silent no-op if none exists
@@ -298,7 +299,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Local-push suppression fires on day-complete (Android) | Unit (`notifications.test.js`) | ✅ |
 | Ad fires after verified save, before celebration | Unit (`TodayPage.test.jsx`) | ✅ |
 | Ad capped at 1/session, skipped when ad-free, never on failed save | Unit (`ads.test.js`) | ✅ |
-| CelebrationModal share card's `data.tier` field - is it ever actually populated? | - | ⬜ **possible bug**: `TodayPage.mark()` builds `{...result, subjectName}` with no `tier` key added; unclear if the RPC itself returns `tier`. Not asserted either way. |
+| CelebrationModal share card's `data.tier` field | - | ✅ verified 2026-07-23 via the live `submit_practice_log` function definition (Supabase MCP) - it returns `tier`, and `TodayPage.mark()`'s spread carries it through. Not a bug. |
 | p_award_streak passthrough (learning-style marks don't advance streak) | Unit (`useToday.test.js`) + Integration(§17) | ✅ |
 | Client-supplied local date honored within ±1 day, falls back beyond that (anti streak-gaming) | Integration(§10b) | ✅ |
 
@@ -349,7 +350,8 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | `slot` CHECK constraint covers every literal `send-reminders` actually uses, incl. tharpanam/observance | Integration(§19) | ✅ |
 | Timezone alias normalization (`Asia/Calcutta` -> `Asia/Kolkata`, old WebView ICU) | - | ⬜ |
 | Edge fn sends only within its tz window | Manual (verified 2026-07-14) | ⚠️ manual only, no automated test of `send-reminders` itself |
-| **`Layout.jsx` re-schedules native reminders on every mount tied to `profile.gender`, independent of the saved opt-in** | - | ⬜ **possible bug** - see Known Gaps |
+| `Layout.jsx` unconditional reminder-scheduling | - | ✅ fixed 2026-07-23 - the redundant, ungated call is removed |
+| Notification-prompt does not re-show on a normal sign-in of an existing user | Unit (`App.notification-prompt.test.jsx`) | ✅ fixed + regression-tested 2026-07-23 (was showing on every login, not just first onboarding) |
 | observanceMatch rule engine (thithi/sankranti/nakshatra/day-offset matching, priority tiebreaks) | Deno (`observanceMatch.test.ts`, CI) | ✅ |
 
 ### Monthly Special Banner
@@ -455,36 +457,87 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 
 ## 3. Known gaps & risks (prioritized)
 
-**Likely real bugs, found reading the code, not yet covered by any test:**
-1. `Layout.jsx` calls `scheduleAllReminders({ includeSandhya })` on every mount keyed
-   to `profile.gender` becoming available, **independent of the user's saved
-   `notification_preferences.enabled`**. On native this requests the OS notification
-   permission and (re)schedules local reminders. A user who explicitly declined via
-   "Maybe later" on the first-run prompt may still get a permission dialog or
-   rescheduled reminders just from using the app. Needs a targeted test (or a code
-   read to confirm/refute) before the next Android release.
-2. `CelebrationModal`'s share card renders `data.tier`. `TodayPage.mark()` builds the
-   object passed to it as `{ ...result, subjectName }` with no `tier` key added.
-   Unclear whether `submit_practice_log`'s RPC response includes a `tier` field on
-   its own - if not, the share card likely shows an undefined/blank tier. Worth a
-   quick RPC-response inspection.
+**Resolved since v2 was first written (2026-07-23), via PR #79 and a same-day follow-up:**
+- ~~`Layout.jsx` calling `scheduleAllReminders()` unconditionally on every mount~~ -
+  **fixed**: the redundant, ungated call is removed; `useNotifications.js` already
+  gates this correctly on the DB `enabled` flag.
+- ~~`CelebrationModal` share card's `data.tier` possibly undefined~~ - **verified not
+  a bug**: read the live `submit_practice_log` function definition directly via
+  Supabase MCP - it does return `'tier', tier_for(v_subject_punya)`, and
+  `TodayPage.mark()`'s `{ ...result, subjectName }` spread carries it through intact.
+- ~~`auth-signout.spec.js` silently skipped in CI~~ - **fixed**: `ci.yml` was passing
+  `E2E_EMAIL`/`E2E_PASSWORD` (the `@destructive` `e2efull` journey account's creds,
+  excluded from CI anyway) instead of the `E2E_UI_EMAIL`/`E2E_UI_PASSWORD` this spec
+  actually reads for the persistent `e2e@nithyakarma.test` account. `ci.yml` now
+  passes both; the `E2E_UI_EMAIL`/`E2E_UI_PASSWORD` repo secrets themselves still
+  need to be set (destructive-git-action classifier blocks setting them via agent).
+- ~~`android-*.sh` hardcode the pre-rename package `in.co.sreeniverse.nithyakarma`~~ -
+  **fixed**: updated to `org.nithyakarma.app` (renamed 2026-07-18, see
+  [06-ANDROID.md](architecture/06-ANDROID.md)); every script would have failed at
+  launch as written.
+- ~~`android-smoke.sh`'s log-string assertions~~ - **fixed**: it grepped for
+  Capacitor bridge trace lines (`"Loading app at..."`, `"Handling local
+  request..."`) that `loggingBehavior: 'none'` (2026-07-19, a deliberate security
+  fix) now suppresses by design - the script reported FAIL on a fully working build.
+  Replaced with a boot screenshot for manual confirmation.
+
+**New bug found + fixed 2026-07-23 (during a live full-suite run):**
+1. **Every sign-in of an already-onboarded user re-showed the "Turn on reminders?"
+   notification prompt**, not just the first one after onboarding. Root cause: the
+   old arming logic inferred "onboarding just completed" from `session` appearing
+   before `profile` had loaded - but that exact shape also happens on every live
+   sign-in of an *existing* user, since `profile` is fetched in a separate async call
+   after the `onAuthStateChange` event fires. Caught because `auth-signout.spec.js`
+   failed against production: the screenshot showed the notification-prompt's
+   "Continue" screen instead of the expected Logout button, for an account that
+   already had a profile. Fixed by adding an explicit `justOnboarded` flag to
+   `useAuth.jsx`, set only inside `createProfile()` (the one true onboarding-just-
+   finished signal) and consumed/cleared by `App.jsx`'s `Gate()` - eliminates the
+   race entirely rather than inferring it from timing. `App.notification-prompt.test.jsx`
+   rewritten to cover the specific race (session-before-profile on a normal sign-in)
+   that used to false-trigger this.
+2. **`android-sandhya.sh`/`android-referral.sh`'s login tap sequence was
+   miscalibrated**: tapping the email field brings up the on-screen keyboard, which
+   scrolls the page up to keep the focused field visible - so the password-field and
+   Sign In coordinates (calibrated for the no-keyboard layout) landed on empty space
+   or the keyboard itself. Confirmed by hand-driving the flow with corrected
+   keyboard-shown coordinates, which reached the throwaway account's clean Today
+   page correctly. **Important**: in the *miscalibrated* runs, this intermittently
+   landed on `sreeni4298@gmail.com` (a real personal Google account cached on the
+   dev emulator) instead of the throwaway account - verified via Supabase MCP both
+   times that **no logs were written to that account** (no data was affected), but
+   it's a reminder that blind-tap Android E2E on a personal dev machine can reach
+   real accounts if a script misses its target. Login-step coordinates are fixed in
+   both scripts; the post-login sequence (OS notification dialog, tour dismiss,
+   sandhya slots / onboarding form) was **not** re-verified end-to-end in this
+   session (stopped after confirming the login fix and the root cause, in favor of a
+   human doing the remaining recalibration interactively - far faster with a live
+   display than blind screenshot round-trips).
 3. Reset-password's `minLength=6` vs signup's `minLength=8` is an inconsistency with
-   no test either enforcing the intended value or flagging the mismatch.
+   no test either enforcing the intended value or flagging the mismatch. Still open.
 
 **Coverage that exists on paper but not in CI:**
 4. The only UI-level tests of Sandhyavandhanam, female onboarding, family-member
    add, delete-account, and leaderboard-opt-in persistence are `journey.spec.js` /
    `journey-female.spec.js`, both excluded from CI as `@destructive`. A regression in
    any of these flows would only surface at the next manual pre-release run.
-5. `auth-signout.spec.js` and `referral.spec.js` are not destructive-tagged but
-   self-skip in CI due to missing secrets - they read as "covered" from the file
-   list alone but contribute nothing automatically.
+5. `referral.spec.js` is not destructive-tagged but self-skips in CI due to missing
+   `E2E_REFERRAL_THROWAWAY_PASSWORD`/`E2E_REFERRER_CODE` secrets. Getting it into CI
+   is more than adding secrets: the spec self-deletes its throwaway account at the
+   end of every run, so CI would need a re-seed step with production DB *write*
+   credentials as a new, more sensitive secret, and the referrer account is
+   rate-limited to 5 credited referrals per rolling 24h (`integration-assertions.sql`
+   §9b) - frequent CI runs would eventually fail for real, not skip. Deliberately
+   left manual; referral correctness is already fully covered at the DB layer.
 6. `send-reminders` and `send-test-notification` (the actual push-sending Deno
    functions) have no test coverage at all - only their shared `observanceMatch.ts`
    helper does.
-7. The three `android-*.sh` scripts assert only "process didn't crash" - none verify
-   actual on-screen text or server-side state. They're also brittle (hardcoded taps
-   calibrated to one 1080x2400 emulator resolution) and not run in CI.
+7. The three `android-*.sh` scripts assert only "process didn't crash" (plus a
+   manually-reviewed screenshot) - no programmatic verification of on-screen text or
+   server-side state is possible (WebView exposes no accessibility tree). They
+   remain brittle (hardcoded taps calibrated to one 1080x2400 emulator resolution,
+   now further calibrated for keyboard-shown vs. no-keyboard layouts too) and are
+   not run in CI.
 8. `android/app/src/androidTest`/`src/test` are unmodified Capacitor boilerplate
    (`com.getcapacitor.myapp` package assertions that don't even match this app's real
    package) - zero real coverage, and no Gradle test task runs in CI regardless.
@@ -521,18 +574,21 @@ Signed in as e2e (male) and a female profile, on web + Android emulator:
   (on a throwaway, never `e2e`), T&C/Privacy reachable standalone.
 - Overnight: confirm a reminder fires in a tz window; confirm streak persists to
   Day 2; confirm a missed-day scenario resets correctly.
-- Specifically probe the two suspected bugs in §3 (Layout re-prompt, share-card tier).
+- Specifically re-verify the post-login Android tap sequence in `android-sandhya.sh`/
+  `android-referral.sh` interactively (§3) - only the login step was confirmed fixed.
 - Track results in `TEST-RESULTS.md`; file any defect with repro.
 
 ## 6. Recommended additions (priority order)
-1. Confirm/fix the `Layout.jsx` unconditional reminder-scheduling behavior (§3.1) -
-   highest risk since it's a live Android UX issue, not just a test gap.
-2. Verify the `CelebrationModal` share-card tier field (§3.2) - quick to check.
+1. Set the `E2E_UI_EMAIL`/`E2E_UI_PASSWORD` repo secrets (values already known, see
+   memory) so `auth-signout.spec.js` actually runs in CI instead of silently
+   skipping - `ci.yml` is already wired, just needs the secrets themselves.
+2. Interactively re-verify and, if needed, recalibrate the post-login tap
+   coordinates in `android-sandhya.sh`/`android-referral.sh` (OS notification
+   dialog, tour dismiss, sandhya slots / onboarding form) - the login step is fixed
+   and confirmed, the rest is not yet re-verified against the corrected login flow.
 3. Get `journey.spec.js`/`journey-female.spec.js` (or a slimmer non-destructive
    subset of their assertions) into CI, even if the full destructive run stays
    manual-only - right now a Sandhyavandhanam UI regression ships silently.
-4. Add secrets so `auth-signout.spec.js` and `referral.spec.js` actually run in CI
-   instead of silently skipping.
 5. Any coverage for `send-reminders`/`send-test-notification` themselves (even a
    thin Deno test of the tz-window logic) - currently the actual push-sending code
    is the least-tested piece of the notification system.

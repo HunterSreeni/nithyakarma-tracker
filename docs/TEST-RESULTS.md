@@ -58,3 +58,62 @@ No functional defects found in the app itself during Day-1.
 - e2e (preserved UI account) - untouched during this run.
 - integtest (profile-less) - used only for rolled-back SQL assertions.
 - e2efull (disposable) - used for the destructive walkthrough; reset after.
+
+## Full suite run (2026-07-23), against production, on main post-PR#79
+
+Web build + Android debug APK, run after fixing the Layout.jsx/CI issues from
+PR #79. Reseeded e2efull, e2efemale, referral-throwaway, android-sandhya-throwaway,
+android-referral-throwaway via Supabase MCP first.
+
+| Suite | Scope | Result |
+|---|---|---|
+| Vitest (lint + unit/component) | 45 files, all suites | 287/287 pass, lint clean |
+| Production build | `npm run build` | succeeds |
+| Playwright e2e, full run (no `--grep-invert`) | all 17 tests across 5 specs | 16/17 pass on first run |
+| Playwright e2e, `auth-signout.spec.js` re-run | after the fix below | 1/1 pass |
+| Android smoke (`android-smoke.sh`) | build→install→launch, boot screenshot | PASS after 2 script fixes (below) |
+| Android sandhya (`android-sandhya.sh`) | login→mark 3 slots | login fixed + verified by hand; slot-marking not completed this session (see below) |
+
+### Bug found + fixed: notification prompt re-shown on every sign-in
+
+`auth-signout.spec.js` failed on the first full run - screenshot showed the
+"Notifications enabled! ... Continue" screen instead of the expected Logout
+button, signed in as `e2e@nithyakarma.test` (an account that already has a
+profile). Root cause and fix: see `TEST-PLAN.md` §3, item 1. Added a
+`justOnboarded` flag to `useAuth.jsx` / `App.jsx`'s `Gate()`, replacing the old
+session-vs-profile-timing heuristic. Re-ran `auth-signout.spec.js` alone
+afterward: PASS. Full Vitest suite (287 tests), lint, and build all still pass.
+
+### Android script fixes (before any device testing was possible)
+
+1. All three `android-*.sh` scripts hardcoded the **pre-rename** package
+   `in.co.sreeniverse.nithyakarma`; the app has been `org.nithyakarma.app` since
+   2026-07-18. Every script would have failed at launch as written. Fixed.
+2. `android-smoke.sh` grepped logcat for Capacitor bridge trace lines that
+   `loggingBehavior: 'none'` (a deliberate 2026-07-19 security fix) now
+   suppresses - it reported FAIL on a fully working build (confirmed via a
+   manual screenshot showing the app rendered correctly). Replaced the
+   log-string assertions with a boot screenshot for manual confirmation; PASS.
+
+### Android sandhya/referral: login-flow bug found, not fully re-verified
+
+`android-sandhya.sh`'s scripted login intermittently landed on a **real personal
+Google account** (`sreeni4298@gmail.com`, cached on the dev emulator) instead of
+the seeded throwaway account. Verified via Supabase MCP on both occurrences that
+**no practice logs were written to that account either time** - no real data was
+affected. Root cause: tapping the email field brings up the on-screen keyboard,
+which scrolls the page up to keep the focused field visible, so the
+password-field and Sign In taps (calibrated for the no-keyboard layout) missed
+their targets. Confirmed by hand-driving the login with corrected keyboard-shown
+coordinates - reached the throwaway account (`Namaskaram, Android`, 0-day streak,
+matching the seed) cleanly. Fixed the login-step coordinates in both
+`android-sandhya.sh` and `android-referral.sh`. The post-login sequence (OS
+notification dialog, driver.js tour, sandhya slot taps / onboarding form) was
+**not** re-verified end to end against the fix in this session - stopped after
+confirming the root cause and the login fix, since further blind screenshot
+round-trips have diminishing returns compared to a quick interactive pass with
+eyes on the emulator. `android-referral.sh` was not run live at all this session.
+
+Emulator autofill was temporarily disabled and restored to its original setting
+while investigating (ruled out - not the actual cause). Emulator app data was
+cleared at the end of the session, left signed out.

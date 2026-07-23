@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import AuthPage from './components/AuthPage'
@@ -28,28 +28,26 @@ const RamayanamPage = lazy(() => import('./components/RamayanamPage'))
 const KandamPage = lazy(() => import('./components/KandamPage'))
 
 function Gate() {
-  const { session, profile, loading } = useAuth()
+  const { session, profile, loading, justOnboarded, clearJustOnboarded } = useAuth()
   const { pathname } = useLocation()
   // Cheap watchdog for the one loading state that fully blanks the app: if
   // something upstream still manages to hang despite the guards in useAuth,
   // don't leave the user staring at a spinner forever.
   const [stuck, setStuck] = useState(false)
-  // Fires the notification prompt exactly once, right as profile flips from
-  // absent to present (i.e. onboarding just completed) - not on every app
-  // load for an already-onboarded returning user. Gated on `!loading` so the
-  // ref doesn't arm during the initial auth fetch, where profile is
-  // momentarily null for returning users too, before their existing profile
-  // has loaded.
-  const wasOnboardingRef = useRef(false)
+  // Fires the notification prompt exactly once, right when onboarding
+  // actually completes - driven by useAuth's justOnboarded flag, not by
+  // session/profile timing. Session appearing before profile has loaded also
+  // happens on every live sign-in of an *existing* user (profile is fetched
+  // in a separate async call after the auth event), so inferring "just
+  // onboarded" from that timing showed this prompt on every login, not just
+  // the first one (fixed 2026-07-23).
   const [showNotifPrompt, setShowNotifPrompt] = useState(false)
   useEffect(() => {
-    if (loading) return
-    if (session && !profile) { wasOnboardingRef.current = true; return }
-    if (profile && wasOnboardingRef.current) {
-      wasOnboardingRef.current = false
+    if (justOnboarded) {
       setShowNotifPrompt(true)
+      clearJustOnboarded()
     }
-  }, [loading, session, profile])
+  }, [justOnboarded, clearJustOnboarded])
   useEffect(() => {
     if (!loading) { setStuck(false); return }
     const t = setTimeout(() => setStuck(true), 15000)

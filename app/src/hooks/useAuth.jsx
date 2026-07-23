@@ -16,6 +16,13 @@ export function AuthProvider({ children }) {
   // null = self, otherwise a family_members row (parent tracks the child)
   const [selectedMember, setSelectedMember] = useState(null)
   const [loading, setLoading] = useState(true)
+  // Set only by createProfile() completing - the one true "onboarding just
+  // finished" signal. Session-appears-before-profile-loads is NOT a reliable
+  // proxy for this: it also happens on every live sign-in of an *existing*
+  // user, since profile is fetched in a separate async call after the auth
+  // event fires (see the sign-in bug this replaced, 2026-07-23).
+  const [justOnboarded, setJustOnboarded] = useState(false)
+  const clearJustOnboarded = useCallback(() => setJustOnboarded(false), [])
 
   const loadProfile = useCallback(async (uid) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle()
@@ -126,6 +133,7 @@ export function AuthProvider({ children }) {
     }
     track('onboarding_complete', { gender, referred: !!referralCode })
     await loadProfile(session.user.id)
+    setJustOnboarded(true)
   }
 
   const updateProfile = async (fields) => {
@@ -176,6 +184,7 @@ export function AuthProvider({ children }) {
     signInGoogle, signInEmail, signUpEmail, signOut, resetPassword, updatePassword,
     createProfile, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount,
     refresh: () => session && loadProfile(session.user.id),
+    justOnboarded, clearJustOnboarded,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
