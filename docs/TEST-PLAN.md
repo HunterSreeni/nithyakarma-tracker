@@ -497,22 +497,32 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
    rewritten to cover the specific race (session-before-profile on a normal sign-in)
    that used to false-trigger this.
 2. **`android-sandhya.sh`/`android-referral.sh`'s login tap sequence was
-   miscalibrated**: tapping the email field brings up the on-screen keyboard, which
-   scrolls the page up to keep the focused field visible - so the password-field and
-   Sign In coordinates (calibrated for the no-keyboard layout) landed on empty space
-   or the keyboard itself. Confirmed by hand-driving the flow with corrected
-   keyboard-shown coordinates, which reached the throwaway account's clean Today
-   page correctly. **Important**: in the *miscalibrated* runs, this intermittently
-   landed on `sreeni4298@gmail.com` (a real personal Google account cached on the
-   dev emulator) instead of the throwaway account - verified via Supabase MCP both
-   times that **no logs were written to that account** (no data was affected), but
-   it's a reminder that blind-tap Android E2E on a personal dev machine can reach
-   real accounts if a script misses its target. Login-step coordinates are fixed in
-   both scripts; the post-login sequence (OS notification dialog, tour dismiss,
-   sandhya slots / onboarding form) was **not** re-verified end-to-end in this
-   session (stopped after confirming the login fix and the root cause, in favor of a
-   human doing the remaining recalibration interactively - far faster with a live
-   display than blind screenshot round-trips).
+   miscalibrated and, worse, inherently unreliable even after a first fix attempt.**
+   Tapping the email field brings up the on-screen keyboard, which scrolls the page
+   to keep the focused field visible - but that scroll amount turned out to NOT be
+   reproducible run to run (sometimes the keyboard stayed open after typing,
+   sometimes it closed on its own), so any hardcoded coordinate for the
+   password field or Sign In button was fundamentally flaky, not just miscalibrated.
+   **Twice, in two different sessions, this landed on `sreeni4298@gmail.com`** - a
+   real personal Google account cached on the dev emulator - instead of the
+   throwaway account; verified via Supabase MCP all four times (two per session)
+   that no logs were ever written to that account, so no real data was affected,
+   but it's a sharp reminder that blind-tap Android E2E on a personal dev machine
+   can reach real accounts if a script misses its target. **Properly fixed
+   2026-07-23**: after the one coordinate-based tap to focus the email field, both
+   scripts now use `KEYCODE_TAB` to move focus to the password field and
+   `KEYCODE_ENTER` to submit - DOM focus-order operations immune to the
+   keyboard-reflow problem entirely, since they don't depend on screen position.
+   Both scripts were then run fully unattended end-to-end and verified via
+   Supabase MCP: `android-sandhya.sh` correctly marks all 3 slots (streak 1, punya
+   15, 3 logged slots); `android-referral.sh` correctly onboards a new account and
+   applies the referral (`referrer_id` linked, `ad_free_until` +30 days). The
+   sandhya-slot and onboarding-form coordinates were also re-measured and
+   corrected in the same pass - an earlier version of `android-sandhya.sh`
+   mistook the "Me / + Add child" profile-switcher row for the Morning/Noon/Evening
+   pill row (they're at different heights; the mistake silently navigated to
+   `/profile` instead of marking anything, twice, before being caught by checking
+   actual on-screen content rather than trusting "no crash").
 3. Reset-password's `minLength=6` vs signup's `minLength=8` is an inconsistency with
    no test either enforcing the intended value or flagging the mismatch. Still open.
 
@@ -534,10 +544,14 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
    helper does.
 7. The three `android-*.sh` scripts assert only "process didn't crash" (plus a
    manually-reviewed screenshot) - no programmatic verification of on-screen text or
-   server-side state is possible (WebView exposes no accessibility tree). They
-   remain brittle (hardcoded taps calibrated to one 1080x2400 emulator resolution,
-   now further calibrated for keyboard-shown vs. no-keyboard layouts too) and are
-   not run in CI.
+   server-side state is possible (WebView exposes no accessibility tree; correctness
+   is instead confirmed manually via Supabase MCP after each run, as documented in
+   §5). All coordinates are calibrated for one 1080x2400 emulator and will need
+   recalibrating on a different resolution/device. `android-sandhya.sh` and
+   `android-referral.sh` now use `KEYCODE_TAB`/`KEYCODE_ENTER` for login (immune to
+   the keyboard-reflow flakiness described above) and have both been run fully
+   unattended, end-to-end, with server-state verified via Supabase MCP. None of the
+   three run in CI (need a real/emulated device).
 8. `android/app/src/androidTest`/`src/test` are unmodified Capacitor boilerplate
    (`com.getcapacitor.myapp` package assertions that don't even match this app's real
    package) - zero real coverage, and no Gradle test task runs in CI regardless.
@@ -574,27 +588,21 @@ Signed in as e2e (male) and a female profile, on web + Android emulator:
   (on a throwaway, never `e2e`), T&C/Privacy reachable standalone.
 - Overnight: confirm a reminder fires in a tz window; confirm streak persists to
   Day 2; confirm a missed-day scenario resets correctly.
-- Specifically re-verify the post-login Android tap sequence in `android-sandhya.sh`/
-  `android-referral.sh` interactively (§3) - only the login step was confirmed fixed.
 - Track results in `TEST-RESULTS.md`; file any defect with repro.
 
 ## 6. Recommended additions (priority order)
 1. Set the `E2E_UI_EMAIL`/`E2E_UI_PASSWORD` repo secrets (values already known, see
    memory) so `auth-signout.spec.js` actually runs in CI instead of silently
    skipping - `ci.yml` is already wired, just needs the secrets themselves.
-2. Interactively re-verify and, if needed, recalibrate the post-login tap
-   coordinates in `android-sandhya.sh`/`android-referral.sh` (OS notification
-   dialog, tour dismiss, sandhya slots / onboarding form) - the login step is fixed
-   and confirmed, the rest is not yet re-verified against the corrected login flow.
-3. Get `journey.spec.js`/`journey-female.spec.js` (or a slimmer non-destructive
+2. Get `journey.spec.js`/`journey-female.spec.js` (or a slimmer non-destructive
    subset of their assertions) into CI, even if the full destructive run stays
    manual-only - right now a Sandhyavandhanam UI regression ships silently.
-5. Any coverage for `send-reminders`/`send-test-notification` themselves (even a
+3. Any coverage for `send-reminders`/`send-test-notification` themselves (even a
    thin Deno test of the tz-window logic) - currently the actual push-sending code
    is the least-tested piece of the notification system.
-6. Replace or delete the Capacitor-boilerplate Android native stub tests - they
+4. Replace or delete the Capacitor-boilerplate Android native stub tests - they
    currently assert against the wrong package name and contribute nothing.
-7. Turn `logic-mirrors.test.js`'s SQL side into something that can't silently drift
+5. Turn `logic-mirrors.test.js`'s SQL side into something that can't silently drift
    (a fixture generated from the live function definitions, refreshed alongside
    migrations) rather than a hand-maintained comment block.
 

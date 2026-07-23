@@ -50,46 +50,60 @@ sleep 8
 
 echo "==> 3. Log in"
 # NOTE (found + fixed 2026-07-23, see android-sandhya.sh for the full story):
-# tapping the email field brings up the on-screen keyboard, which scrolls the
-# page up to keep the focused field visible - the password/Sign In taps need
-# the keyboard-shown coordinates below, not the no-keyboard ones the first
-# tap uses. The onboarding form taps further down (name/referral-code fields)
-# likely have the same keyboard-scroll issue and were NOT re-verified against
-# a real run in this session - re-check interactively before trusting this
-# script's PASS.
-tap 557 1562            # email field (no keyboard shown yet)
+# the on-screen keyboard's page-scroll amount is not reliably reproducible
+# run to run, so hardcoded coordinates for the password field / Sign In
+# button are inherently flaky - two miscalibrated attempts landed on a real
+# personal Google account cached on this emulator instead of the throwaway
+# account (confirmed via Supabase MCP both times that no data was written to
+# it). Fixed properly: after the one coordinate-based tap to focus the email
+# field, use KEYCODE_TAB to move focus to the password field and
+# KEYCODE_ENTER to submit - both are DOM focus-order operations, immune to
+# the keyboard-reflow problem.
+tap 557 1562             # email field (the only coordinate-based tap for login)
 sleep 1
 adb shell input text "$EMAIL"
 sleep 1
-tap 540 954              # password field (keyboard now shown, page scrolled up)
+adb shell input keyevent KEYCODE_TAB     # move focus to the password field
 sleep 1
 adb shell input text "$PASSWORD"
 sleep 1
-tap 540 1214              # Sign In (keyboard-shown position)
+adb shell input keyevent KEYCODE_ENTER   # submit
 sleep 5
 shot "01-onboard-intro.png"
 
 echo "==> 4. Onboarding: Get started -> fill form -> enter referral code"
+# Coordinates re-measured and verified 2026-07-23 (this whole onboarding
+# section had never actually been run before - the form is NOT scrolled by
+# the keyboard the way the login screen is, so these are stable no-keyboard
+# positions throughout).
 tap 540 1781              # Get started
 sleep 2
-adb shell input text "Android%sReferral"      # %s = space (adb input text quirk)
+adb shell input text "Android%sReferral"      # %s = space (adb input text quirk) -
+                                               # NOTE: this quirk is unreliable in
+                                               # practice (still produced "Android" with
+                                               # the space/second word dropped in testing);
+                                               # harmless since the name isn't asserted on,
+                                               # but don't rely on it if the name ever matters.
 sleep 1
-tap 324 1231               # Male (adds the Sandhyavandhanam hint, shifts layout below)
+tap 324 1215               # Male (adds the Sandhyavandhanam hint, shifts layout below)
 sleep 1
-tap 540 1535                # referral code field (post-shift position)
+tap 540 1572                # referral code field (post-shift position)
 sleep 1
 adb shell input text "$REFERRER_CODE"
 sleep 1
-adb shell input keyevent KEYCODE_BACK
-sleep 1
 shot "02-onboard-filled.png"
-tap 540 1675                 # Begin
+tap 540 1631                 # Begin
 sleep 5
 
-echo "==> 5. Dismiss OS notification prompt + guided tour (no-ops if absent)"
-tap 540 1470              # "Don't allow" on the OS notification dialog
+echo "==> 5. Dismiss the notification prompt (real one - this account has never onboarded before) and the guided tour"
+tap 540 1506              # "Maybe later" on the "Turn on reminders?" prompt (this is the
+                           # genuine first-onboarding case the prompt is meant for)
+sleep 2
+tap 842 1348               # tour step 1/3: Next
 sleep 1
-tap 950 1085               # close "x" on the driver.js tour popover
+tap 917 1873               # tour step 2/3: Next
+sleep 1
+tap 836 1287               # tour step 3/3: Begin
 sleep 1
 shot "03-today.png"
 

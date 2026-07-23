@@ -117,3 +117,51 @@ eyes on the emulator. `android-referral.sh` was not run live at all this session
 Emulator autofill was temporarily disabled and restored to its original setting
 while investigating (ruled out - not the actual cause). Emulator app data was
 cleared at the end of the session, left signed out.
+
+## Full re-run after PR #81 merged (2026-07-23, same day, follow-up session)
+
+Local `main` fast-forwarded to the merged fix, full rebuild, full re-run of
+everything above plus a live production check via the Electronium MCP browser.
+
+| Suite | Scope | Result |
+|---|---|---|
+| Vitest (lint + unit/component) | 45 files | 287/287 pass, lint clean |
+| Playwright e2e, full run | all 17 tests | 17/17 pass |
+| Electronium live check, `https://app.nithyakarma.org` | manual sign-in as `e2e@nithyakarma.test` | landed straight on Today (Logout visible) - the notification-prompt-on-every-login bug fix confirmed live in production, not just in Playwright's environment. Profile page, notification settings, and sign-out all spot-checked and correct. |
+| Android smoke | build → install → boot screenshot | PASS, verified visually |
+| Android sandhya (`android-sandhya.sh`) | login → tour → mark all 3 slots | **PASS, fully unattended**, DB-verified: streak 1, best 1, punya 15, 3 slots logged against the correct throwaway account |
+| Android referral (`android-referral.sh`) | login → onboard → apply referral code | **PASS, fully unattended**, DB-verified: `referrer_id` correctly linked to e2e's account, `ad_free_until` = +30 days |
+
+### The Android login bug needed a second, deeper fix
+
+The first fix (recalibrated coordinates for the keyboard-shown layout) was not
+enough - re-running `android-sandhya.sh` unattended landed on
+`sreeni4298@gmail.com` (the same real personal Google account as before) a
+**third time** this same day, and a fourth time on a subsequent manual retry,
+before the real problem was understood: the on-screen keyboard's scroll amount
+isn't reproducible run to run (confirmed by watching it stay open after typing
+in one attempt and close on its own in another, both starting from an
+identical `pm clear`). All four occurrences were checked via Supabase MCP -
+no logs were ever written to the real account.
+
+The actual fix: stop tapping screen coordinates for the password field and
+Sign In button entirely. After the one unavoidable coordinate tap to focus the
+email field, both scripts now use `KEYCODE_TAB` (move focus to the password
+field) and `KEYCODE_ENTER` (submit) - DOM focus-order keyboard operations that
+don't care where the keyboard has scrolled the page to. This was suggested by
+Sreeni mid-session ("use the ad fill method") after watching the coordinate
+approach fail twice in a row live.
+
+While re-verifying the rest of the flow, also found and fixed: the
+Morning/Noon/Evening sandhya slot row and the "+ Add child" profile-switcher
+chip are at different heights on screen, but an earlier version of
+`android-sandhya.sh` had them confused - two separate tap-driven runs landed
+on `/profile` instead of marking a slot, silently, until checked against an
+actual screenshot rather than trusting "no crash occurred." Re-measured and
+fixed; both scripts now run correctly unattended, verified twice each (once
+by hand, once as a full unattended script run) with matching Supabase MCP
+confirmation.
+
+Both Android throwaway accounts (`android-sandhya-throwaway`,
+`android-referral-throwaway`) were deleted at the end of the session; emulator
+app data cleared, left signed out.
