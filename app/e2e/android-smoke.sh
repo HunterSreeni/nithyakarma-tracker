@@ -7,7 +7,7 @@
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-PKG="in.co.sreeniverse.nithyakarma"
+PKG="org.nithyakarma.app"
 APK="$APP_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
 cd "$APP_DIR"
 
@@ -28,18 +28,22 @@ adb logcat -c
 adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 sleep 6
 LOG="$(adb logcat -d 2>&1)"
+SCRATCH="$(mktemp -d)"
+adb exec-out screencap -p > "$SCRATCH/boot.png"
 
 echo "==> 4. Assertions"
 fail=0
-echo "$LOG" | grep -q "Loading app at https://localhost" \
-  && echo "  ok: Capacitor loaded the web app" || { echo "  FAIL: web app never loaded"; fail=1; }
-echo "$LOG" | grep -q "Handling local request: https://localhost/assets/" \
-  && echo "  ok: JS/CSS assets served" || { echo "  FAIL: bundle assets not served (bad build/env?)"; fail=1; }
+# capacitor.config.ts sets loggingBehavior:'none' (2026-07-19, a deliberate
+# security fix - the 'debug' default echoed OAuth tokens to logcat). That also
+# silences the "Loading app at..."/"Handling local request..." bridge trace
+# lines this script used to grep for, so a boot screenshot is the load signal
+# now - see "$SCRATCH/boot.png" (should show the auth screen, not white/blank).
 if echo "$LOG" | grep -qiE "AndroidRuntime: FATAL|Supabase env missing"; then
   echo "  FAIL: fatal error or missing-env guard tripped"; fail=1
 else
   echo "  ok: no fatal crash / env guard"
 fi
 adb shell pidof "$PKG" >/dev/null && echo "  ok: process alive" || { echo "  FAIL: process not running"; fail=1; }
+echo "  boot screenshot saved to $SCRATCH/boot.png - confirm it shows the app, not a blank/white screen"
 
-[ "$fail" = 0 ] && echo "ANDROID SMOKE: PASS" || { echo "ANDROID SMOKE: FAIL"; exit 1; }
+[ "$fail" = 0 ] && echo "ANDROID SMOKE: PASS (verify boot.png manually)" || { echo "ANDROID SMOKE: FAIL"; exit 1; }

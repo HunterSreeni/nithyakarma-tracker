@@ -20,7 +20,7 @@
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-PKG="in.co.sreeniverse.nithyakarma"
+PKG="org.nithyakarma.app"
 APK="$APP_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
 SCRATCH="$(mktemp -d)"
 EMAIL="android-referral-throwaway@nithyakarma.test"
@@ -49,17 +49,23 @@ adb shell am start -n "$PKG/.MainActivity" >/dev/null
 sleep 8
 
 echo "==> 3. Log in"
-tap 557 1562            # email field
+# NOTE (found + fixed 2026-07-23, see android-sandhya.sh for the full story):
+# tapping the email field brings up the on-screen keyboard, which scrolls the
+# page up to keep the focused field visible - the password/Sign In taps need
+# the keyboard-shown coordinates below, not the no-keyboard ones the first
+# tap uses. The onboarding form taps further down (name/referral-code fields)
+# likely have the same keyboard-scroll issue and were NOT re-verified against
+# a real run in this session - re-check interactively before trusting this
+# script's PASS.
+tap 557 1562            # email field (no keyboard shown yet)
 sleep 1
 adb shell input text "$EMAIL"
 sleep 1
-tap 557 1622             # password field
+tap 540 954              # password field (keyboard now shown, page scrolled up)
 sleep 1
 adb shell input text "$PASSWORD"
 sleep 1
-adb shell input keyevent KEYCODE_BACK
-sleep 1
-tap 557 1951              # Sign In
+tap 540 1214              # Sign In (keyboard-shown position)
 sleep 5
 shot "01-onboard-intro.png"
 
