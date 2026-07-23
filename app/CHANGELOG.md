@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.24.0...app-v0.24.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* stop unconditional notification scheduling, wire auth-signout into CI ([bc7f15c](https://github.com/HunterSreeni/nithyakarma-tracker/commit/bc7f15c84c34d87de04bf0f6337269120f45733d))
+
 ## [0.24.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.23.0...app-v0.24.0) (2026-07-23)
 
 
