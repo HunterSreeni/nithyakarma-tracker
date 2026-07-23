@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.24.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.23.0...app-v0.24.0) (2026-07-23)
+
+
+### Features
+
+* **app:** 2027 panchangam data, tradition preference, tharpanam+observance notifications ([6804659](https://github.com/HunterSreeni/nithyakarma-tracker/commit/680465939d0a8130972bcd64b1ec8cacd1b6285e))
+* **app:** production AdMob IDs and Sentry crash reporting ([ec379d1](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ec379d15996bf5ebfe1d1262a130909d4059c3c6))
+* cut over nithyakarma.org and app.nithyakarma.org custom domains ([b7bb882](https://github.com/HunterSreeni/nithyakarma-tracker/commit/b7bb882973e33696a66624316cf02174029ce446))
+
 ## [0.23.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.22.1...app-v0.23.0) (2026-07-21)
 
 
