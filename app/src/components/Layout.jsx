@@ -1,8 +1,6 @@
-import { useEffect } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import { Home, BookOpen, GraduationCap, Trophy, Gift, CircleUserRound, Flame } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { scheduleAllReminders } from '../utils/notifications'
 
 const BASE_TABS = [
   { to: '/', label: 'Today', icon: Home },
@@ -19,10 +17,6 @@ export default function Layout({ children }) {
     .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
   // Community/Sabha is opt-in (default hidden) - see ProfilePage's toggle.
   const TABS = BASE_TABS.filter(t => !t.community || profile?.community_enabled)
-
-  useEffect(() => {
-    if (profile) scheduleAllReminders({ includeSandhya: profile.gender === 'male' })
-  }, [profile?.gender]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="app-shell">
