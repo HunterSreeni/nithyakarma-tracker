@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.25.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.24.2...app-v0.25.0) (2026-07-23)
+
+
+### Features
+
+* add Sai Baba Aarti as a weekly Thursday stotram ([17022cf](https://github.com/HunterSreeni/nithyakarma-tracker/commit/17022cf4f316df1a038edc3973e45ac1407526b3))
+
+
+### Bug Fixes
+
+* **e2e:** use KEYCODE_TAB/ENTER for Android login instead of coordinate taps ([58666b4](https://github.com/HunterSreeni/nithyakarma-tracker/commit/58666b4439bf8c74d492a50d8e59c404012df5b9))
+
 ## [0.24.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.24.1...app-v0.24.2) (2026-07-23)
 
 
