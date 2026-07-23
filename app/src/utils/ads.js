@@ -1,9 +1,10 @@
 import { Capacitor } from '@capacitor/core'
 import { track } from './analytics'
 
-// Google's public TEST interstitial ad unit. Replace with the real AdMob unit id
-// once the AdMob account is created (Intent 0.2). Never ship the test id to Play.
-const INTERSTITIAL_ID = 'ca-app-pub-3940256099942544/1033173712'
+const INTERSTITIAL_ID = 'ca-app-pub-2677287550445019/1140728797'
+// Dev builds only: use Google's test ad serving so local/CI runs never request
+// or render real ads. Prod builds always use the real ad unit above for real.
+const isTesting = import.meta.env.DEV
 
 let initialized = false
 // Launch is intentionally LIGHT: at most one interstitial per app session. The
@@ -34,13 +35,13 @@ export async function showInterstitial(profile) {
     const { AdMob, MaxAdContentRating } = await import('@capacitor-community/admob')
     if (!initialized) {
       await AdMob.initialize({
-        initializeForTesting: true,
+        initializeForTesting: isTesting,
         // Family/devotional audience: only G-rated ads (never gambling, dating, etc.).
         maxAdContentRating: MaxAdContentRating.General,
       })
       initialized = true
     }
-    await AdMob.prepareInterstitial({ adId: INTERSTITIAL_ID, isTesting: true })
+    await AdMob.prepareInterstitial({ adId: INTERSTITIAL_ID, isTesting })
     await AdMob.showInterstitial()
     shownThisSession = true
     track('ad_shown', {})
