@@ -122,20 +122,79 @@ Intent 2.4 reminder overhaul.
 
 ## Preferences and identity
 
-`notification_preferences` holds `enabled` and `timezone` (default `Asia/Kolkata`, with
-the deprecated `Asia/Calcutta` alias normalized by migration). `profiles.reminder_times`
-holds a per-user jsonb of slot times, but **the edge function currently uses hardcoded
-windows** rather than reading it - wiring that up is part of Intent 2.4.
+`notification_preferences` holds `enabled`, `timezone` (default `Asia/Kolkata`, with the
+deprecated `Asia/Calcutta` alias normalized by migration), and two sub-toggles gating
+System 3 below: `tharpanam_enabled`, `observances_enabled` (both default `false`, both
+inert unless `enabled` is also true). `profiles.reminder_times` holds a per-user jsonb of
+slot times, but **the edge function currently uses hardcoded windows** rather than
+reading it - wiring that up is part of Intent 2.4.
 
-## Extension point: auspicious-day notifications
+## System 3: tharpanam and auspicious-day ("observance") notifications
 
-The planned observance push should reuse this machinery rather than add a parallel one:
-a new `observance` slot in `slotFor()`, dedupe through the same
-`notification_deliveries` insert, and a `notification_preferences.observances_enabled`
-toggle. **Adding `observance` to the `slot` CHECK is required** - forgetting it is
-exactly the mistake that hid the `nudge_morning` slot for months.
+Built 23 July 2026. Rides the same `send-reminders` cron as System 1, in a new 06:00
+`calendar` window - but unlike every other slot, `calendar` is an **internal marker**,
+not a `notification_deliveries` slot value. It can fan out to zero, one, or two actual
+deliveries per user (tharpanam and observance are independent categories, each gated by
+its own toggle), which doesn't fit the one-slot-per-user shape the rest of `slotFor()`
+uses. The two real slot values it can produce are `tharpanam` and `observance`.
+
+**Data-driven, not per-date rows.** `panchangam_observances` is a small static rule
+table (16 rows as of 23 July 2026), not an events calendar - every occasion reduces to a
+pattern against a `panchangam_days` row (`thithi`/`tamil_month`/`tamil_day`/
+`malayalam_month`/`malayalam_day`/`nakshatra`), so unlike `panchangam_days` itself this
+table never needs annual regeneration. Matching is a pure function,
+`_shared/observanceMatch.ts`'s `bestMatch()`, unit tested independent of the Deno
+handler (see "Deno testing in CI" below).
+
+`day_offset` lets a rule match against a **neighboring day's** row instead of its own
+candidate day, and can point either direction - this is the solar-noon-sampling
+limitation from [08-PANCHANGAM.md](08-PANCHANGAM.md#known-limitations) showing up in
+practice, not a new gap:
+
+- **+1 (check tomorrow):** a night observance, where the tithi begins in the evening -
+  the printed-panchangam day is the day *before* the noon-sampled thithi's own day.
+  Maha Sivarathri and Vijayadashami both need this (each verified: our noon-sampled
+  Chaturdashi/Dashami row lands one day after the cited source's actual observance day).
+- **-1 (check yesterday):** a pre-dawn observance, where the tithi is still active at
+  dawn even though the noon-sample has already rolled past it - the printed-panchangam
+  day is the day *after* the noon-sampled thithi's own day. Naraka Chaturdashi needs
+  this (verified: our noon-sampled Krishna Chaturdashi row lands one day before the
+  cited source's 8 Nov 2026 observance day).
+
+**Festival set, verified against loaded `panchangam_days` (2026-2027) and cited sources,
+23 July 2026:** Pongal, Tamil New Year, Vishu, Onam (Chingam + Shravana nakshatra, same
+pattern as Karthigai Deepam below), the two Sankranti tharpanams, monthly Amavasya,
+Karkidaka Vaavu, Maha Sivarathri, Krishna Janmashtami, Vinayaka Chaturthi,
+Vijayadashami, Naraka Chaturdashi (Deepavali), Karthigai Deepam (Karthikai month +
+Krittika nakshatra, not thithi), Skanda Sashti. Not seeded, no reliable rule found yet:
+the exact main-Diwali Lakshmi Puja day (distinct from Naraka Chaturdashi) needs
+sub-day precision the current noon-sampling can't give - two consecutive days can both
+show `thithi = 'Amavasya'` when that tithi happens to span both noons, and picking the
+"correct" one of the two needs finer timing data than `panchangam_days` stores. Extend
+`panchangam_observances` with new rows (no code change needed) for anything else wanted
+later, verified the same way: check a cited external date against the loaded data,
+and if they disagree by exactly one day, suspect a night/dawn boundary rather than an
+error and check the neighboring day before assuming `day_offset` is needed.
+
+## Deno testing in CI
+
+`_shared/observanceMatch.test.ts` is the first Deno-side test this project has -
+`supabase/functions/**` was entirely untested in CI before it, since it runs on Deno,
+not Node/Vite, and vitest can't parse `Deno.test`/`jsr:` imports (it's excluded from
+vitest's discovery in `vite.config.js` for that reason). A dedicated `edge-functions`
+job in `.github/workflows/ci.yml` (`denoland/setup-deno@v2`, `deno test`) now runs it on
+every push/PR - added and verified (`deno test` run locally, all cases passing) 23 July
+2026, same session as the festival set above.
+
+## Extension point history
+
+The section above replaces an earlier one-line sketch ("a new `observance` slot in
+`slotFor()`, dedupe through `notification_deliveries`, a `notification_preferences`
+toggle") that undersold the actual shape needed - the fan-out-to-two-categories nuance
+wasn't visible until building it. Kept as a reminder that a sketch is not a spec.
 
 ## Related
 
 - Server detail: [03-EDGE-FUNCTIONS.md](03-EDGE-FUNCTIONS.md)
+- Panchangam data pipeline: [08-PANCHANGAM.md](08-PANCHANGAM.md)
 - Tables: [01-DATABASE.md](01-DATABASE.md)

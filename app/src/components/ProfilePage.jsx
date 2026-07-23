@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const [error, setError] = useState(null)
   const [optIn, setOptIn] = useState(profile.leaderboard_opt_in)
   const [communityEnabled, setCommunityEnabled] = useState(profile.community_enabled)
+  const [tradition, setTradition] = useState(profile.panchangam_tradition ?? 'tamil')
 
   const toggleOptIn = async (checked) => {
     setOptIn(checked) // optimistic - revert on failure
@@ -25,6 +26,16 @@ export default function ProfilePage() {
       await updateProfile({ leaderboard_opt_in: checked })
     } catch {
       setOptIn(!checked)
+    }
+  }
+
+  const setTraditionPref = async (value) => {
+    const prev = tradition
+    setTradition(value) // optimistic - revert on failure
+    try {
+      await updateProfile({ panchangam_tradition: value })
+    } catch {
+      setTradition(prev)
     }
   }
 
@@ -124,6 +135,15 @@ export default function ProfilePage() {
           and a streak freeze. Your code: <strong>{profile.referral_code}</strong>
         </div>
         <button className="btn-ref" onClick={inviteWhatsApp}>Share invite on WhatsApp</button>
+      </div>
+
+      <div className="card">
+        <h2 className="card-h">Panchangam</h2>
+        <label className="field-label">Which tradition should the Today page show?</label>
+        <div className="radio-row">
+          <button type="button" className={`radio-chip ${tradition === 'tamil' ? 'on' : ''}`} onClick={() => setTraditionPref('tamil')}>Tamil</button>
+          <button type="button" className={`radio-chip ${tradition === 'malayalam' ? 'on' : ''}`} onClick={() => setTraditionPref('malayalam')}>Malayalam</button>
+        </div>
       </div>
 
       <div className="card">

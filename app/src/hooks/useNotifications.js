@@ -26,6 +26,8 @@ async function savePref(userId, enabled) {
 
 export function useNotifications(user, { includeSandhya } = { includeSandhya: false }) {
   const [enabled, setEnabled] = useState(false)
+  const [tharpanamEnabled, setTharpanamEnabled] = useState(false)
+  const [observancesEnabled, setObservancesEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [testResult, setTestResult] = useState('')
@@ -34,9 +36,11 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
   useEffect(() => {
     if (!user) { setLoading(false); return }
     supabase.from('notification_preferences')
-      .select('enabled').eq('user_id', user.id).maybeSingle()
+      .select('enabled, tharpanam_enabled, observances_enabled').eq('user_id', user.id).maybeSingle()
       .then(({ data }) => {
         setEnabled(data?.enabled ?? false)
+        setTharpanamEnabled(data?.tharpanam_enabled ?? false)
+        setObservancesEnabled(data?.observances_enabled ?? false)
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -166,8 +170,27 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
     }
   }, [])
 
+  // Simple sub-toggles under the master `enabled` switch - the row already
+  // exists by the time these are reachable (enabling notifications creates
+  // it via savePref's upsert), so a direct update is enough; no permission
+  // prompts or subscription registration involved, unlike `toggle` above.
+  const toggleTharpanam = useCallback(async (checked) => {
+    setTharpanamEnabled(checked) // optimistic - revert on failure
+    const { error: updateError } = await supabase.from('notification_preferences')
+      .update({ tharpanam_enabled: checked }).eq('user_id', user.id)
+    if (updateError) setTharpanamEnabled(!checked)
+  }, [user])
+
+  const toggleObservances = useCallback(async (checked) => {
+    setObservancesEnabled(checked) // optimistic - revert on failure
+    const { error: updateError } = await supabase.from('notification_preferences')
+      .update({ observances_enabled: checked }).eq('user_id', user.id)
+    if (updateError) setObservancesEnabled(!checked)
+  }, [user])
+
   return {
-    enabled, loading, error, testResult, supported: native || isPushSupported(),
-    toggle, sendTestNotification,
+    enabled, tharpanamEnabled, observancesEnabled, loading, error, testResult,
+    supported: native || isPushSupported(),
+    toggle, toggleTharpanam, toggleObservances, sendTestNotification,
   }
 }

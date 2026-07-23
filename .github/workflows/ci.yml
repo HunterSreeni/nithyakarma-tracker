@@ -27,6 +27,20 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
 
+  edge-functions:
+    # supabase/functions/** runs on Deno, not Node - excluded from the `verify`
+    # job's `npm run test` (vitest/esbuild can't parse Deno.test or jsr:
+    # imports). Was entirely untested in CI until this job; observanceMatch.ts
+    # is the first Deno-side test this project has, added alongside Phase 3
+    # of the panchangam-observances work (2026-07-23).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno test supabase/functions/_shared/observanceMatch.test.ts
+
   e2e:
     runs-on: ubuntu-latest
     steps:

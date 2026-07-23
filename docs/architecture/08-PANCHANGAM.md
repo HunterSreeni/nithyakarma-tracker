@@ -147,8 +147,9 @@ nakshatras, the 30 thithi names (via `malayalamThithi()`, which recomposes the s
    one-row-per-day table, but a thithi that begins in the evening is attributed to the
    following day. This matters for thithi-based observance scheduling. *(Solar month and
    month-day no longer noon-sample - they use the exact sankranti moment.)*
-3. **Single year.** No data past 31 December 2026, and no graceful fallback for a missing
-   date. The year boundary needs handling before it arrives.
+3. **Two years.** `panchangam_days` covers 2026 and 2027 (2027 loaded 23 July 2026, 365
+   rows, spot-checked below). No data past 31 December 2027, and no graceful fallback for
+   a missing date. The year boundary needs handling before it arrives.
 4. **Partially validated.** On 19 July 2026 the Malayalam side was cross-checked against
    Prokerala and DrikPanchang: **10 of 12** month starts confirmed (Makaram, Kumbham,
    Meenam, Medam, Edavam, Mithunam, Karkidakam, Chingam, Thulam, Vrischikam). Kanni
@@ -157,18 +158,34 @@ nakshatras, the 30 thithi names (via `malayalamThithi()`, which recomposes the s
    minute, which is the strongest single check on the ephemeris itself.
 
    **Tamil day-1 rule resolved 2026-07-20** (see the `MONTH_START_RULE` note above) - Pongal
-   2026 confirmed as 14 January against DrikPanchang and dailycalendartamil.com. The printed
-   Pambu Panchangam remains the eventual authority per the Intent 2.7 gate; revisit if it
-   disagrees once published.
+   2026 confirmed as 14 January against DrikPanchang and dailycalendartamil.com.
+
+   **2027 spot-checked 23 July 2026 against two independent oracles**, per the Source-material
+   position below (the physical book is used to validate, never to transcribe):
+   - **Tamil**, against the physical Pambu Panchangam (Parabhava year, Apr 2026-Apr 2027):
+     Thai 1 = 15 Jan 2027 (book page 18, row 1), Thai Amavasya = 6 Feb 2027/Thai day 23 (book
+     page 18, row 23: "தை அமாவாசை"), Panguni 1 = 15 March 2027 (book page 20, row 1) - all
+     three match exactly.
+   - **Malayalam**, against DrikPanchang/Prokerala (the book is Tamil-only): Makaram 1 = 15
+     Jan 2027 matches DrikPanchang's exact sankranti moment (15 Jan, 2:45 AM IST - already
+     past midnight, so both the sunset and aparahna cutoffs land on the 15th regardless of
+     tradition); Chingam 1 = 18 Aug 2027 matches published Malayalam New Year sources.
+   - Pinned as regression tests in `scripts/__tests__/panchangam-2027-output.test.js`.
 
 ## Annual maintenance
 
 Pambu Panchangam publishes each February/March. Matching cadence:
 
 1. Run `node scripts/generate-panchangam.cjs <next-year>`
-2. Cross-check a sample against a trusted printed source
-3. Load into `panchangam_days`
-4. Confirm the varsham name and its rollover date
+2. **Tamil**: cross-check a sample against a trusted printed source (the physical Pambu
+   Panchangam, used only to validate specific computed dates - never transcribed, per the
+   Source-material position below)
+3. **Malayalam**: cross-check the same sample dates against DrikPanchang and Prokerala - the
+   physical Pambu Panchangam is Tamil-only and must not be used as the Malayalam oracle
+4. Load into `panchangam_days`
+5. Confirm the varsham name and its rollover date
+6. Add pinned regression-test assertions for the dates checked in steps 2-3, mirroring
+   `panchangam-2027-output.test.js`
 
 **Do this before the current year's data runs out**, not after - there is no fallback
 for a missing date.

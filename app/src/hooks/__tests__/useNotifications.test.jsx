@@ -29,8 +29,9 @@ vi.mock('../../utils/notifications', () => ({
   cancelAllReminders: vi.fn().mockResolvedValue(undefined),
 }))
 
-const h = vi.hoisted(() => ({ prefEnabled: false }))
+const h = vi.hoisted(() => ({ prefEnabled: false, tharpanamEnabled: false, observancesEnabled: false }))
 const upsertPref = vi.fn().mockResolvedValue({ error: null })
+const updatePref = vi.fn().mockResolvedValue({ error: null })
 const deleteSub = vi.fn().mockResolvedValue({ error: null })
 const invokeFn = vi.fn()
 vi.mock('../../lib/supabase', () => ({
@@ -38,8 +39,19 @@ vi.mock('../../lib/supabase', () => ({
     from: vi.fn((table) => {
       if (table === 'notification_preferences') {
         return {
-          select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { enabled: h.prefEnabled } }) }) }),
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({
+                data: {
+                  enabled: h.prefEnabled,
+                  tharpanam_enabled: h.tharpanamEnabled,
+                  observances_enabled: h.observancesEnabled,
+                },
+              }),
+            }),
+          }),
           upsert: upsertPref,
+          update: (...args) => ({ eq: () => updatePref(...args) }),
         }
       }
       return {
@@ -62,6 +74,8 @@ beforeEach(() => {
   hasActiveSubscription.mockResolvedValue(true)
   checkFCMPermission.mockResolvedValue('granted')
   h.prefEnabled = false
+  h.tharpanamEnabled = false
+  h.observancesEnabled = false
   window.Notification = { permission: 'granted', requestPermission: vi.fn().mockResolvedValue('granted') }
 })
 
@@ -193,6 +207,41 @@ describe('useNotifications (native) - self-heal on mount', () => {
     checkFCMPermission.mockResolvedValue('denied')
     const { result } = renderHook(() => useNotifications(user))
     await waitFor(() => expect(result.current.error).toMatch(/blocked/))
+  })
+})
+
+describe('tharpanam and observance sub-toggles', () => {
+  it('loads tharpanam_enabled and observances_enabled from the stored preference row', async () => {
+    h.tharpanamEnabled = true
+    h.observancesEnabled = false
+    const { result } = renderHook(() => useNotifications(user))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.tharpanamEnabled).toBe(true)
+    expect(result.current.observancesEnabled).toBe(false)
+  })
+
+  it('toggleTharpanam updates optimistically and persists via a direct update', async () => {
+    const { result } = renderHook(() => useNotifications(user))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await act(() => result.current.toggleTharpanam(true))
+    expect(result.current.tharpanamEnabled).toBe(true)
+    expect(updatePref).toHaveBeenCalledWith({ tharpanam_enabled: true })
+  })
+
+  it('toggleObservances updates optimistically and persists via a direct update', async () => {
+    const { result } = renderHook(() => useNotifications(user))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await act(() => result.current.toggleObservances(true))
+    expect(result.current.observancesEnabled).toBe(true)
+    expect(updatePref).toHaveBeenCalledWith({ observances_enabled: true })
+  })
+
+  it('reverts toggleTharpanam on failure', async () => {
+    updatePref.mockResolvedValueOnce({ error: { message: 'network error' } })
+    const { result } = renderHook(() => useNotifications(user))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await act(() => result.current.toggleTharpanam(true))
+    expect(result.current.tharpanamEnabled).toBe(false)
   })
 })
 

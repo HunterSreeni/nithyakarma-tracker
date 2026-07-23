@@ -18,18 +18,18 @@ Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 | Intent | Status | Evidence |
 |---|---|---|
 | 0.1 Real launcher/adaptive icon | ⬜ **Open** | `mipmap-*/ic_launcher.png` is still the **stock Capacitor blue-X placeholder** - files dated 19 June 2026, predating the project (created 7 July). Visually confirmed |
-| 0.2 Production AdMob | ⬜ **Open** | Google test IDs in `AndroidManifest.xml:16` (`ca-app-pub-3940256099942544~...`) and `utils/ads.js:6`. Ad *ordering* and session cap are built |
+| 0.2 Production AdMob | ✅ **Done** | Real app ID in `AndroidManifest.xml:16` (`ca-app-pub-2677287550445019~...`) and real interstitial unit in `utils/ads.js`, `isTesting` gated on `import.meta.env.DEV`. G content rating + Dating/Gambling/Alcohol/etc. blocked in the AdMob console (23 July 2026) |
 | 0.3 Password reset | ✅ Done | `components/ResetPassword.jsx`, `/reset` route in `App.jsx:56`, tests present |
 | 0.4 Accessibility pass | ✅ Done | `utils/contrast.js`, `components/__tests__/a11y.test.jsx` with contrast assertions |
 | 0.5 Store readiness assets | 🟡 Partial | `docs/PLAY-STORE-LISTING.md` drafted, screenshots captured (commit `4c7a74f`), privacy policy live. Missing: feature graphic, signing keystore, content rating |
 | 0.6 Onboarding value-prop | ✅ Done | `Onboarding.jsx:12` `useState('intro')`, intro step at `:34`, advances to form |
 | 0.7 Password policy | 🟡 Partial | Client `minLength={8}` at `AuthPage.jsx:81`. **HIBP still disabled** server-side - Supabase Pro feature, noted won't-fix |
 
-> ### ⚠️ There are two launch blockers, not one
+> ### ⚠️ One launch blocker left: the app icon
 >
-> The working assumption has been that the real AdMob ID is the last piece. **The app
-> icon is also still the default placeholder.** Shipping a blue-X launcher icon to Play
-> is a visible quality problem and hurts install conversion badly.
+> AdMob is done (23 July 2026). **The app icon is still the default placeholder** -
+> shipping a blue-X launcher icon to Play is a visible quality problem and hurts
+> install conversion badly.
 
 ---
 
@@ -55,7 +55,12 @@ Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 |---|---|---|
 | 1.1 Streak freeze | ✅ Done | `freeze_credits` on both subject tables, `freeze_cap_for`, `streak_after_completion`, migration `20260712094627` |
 | 1.2 Streak-miss reminder | ✅ **Done** | Server nudges (`send-reminders`), client suppression (`suppressTodayNudgesIfScheduled`). `nudge_morning` confirmed delivering 2026-07-19; on-device push verified end to end on the emulator |
-| 1.3 Analytics + crash | ✅ Done | `analytics_events` table (151 rows), `utils/analytics.js`, `utils/sentry.js` |
+| 1.3 Analytics + crash | ✅ Done | `analytics_events` table (209 rows), `utils/analytics.js`. `utils/sentry.js` wired, `VITE_SENTRY_DSN` set on Netlify production (23 July 2026), CSP `connect-src` allows the ingest domain |
+
+> `utils/sentry.js` sets `sendDefaultPii: false`, which `@sentry/react` deprecated as of
+> SDK 10.57 (installed: 10.65) in favour of a `dataCollection` option. Still functional -
+> deprecated, not removed - but will break on a future v11 upgrade. Not fixed yet, flagged
+> 23 July 2026.
 | 1.4 In-app review | ✅ Done | `utils/review.js` with `isMilestone` + rate limiting |
 | 1.5a Women's scope decision | ✅ Done | Decided narrow, 17 July 2026 |
 | 1.5 Female activation default | ✅ Done | `SuggestedPractices` in `TodayPage.jsx`, `TodayPage.test.jsx` covers the female/non-sandhya case |
@@ -264,8 +269,15 @@ closes the "no agreement tests" gap noted above for at least these three.
 - `support@nithyakarma.org` is live both directions (Cloudflare Email Routing in, Gmail's
   own SMTP + App Password out - no third-party relay). Replaces
   `support@sreeniverse.co.in` in `LegalPages.jsx`.
-- A static (non-SPA) marketing site was built at `/site` for `nithyakarma.org` - not yet
-  DNS-pointed. See [11-MARKETING-SITE.md](11-MARKETING-SITE.md).
+- A static (non-SPA) marketing site was built at `/site` for `nithyakarma.org`, deployed
+  22 July 2026 to its own Netlify project (`https://tranquil-jalebi-88d0eb.netlify.app/`),
+  custom domain live 23 July 2026, Cloudflare Web Analytics enabled (automatic RUM). See
+  [11-MARKETING-SITE.md](11-MARKETING-SITE.md).
+- `app.nithyakarma.org` also went live 23 July 2026 - Cloudflare CNAME to
+  `nithykarma.netlify.app`, added as an additional Netlify custom domain (the original
+  origin was kept alive, not replaced or redirected). Supabase Auth redirect allow-list
+  updated, `push.ts`'s `APP_URL` updated and `send-reminders` / `send-test-notification`
+  redeployed. CSP `connect-src` needed no change (never hardcoded the app's own origin).
 - **Release status unchanged: still not released anywhere.** No Play Store listing, no
   App Store/iOS platform. Android testing-track release planned for the week of
   2026-07-27; iOS is Phase 3, not started. See `docs/ROADMAP.md`'s "Release status" callout.
