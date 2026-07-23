@@ -58,11 +58,16 @@ jobs:
           VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
       # Non-destructive specs only. The full journey (@destructive) deletes a
       # shared live account and must be re-seeded first, so it is a manual
-      # pre-release gate, not a CI gate. E2E_* secrets are passed for when
-      # destructive specs are run in a dedicated, seeded workflow later.
+      # pre-release gate, not a CI gate. E2E_EMAIL/PASSWORD are the e2efull
+      # journey account's own fallback creds (journey.spec.js is @destructive
+      # and excluded here anyway). E2E_UI_EMAIL/PASSWORD are the separate,
+      # never-deleted e2e@nithyakarma.test account that auth-signout.spec.js
+      # signs in and back out of - non-destructive, safe to run every CI run.
       - run: npx playwright test --grep-invert "@destructive"
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          E2E_UI_EMAIL: ${{ secrets.E2E_UI_EMAIL }}
+          E2E_UI_PASSWORD: ${{ secrets.E2E_UI_PASSWORD }}
