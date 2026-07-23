@@ -7,7 +7,7 @@ android {
         applicationId "org.nithyakarma.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        def appVersionName = "0.24.0" // x-release-please-version
+        def appVersionName = "0.24.1" // x-release-please-version
         // versionCode derived from versionName (major*10000 + minor*100 + patch) so it
         // strictly increases with every release-please release automatically, instead of
         // being hardcoded - Play Store rejects a re-upload with a duplicate versionCode.
