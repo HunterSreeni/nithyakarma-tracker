@@ -440,6 +440,28 @@ begin
     raise exception 'FAIL: sri-rudram punya_value drifted from demanding tier (12)';
   end if;
 
+  -- 18. notification_deliveries.slot CHECK covers every literal send-reminders
+  -- actually uses, including the two added for Phase 3 (tharpanam/observance
+  -- calendar notifications). This is the exact regression class that hid the
+  -- 'nudge_morning' slot for months (section 6 covers dedup; this covers the
+  -- CHECK itself) - one row per slot, distinct endpoints to avoid the dedup
+  -- constraint masking a CHECK failure.
+  declare
+    v_slot text;
+  begin
+    foreach v_slot in array array['morning','afternoon','evening','nudge','nudge_morning','tharpanam','observance']
+    loop
+      v_failed := false;
+      begin
+        insert into notification_deliveries (user_id, reminder_date, slot, endpoint)
+          values (v_uid, current_date, v_slot, 'https://push.test/slot-check-' || v_slot);
+      exception when others then
+        v_failed := true;
+      end;
+      if v_failed then raise exception 'FAIL: slot % rejected by the notification_deliveries CHECK constraint', v_slot; end if;
+    end loop;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;
