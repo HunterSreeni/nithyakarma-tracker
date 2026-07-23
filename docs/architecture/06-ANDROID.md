@@ -103,20 +103,22 @@ Auth allow-list. All four together or Google Sign-In breaks.
 
 ```xml
 <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"
-           android:value="ca-app-pub-3940256099942544~3347511713" />
+           android:value="ca-app-pub-2677287550445019~1788696138" />
 ```
 
-> ⚠️ Both this app ID and the interstitial unit in `src/utils/ads.js:6` are **Google test
-> IDs**. Shipping them to production serves no real ads and violates AdMob policy.
-> Replacing them is the last remaining launch blocker.
->
+Real app ID and interstitial unit (`src/utils/ads.js`) went live 23 July 2026. `isTesting` /
+`initializeForTesting` are now gated on `import.meta.env.DEV`, so dev/CI builds still use
+Google's test ad serving and prod always requests the real ad unit.
+
 > The comment in the manifest is accurate and worth heeding: **a missing AdMob app ID
 > crashes the app at launch**, so the key must be present even in debug builds.
 
 Ad behaviour (per Intent 0.2): fires after a *verified* save and before the celebration,
 capped at one per session, never on a failed save, suppressed when `isAdFree`. Content
-rating must be set to **G** with gambling/dating/alcohol categories blocked in the AdMob
-console - a sectarian-adjacent app cannot afford a gambling ad beside a sandhya prompt.
+rating is set to **G** in the AdMob console, with Dating, Get Rich Quick, Sensationalism,
+Sexual & Reproductive Health, and Social Casino Games blocked (Alcohol and Gambling &
+Betting are blocked by default as Restricted categories) - a sectarian-adjacent app
+cannot afford a gambling or dating ad beside a sandhya prompt.
 
 ## Capacitor plugins
 
