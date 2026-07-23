@@ -1,8 +1,11 @@
 # 11 - Marketing Site (`/site`)
 
-Built 20 July 2026. A static (non-SPA) marketing site for the `nithyakarma.org` root
-domain, entirely separate from the React app in `/app`. **Not yet DNS-pointed** - see
-`docs/ROADMAP.md`'s "Domain and public identity" section for the cutover checklist.
+Built 20 July 2026, deployed 22 July 2026, custom domain live 23 July 2026. A static
+(non-SPA) marketing site for the `nithyakarma.org` root domain, entirely separate from
+the React app in `/app`. Runs on its own Netlify project (`tranquil-jalebi-88d0eb`),
+reachable at both `https://nithyakarma.org` and `https://tranquil-jalebi-88d0eb.netlify.app/`.
+`app.nithyakarma.org` for the React app itself is a separate, still-open cutover - see
+`docs/ROADMAP.md`'s "Domain and public identity" section for that checklist.
 
 ## Pages
 
@@ -51,17 +54,13 @@ Tamil/Malayalam-glyph-inspired English look-alike font, fully owned, no license 
 
 Chosen over Google Analytics, Plausible, Umami, GoatCounter because: free (the domain
 is already on Cloudflare), cookieless, no consent banner needed, zero extra
-infrastructure. Each HTML file has a placeholder HTML comment marking where the real
-beacon script goes:
-
-```html
-<!-- Cloudflare Web Analytics: paste the beacon script from
-     Cloudflare dashboard -> Analytics & Logs -> Web Analytics -> Add a site -->
-```
-
-Not yet filled in - do this once the site is actually deployed. A short paragraph was
-added to the app's real Privacy Policy (`app/src/components/LegalPages.jsx`,
-`PrivacyPage`, "Marketing site (nithyakarma.org)" section) disclosing this.
+infrastructure. Live since 23 July 2026 via **automatic RUM injection** at the
+Cloudflare edge (Analytics & Logs -> Web Analytics -> nithyakarma.org -> Manage site ->
+"Enable") - no JS snippet in the HTML at all, since the domain is now proxied through
+Cloudflare. Each HTML file has a comment noting this so nobody re-adds a manual snippet.
+A short paragraph was added to the app's real Privacy Policy
+(`app/src/components/LegalPages.jsx`, `PrivacyPage`, "Marketing site (nithyakarma.org)"
+section) disclosing this.
 
 **Rejected: Ghost.org / TryGhost.** A full CMS+newsletter platform needing either a
 real server (2GB+ RAM, Node, MySQL, Nginx) or paid Ghost(Pro) hosting ($15+/mo) -
@@ -103,10 +102,11 @@ at all (`app/android` only, no `app/ios`) - adding it means `npx cap add ios` pl
 Mac, Xcode, and a paid Apple Developer account, not just a site change. Android
 testing-track release is planned for the week of 2026-07-27; iOS is Phase 3.
 
-## Deploy plan (not yet executed)
+## Deploy plan
 
-- Second Netlify site, `site/netlify.toml` sets `base = "site"` - create via Netlify
-  dashboard, point `nithyakarma.org` root at it
+- Second Netlify site created, `site/netlify.toml` sets `base = "site"` - live at
+  `https://tranquil-jalebi-88d0eb.netlify.app/`. `nithyakarma.org` still needs pointing
+  at it (Cloudflare DNS + Netlify custom domain add - not yet done)
 - `app.nithyakarma.org` gets added as an *additional* custom domain on the **existing**
   Netlify site that already serves `nithykarma.netlify.app` - that origin must keep
   resolving, not get replaced (continuity for the developer's own test push

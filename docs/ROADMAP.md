@@ -27,9 +27,9 @@ Planned layout:
 
 | Host | Serves | Status |
 |---|---|---|
-| `nithyakarma.org` | Marketing site - About as the landing page, features, karma explainer, support us | Built (`/site`), not deployed/pointed yet |
-| `app.nithyakarma.org` | The existing React app | Not pointed |
-| `nithykarma.netlify.app` | Current app origin - **keep alive and 301-redirecting** | Live |
+| `nithyakarma.org` | Marketing site - About as the landing page, features, karma explainer, support us | **Live** (23 July 2026) - Cloudflare CNAME to `tranquil-jalebi-88d0eb.netlify.app`, proxied, Full SSL |
+| `app.nithyakarma.org` | The existing React app | **Live** (23 July 2026) - Cloudflare CNAME to `nithykarma.netlify.app`, proxied, added as Netlify custom domain (not a redirect - both origins serve the same site) |
+| `nithykarma.netlify.app` | Current app origin - **kept alive**, no redirect added | Live |
 
 > ### Keep the Netlify origin alive when this is picked up
 >
@@ -44,18 +44,23 @@ Planned layout:
 > Note the existing origin is **misspelled** (`nithykarma`, missing the second `a`).
 > That is part of why the domain matters.
 
-Migration checklist when this is picked up:
+Migration checklist:
 
-- Add both new origins to the Supabase Auth redirect allow-list
-- Update the CSP `connect-src` in `app/netlify.toml` (currently hardcoded to the
-  Supabase origin) - and mind that **two `netlify.toml` files exist**; the root one
-  sets `base = "app"` and carries no headers block, `app/netlify.toml` carries the real
-  CSP and HSTS. Splitting into two Netlify sites risks silently dropping the headers
+- ~~Add both new origins to the Supabase Auth redirect allow-list~~ - done 2026-07-23,
+  `https://app.nithyakarma.org/**` added alongside the existing `nithykarma.netlify.app`
+  entry (dashboard-only, no MCP tool covers Auth config)
+- ~~Update the CSP `connect-src` in `app/netlify.toml`~~ - checked 2026-07-23, no change
+  needed: it only lists third-party origins (Supabase, Cloudflare Turnstile, Sentry),
+  never the app's own domain, so it works unchanged regardless of which origin serves
+  the page. Still mind that **two `netlify.toml` files exist**; the root one sets
+  `base = "app"` and carries no headers block, `app/netlify.toml` carries the real CSP
+  and HSTS
 - ~~Swap `CONTACT` in `src/components/LegalPages.jsx` from `support@sreeniverse.co.in`
   to `support@nithyakarma.org`~~ - done 2026-07-20
-- Update `APP_URL` in `supabase/functions/_shared/push.ts`, which is what push
-  notifications deep-link to
-- Update the Play Store listing URLs
+- ~~Update `APP_URL` in `supabase/functions/_shared/push.ts`~~ - done 2026-07-23, now
+  `https://app.nithyakarma.org`; `send-reminders` and `send-test-notification` redeployed
+- Update the Play Store listing URLs - **not applicable yet**, no Play Store listing
+  exists (see "Release status" callout)
 
 ### support@nithyakarma.org - done 2026-07-20
 

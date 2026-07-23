@@ -4,7 +4,7 @@
 // both functions can hold their own.
 import webpush from "npm:web-push";
 
-export const APP_URL = "https://nithykarma.netlify.app";
+export const APP_URL = "https://app.nithyakarma.org";
 
 export async function loadConfig(admin: any): Promise<Record<string, string>> {
   const { data } = await admin.from("app_config").select("key, value");
