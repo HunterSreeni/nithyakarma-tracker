@@ -18,7 +18,10 @@ export default defineConfig(({ command, mode }) => {
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.js',
-    exclude: ['e2e/**', 'node_modules/**'],
+    // supabase/functions/** runs on Deno, not Vite/Node - its *.test.ts files
+    // use Deno.test and jsr: imports that vitest/esbuild can't transform.
+    // Run those with `deno test` instead (see the file header comment).
+    exclude: ['e2e/**', 'node_modules/**', 'supabase/functions/**'],
   },
   }
 })
