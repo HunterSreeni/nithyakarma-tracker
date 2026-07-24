@@ -103,21 +103,14 @@ header.site-head {
 }
 
 .wordmark {
-  font-family: 'Yatra One', 'Sora', sans-serif;
-  font-size: 1.35rem;
-  font-weight: 400;
-  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  background: linear-gradient(180deg, var(--ink), #3a2a1a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
-.wordmark span {
-  background: linear-gradient(180deg, var(--saffron-500), var(--saffron-700));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.wordmark img {
+  height: 26px;
+  width: auto;
+  display: block;
 }
 
 nav.site-nav {

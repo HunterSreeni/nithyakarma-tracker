@@ -114,11 +114,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 /* topbar */
 .topbar { background: var(--saffron-950); padding: 0 1.2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
 .wordmark { display: flex; align-items: center; gap: 7px; text-decoration: none; }
-/* Yatra One is a single-weight display face: no 700 to ask for, and its wide
-   brush forms need positive tracking rather than the tightening Sora wanted. */
-.wordmark .name { font-family: 'Yatra One', 'Sora', sans-serif; font-weight: 400; font-size: 1.02rem; letter-spacing: 0.01em; }
-.wordmark .name .nk-n { background: linear-gradient(180deg, #FFFFFF, #F0E7D8); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.wordmark .name .nk-k { background: linear-gradient(180deg, var(--saffron-300), var(--saffron-700)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.wordmark img { height: 22px; width: auto; display: block; }
 .top-right { display: flex; align-items: center; gap: 10px; }
 .streak-pill { display: flex; align-items: center; gap: 4px; background: rgba(255,153,51,0.12); border: 1px solid rgba(255,153,51,0.35); border-radius: 100px; padding: 3px 10px; font-weight: 700; font-size: 0.75rem; color: var(--saffron-400); }
 .top-avatar { position: relative; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; color: #fff; border: none; }
@@ -393,7 +389,7 @@ a.verse-card { text-decoration: none; color: inherit; }
 /* auth */
 .auth-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; background: var(--paper); }
 .auth-logo { font-family: 'Yatra One', 'Sora', sans-serif; font-size: 1.5rem; font-weight: 400; letter-spacing: 0.01em; margin-bottom: 0.3rem; background: linear-gradient(180deg, var(--ink), #3a2a1a); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.auth-logo span { background: linear-gradient(180deg, var(--saffron-500), var(--saffron-700)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.auth-logo-img { display: block; height: 32px; width: auto; margin-bottom: 0.3rem; }
 .auth-sub { color: var(--text-2); font-size: 0.8rem; font-weight: 300; margin-bottom: 1.8rem; }
 .auth-card { width: 100%; max-width: 380px; background: #fff; border-radius: 18px; padding: 1.6rem 1.4rem; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
 .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; border: 1.5px solid var(--warm); border-radius: 100px; padding: 11px; font-weight: 700; font-size: 0.8rem; }

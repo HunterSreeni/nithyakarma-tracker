@@ -26,7 +26,7 @@ export default function ResetPassword() {
 
   return (
     <div className="auth-wrap">
-      <div className="auth-logo">Nithya<span>karma</span></div>
+      <img src="/wordmark.png" alt="Nithyakarma" className="auth-logo-img" />
       <div className="auth-sub">Set a new password</div>
       <div className="auth-card">
         {done ? (

@@ -35,7 +35,7 @@ export default function Onboarding() {
     return (
       <div className="auth-wrap">
         <div className="onboard-intro">
-          <div className="auth-logo" style={{ textAlign: 'center', marginBottom: '0.2rem' }}>Nithya<span>karma</span></div>
+          <img src="/wordmark.png" alt="Nithyakarma" className="auth-logo-img" style={{ margin: '0 auto 0.2rem' }} />
           <h1 className="oi-title">Namaskaram</h1>
           <div className="oi-sub">A simple way to keep up your daily anushtanams.</div>
           <div className="oi-points">

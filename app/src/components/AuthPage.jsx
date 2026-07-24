@@ -51,7 +51,7 @@ export default function AuthPage() {
       {/* Form panel */}
       <div className="auth-panel">
         <div className="auth-formwrap">
-          <div className="auth-logo">Nithya<span>karma</span></div>
+          <img src="/wordmark.png" alt="Nithyakarma" className="auth-logo-img" />
           <h1 className="auth-welcome">
             {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Get started' : 'Reset password'}
           </h1>
