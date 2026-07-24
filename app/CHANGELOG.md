@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.26.0...app-v0.27.0) (2026-07-24)
+
+
+### Features
+
+* wire the real Nithyakarma wordmark into every UI surface ([73c7771](https://github.com/HunterSreeni/nithyakarma-tracker/commit/73c7771407a7d049d4cd3d78e515d1822da65fed))
+* wire the real Nithyakarma wordmark into every UI surface ([6a5f59e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/6a5f59ebff556c11e1cf6cb1f57448ed6b8dfa31))
+
 ## [0.26.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.25.0...app-v0.26.0) (2026-07-24)
 
 
