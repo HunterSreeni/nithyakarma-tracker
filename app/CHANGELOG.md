@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.25.0...app-v0.26.0) (2026-07-24)
+
+
+### Features
+
+* Play Store release readiness - legal pages, ad consent, signing, branding ([6877fb6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/6877fb600626addb74da44d78ce914dafe12095e))
+* Play Store release readiness - legal pages, ad consent, signing, branding ([a490d49](https://github.com/HunterSreeni/nithyakarma-tracker/commit/a490d49814cee35192b88ea184d9970a914a5d2e))
+
 ## [0.25.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.24.2...app-v0.25.0) (2026-07-23)
 
 
