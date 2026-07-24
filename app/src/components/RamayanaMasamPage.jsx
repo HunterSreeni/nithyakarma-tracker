@@ -16,7 +16,7 @@ export default function RamayanaMasamPage() {
     <div className="legal-page">
       <div className="legal-head">
         <button className="legal-back" onClick={() => navigate(-1)} aria-label="Go back"><ChevronLeft size={16} strokeWidth={2.5} /> Back</button>
-        <div className="auth-logo" style={{ fontSize: '1rem', margin: 0 }}>Nithya<span>karma</span></div>
+        <img src="/wordmark.png" alt="Nithyakarma" className="auth-logo-img" style={{ height: '20px', margin: 0 }} />
       </div>
       <h1 className="legal-title">Ramayana Masam</h1>
       <div className="legal-body">
