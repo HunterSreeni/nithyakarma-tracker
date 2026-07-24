@@ -13,6 +13,12 @@ fcm-service-account.json
 *firebase-adminsdk*.json
 client_secret_*.json
 
+# Android release signing - keystore + its passwords. Never commit (see
+# app/android/keystore.properties.example for the template).
+keystore.properties
+*.jks
+*.keystore
+
 # supabase CLI temp (project uses Supabase MCP only)
 app/supabase/.temp/
 
@@ -27,6 +33,10 @@ app/supabase/migrations/_archive/
 # "no copying" notice (see docs/architecture/08-PANCHANGAM.md). Never commit.
 paambu-panchangam/
 parapava-varusham-pambu-panchangam-2026-2027_compress.pdf
+
+# Malayalam (Kerala Brahmana Sabha) panchangam photos - copyrighted, spot-check
+# oracle only. Never commit.
+malayalam-panchangam/
 
 # Stray secret file - never commit
 google-secret.txt

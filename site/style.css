@@ -108,9 +108,17 @@ header.site-head {
   font-weight: 400;
   letter-spacing: 0.01em;
   text-decoration: none;
-  color: var(--ink);
+  background: linear-gradient(180deg, var(--ink), #3a2a1a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-.wordmark span { color: var(--action); }
+.wordmark span {
+  background: linear-gradient(180deg, var(--saffron-500), var(--saffron-700));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
 nav.site-nav {
   display: flex;

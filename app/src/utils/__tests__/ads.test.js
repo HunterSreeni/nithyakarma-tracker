@@ -7,8 +7,15 @@ vi.mock('@capacitor/core', () => ({
 
 const admob = {
   initialize: vi.fn(), prepareInterstitial: vi.fn(), showInterstitial: vi.fn(),
+  // Default: consent not required (typical non-EEA user) and ads allowed.
+  requestConsentInfo: vi.fn(() => ({ status: 'NOT_REQUIRED', isConsentFormAvailable: false, canRequestAds: true })),
+  showConsentForm: vi.fn(() => ({ status: 'OBTAINED', canRequestAds: true })),
 }
-vi.mock('@capacitor-community/admob', () => ({ AdMob: admob, MaxAdContentRating: { General: 'General' } }))
+vi.mock('@capacitor-community/admob', () => ({
+  AdMob: admob,
+  MaxAdContentRating: { General: 'General' },
+  AdmobConsentStatus: { NOT_REQUIRED: 'NOT_REQUIRED', REQUIRED: 'REQUIRED', OBTAINED: 'OBTAINED', UNKNOWN: 'UNKNOWN' },
+}))
 
 vi.mock('../analytics', () => ({ track: vi.fn() }))
 
@@ -72,6 +79,31 @@ describe('showInterstitial', () => {
     expect(admob.initialize).toHaveBeenCalledWith(
       expect.objectContaining({ maxAdContentRating: 'General' }),
     )
+  })
+
+  it('shows the UMP consent form when consent is required (EEA/UK)', async () => {
+    mockNative.mockReturnValue(true)
+    admob.requestConsentInfo.mockResolvedValueOnce({
+      status: 'REQUIRED', isConsentFormAvailable: true, canRequestAds: false,
+    })
+    admob.showConsentForm.mockResolvedValueOnce({ status: 'OBTAINED', canRequestAds: true })
+    const shown = await showInterstitial({ ad_free_until: null })
+    expect(admob.showConsentForm).toHaveBeenCalledTimes(1)
+    expect(shown).toBe(true)
+    expect(admob.showInterstitial).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows no ad when the user declines consent', async () => {
+    mockNative.mockReturnValue(true)
+    admob.requestConsentInfo.mockResolvedValue({
+      status: 'REQUIRED', isConsentFormAvailable: true, canRequestAds: false,
+    })
+    admob.showConsentForm.mockResolvedValue({ status: 'REQUIRED', canRequestAds: false })
+    expect(await showInterstitial({ ad_free_until: null })).toBe(false)
+    expect(admob.showInterstitial).not.toHaveBeenCalled()
+    // Stays blocked for the rest of the session without re-prompting.
+    expect(await showInterstitial({ ad_free_until: null })).toBe(false)
+    expect(admob.showConsentForm).toHaveBeenCalledTimes(1)
   })
 })
 

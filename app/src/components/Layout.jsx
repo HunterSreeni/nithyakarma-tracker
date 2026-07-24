@@ -22,7 +22,7 @@ export default function Layout({ children }) {
     <div className="app-shell">
       <header className="topbar">
         <Link to="/" className="wordmark">
-          <span className="name">Nithya<span>karma</span></span>
+          <span className="name"><span className="nk-n">Nithya</span><span className="nk-k">karma</span></span>
         </Link>
         <nav className="nav-tabs" aria-label="Primary">
           {TABS.map(t => (
