@@ -75,3 +75,8 @@ parayanam tradition, and open to anyone keeping up a daily practice.
   ships (currently only the Hanuman Chalisa text-only pilot, Intent 2.1a).
 - Screenshots and feature graphic are tracked separately - see the rest of
   Intent 0.5 in `docs/UPGRADE-PLAN.md`.
+- **Contains ads:** tick "Contains ads" and answer the content-rating
+  questionnaire's ads question "yes" (interstitial via AdMob, Android only). The
+  matching Data Safety declaration lives in `docs/DATA-SAFETY.md`.
+- **Privacy policy URL:** `https://nithyakarma.org/privacy.html` (static, readable
+  without JS - the in-app `/privacy` SPA route is for in-app viewing only).

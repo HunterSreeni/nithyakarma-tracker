@@ -7,6 +7,8 @@ const INTERSTITIAL_ID = 'ca-app-pub-2677287550445019/1140728797'
 const isTesting = import.meta.env.DEV
 
 let initialized = false
+// null = not yet resolved this session; true/false once UMP consent is known.
+let adsAllowed = null
 // Launch is intentionally LIGHT: at most one interstitial per app session. The
 // aggressive-ads + ₹99/year ad-free upgrade come later (Intent 2.6).
 let shownThisSession = false
@@ -19,6 +21,20 @@ export function adsAvailable() {
 export function _resetAdSession() {
   shownThisSession = false
   initialized = false
+  adsAllowed = null
+}
+
+// Google UMP consent (required to serve ads to EEA/UK users). Runs once per
+// session: fetch the latest consent info, show the form if the SDK says one is
+// required and available, then report whether ads may be requested at all.
+// Returns true when ads are allowed, false when consent forbids them.
+async function ensureConsent(AdMob, AdmobConsentStatus) {
+  const info = await AdMob.requestConsentInfo()
+  if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) {
+    const after = await AdMob.showConsentForm()
+    return after.canRequestAds !== false
+  }
+  return info.canRequestAds !== false
 }
 
 export function isAdFree(profile, today = new Date()) {
@@ -32,7 +48,7 @@ export function isAdFree(profile, today = new Date()) {
 export async function showInterstitial(profile) {
   if (!adsAvailable() || isAdFree(profile) || shownThisSession) return false
   try {
-    const { AdMob, MaxAdContentRating } = await import('@capacitor-community/admob')
+    const { AdMob, MaxAdContentRating, AdmobConsentStatus } = await import('@capacitor-community/admob')
     if (!initialized) {
       await AdMob.initialize({
         initializeForTesting: isTesting,
@@ -41,6 +57,13 @@ export async function showInterstitial(profile) {
       })
       initialized = true
     }
+    // Gate ads behind UMP consent (EEA/UK requirement). Resolved once per
+    // session; if the user declines or consent can't be obtained, no ad is ever
+    // shown this session.
+    if (adsAllowed === null) {
+      adsAllowed = await ensureConsent(AdMob, AdmobConsentStatus)
+    }
+    if (!adsAllowed) return false
     await AdMob.prepareInterstitial({ adId: INTERSTITIAL_ID, isTesting })
     await AdMob.showInterstitial()
     shownThisSession = true
