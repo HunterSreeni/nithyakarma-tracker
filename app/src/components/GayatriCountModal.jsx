@@ -25,7 +25,7 @@ export default function GayatriCountModal({ slot, onCancel, onConfirm }) {
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="gayatri-count-title"
         tabIndex={-1} ref={modalRef} onClick={e => e.stopPropagation()}>
         <div className="cel-streak" id="gayatri-count-title">{label} Gayatri Count</div>
-        <div className="cel-sub">How many Gayatri japa did you do?</div>
+        <div className="cel-sub" style={{ marginBottom: '0.8rem' }}>How many Gayatri japa did you do?</div>
         <form onSubmit={confirm}>
           <input className="field-input" type="number" min="1" step="1" inputMode="numeric"
             autoFocus value={count} onChange={e => setCount(e.target.value)} />

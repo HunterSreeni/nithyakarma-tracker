@@ -68,4 +68,28 @@ describe('Onboarding', () => {
       expect.objectContaining({ gender: 'male', isMarried: true }),
     ))
   })
+
+  it('asks for panchangam tradition regardless of gender, defaulting to Tamil', async () => {
+    render(<Onboarding />)
+    fireEvent.click(screen.getByText(/Get started/))
+    fireEvent.click(screen.getByText('Female'))
+    expect(screen.getByText('Panchangam')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Priya' } })
+    fireEvent.click(screen.getByText(/Begin/))
+    await waitFor(() => expect(createProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ gender: 'female', panchangamTradition: 'tamil' }),
+    ))
+  })
+
+  it('flows a Malayalam selection through to createProfile', async () => {
+    render(<Onboarding />)
+    fireEvent.click(screen.getByText(/Get started/))
+    fireEvent.click(screen.getByText('Female'))
+    fireEvent.click(screen.getByText('Malayalam'))
+    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Priya' } })
+    fireEvent.click(screen.getByText(/Begin/))
+    await waitFor(() => expect(createProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ panchangamTradition: 'malayalam' }),
+    ))
+  })
 })

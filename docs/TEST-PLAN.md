@@ -261,6 +261,8 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Referral code flows through from `/r/:code`/`?ref=` to `createProfile` | Unit | ✅ |
 | Male -> Sandhyavandhanam auto-added | Integration + E2E(W, `journey.spec.js` @destructive) | ✅ / ⚠️ manual-gate only |
 | Marital-status chip (Bachelor/Married) shown only for male, defaults Bachelor, flows into `createProfile` | Unit (`Onboarding.test.jsx`) | ✅ |
+| Panchangam tradition chip (Tamil/Malayalam) shown regardless of gender, defaults Tamil, flows into `createProfile` | Unit (`Onboarding.test.jsx`) | ✅ |
+| Notification-permission screen offers Tharpanam + Auspicious-day sub-toggles, disabled until the master toggle is enabled | Unit (`NotificationPrompt.test.jsx`) | ✅ |
 | Female -> no Sandhyavandhanam, lands on suggested-practices empty state | E2E(W, `journey-female.spec.js` @destructive) | ⚠️ manual-gate only |
 | Sandhya-association trigger blocks female / boy-without-upanayanam at the DB layer | Integration (§2, §3) | ✅ |
 | Referral code applied at signup (valid) | Integration (§9) + E2E(W, `referral.spec.js`) | ✅ / ⚠️ **effectively skipped in CI** (missing secrets) |
@@ -276,7 +278,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Sandhya step dropped even for male users if the DOM element is absent | Unit | ✅ |
 | Runs once on first ready render, not before, not again once seen | Unit | ✅ |
 | Marks itself seen via driver.js `onDestroyed` | Unit | ✅ |
-| Tour-seen persistence is per-device (localStorage), not per-account | - | ⬜ (a second account on the same device never seeing the tour is unverified) |
+| Gated to accounts that just onboarded in this browser session (`sessionStorage: nk_onboarded_session`, set by `createProfile`), not just "never seen on this device" | Unit (`GuidedTour.test.jsx`) + live headed-browser check 2026-07-26 | ✅ fixed a real gap - previously an existing account signing in on a new/cleared device or fresh Android install would see the "first-run" tour again |
 | Blocked/unavailable localStorage suppresses the tour rather than re-showing it every load | - | ⬜ |
 
 ### Today / mark & Sandhya 3-slot ← the most heavily tested area

@@ -108,10 +108,11 @@ export function AuthProvider({ children }) {
   const updatePassword = (password) => supabase.auth.updateUser({ password })
 
   // Onboarding: create the profile row (RLS: id must equal auth.uid()).
-  const createProfile = async ({ displayName, gender, isMarried, referralCode }) => {
+  const createProfile = async ({ displayName, gender, isMarried, panchangamTradition, referralCode }) => {
     const { error } = await supabase.from('profiles').insert({
       id: session.user.id, display_name: displayName, gender,
       is_married: gender === 'male' ? !!isMarried : false,
+      panchangam_tradition: panchangamTradition ?? 'tamil',
     })
     if (error) throw error
     if (referralCode) {
@@ -135,6 +136,10 @@ export function AuthProvider({ children }) {
     track('onboarding_complete', { gender, referred: !!referralCode })
     await loadProfile(session.user.id)
     setJustOnboarded(true)
+    // Lets GuidedTour know this account just onboarded in this browser
+    // session, since justOnboarded itself gets cleared by App.jsx's Gate
+    // before the Today page ever mounts (see GuidedTour.jsx).
+    try { sessionStorage.setItem('nk_onboarded_session', '1') } catch { /* private mode */ }
   }
 
   const updateProfile = async (fields) => {

@@ -11,6 +11,12 @@ import GuidedTour, { buildSteps, tourSeen } from '../GuidedTour'
 
 beforeEach(() => {
   localStorage.clear()
+  sessionStorage.clear()
+  // GuidedTour now also requires "this account just onboarded in this
+  // browser session" (set by useAuth's createProfile) - default it on so
+  // the existing tests below keep exercising the tour-runs path; the
+  // dedicated test further down clears it to cover the opposite case.
+  sessionStorage.setItem('nk_onboarded_session', '1')
   vi.clearAllMocks()
   document.body.innerHTML = ''
 })
@@ -51,6 +57,12 @@ describe('GuidedTour', () => {
 
   it('does not run again once seen', () => {
     localStorage.setItem('nk_tour_seen_v1', '1')
+    render(<GuidedTour ready={true} showSandhya={true} />)
+    expect(driveMock).not.toHaveBeenCalled()
+  })
+
+  it('does not run for an existing account on a new/cleared device (never seen locally, but did not just onboard this session)', () => {
+    sessionStorage.removeItem('nk_onboarded_session')
     render(<GuidedTour ready={true} showSandhya={true} />)
     expect(driveMock).not.toHaveBeenCalled()
   })

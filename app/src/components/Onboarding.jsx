@@ -7,6 +7,7 @@ export default function Onboarding() {
   const [name, setName] = useState(session?.user?.user_metadata?.full_name ?? '')
   const [gender, setGender] = useState(null)
   const [isMarried, setIsMarried] = useState(false)
+  const [panchangamTradition, setPanchangamTradition] = useState('tamil')
   const [referral, setReferral] = useState(getReferralFromUrl())
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -25,7 +26,7 @@ export default function Onboarding() {
     if (!gender) { setError('Please select gender'); return }
     setError(null); setBusy(true)
     try {
-      await createProfile({ displayName: name.trim(), gender, isMarried, referralCode: referral.trim() || null })
+      await createProfile({ displayName: name.trim(), gender, isMarried, panchangamTradition, referralCode: referral.trim() || null })
     } catch (err) {
       setError(err.message)
       setBusy(false)
@@ -91,6 +92,13 @@ export default function Onboarding() {
               </div>
             </>
           )}
+          <label className="field-label">Panchangam</label>
+          <div className="radio-row">
+            <button type="button" className={`radio-chip ${panchangamTradition === 'tamil' ? 'on' : ''}`}
+              onClick={() => setPanchangamTradition('tamil')}>Tamil</button>
+            <button type="button" className={`radio-chip ${panchangamTradition === 'malayalam' ? 'on' : ''}`}
+              onClick={() => setPanchangamTradition('malayalam')}>Malayalam</button>
+          </div>
           <label className="field-label">Referral code (optional)</label>
           <input className="field-input" value={referral} onChange={e => setReferral(e.target.value)}
             placeholder="From a friend's invite link" />
