@@ -8,6 +8,7 @@ do $$
 declare
   v_uid uuid;
   v_sandhya int;
+  v_samidha int;
   v_up uuid;
   v_girl uuid;
   v_sup uuid;
@@ -57,6 +58,22 @@ begin
     if not v_failed then raise exception 'FAIL: boy without upanayanam got Sandhyavandhanam'; end if;
     update family_members set upanayanam_done = true where id = v_boy;
     insert into user_practices (owner_id, family_member_id, practice_id) values (v_uid, v_boy, v_sandhya);
+
+    -- 3b. Samidhadhanam trigger: bachelor self allowed, married self blocked,
+    -- family boy follows the same upanayanam gate as Sandhyavandhanam.
+    select id into v_samidha from practices where slug = 'samidhadhanam';
+    insert into user_practices (owner_id, practice_id) values (v_uid, v_samidha) returning id into v_up;
+    delete from user_practices where id = v_up;
+    update profiles set is_married = true where id = v_uid;
+    v_failed := false;
+    begin
+      insert into user_practices (owner_id, practice_id) values (v_uid, v_samidha);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: married self got Samidhadhanam'; end if;
+    update profiles set is_married = false where id = v_uid;
+
+    insert into user_practices (owner_id, family_member_id, practice_id) values (v_uid, v_boy, v_samidha);
   end;
 
   -- 4. Duplicate same-day log rejected by unique index

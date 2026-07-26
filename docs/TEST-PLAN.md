@@ -315,7 +315,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Sandhya shown for self (male) and for family boy with upanayanam | Unit | ✅ |
 | Samidhadhanam hidden for married men, women, and boys without upanayanam in dropdown | Unit (`TodayPage.test.jsx`) | ✅ |
 | Samidhadhanam shown for unmarried men and for family boy with upanayanam | Unit (`TodayPage.test.jsx`) | ✅ |
-| DB trigger blocks a direct insert of Samidhadhanam for an ineligible subject (married/female/no-upanayanam) | - | ⬜ no integration test yet against the live `check_sandhya_eligibility` extension |
+| DB trigger blocks a direct insert of Samidhadhanam for a married self / allows unmarried self / gates family boy on upanayanam | Integration(§3b) | ✅ run against production via Supabase MCP 2026-07-26, rolled back |
 | Already-tracking dimmed & disabled | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Add error keeps dropdown open, shows inline error | - | ⬜ |
 | Escape closes dropdown, focus trap active | - | ⬜ (hook `useFocusTrap` itself untested directly; only exercised indirectly via CelebrationModal focus tests) |
