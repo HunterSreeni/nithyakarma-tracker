@@ -6,6 +6,7 @@ export default function Onboarding() {
   const { createProfile, session } = useAuth()
   const [name, setName] = useState(session?.user?.user_metadata?.full_name ?? '')
   const [gender, setGender] = useState(null)
+  const [isMarried, setIsMarried] = useState(false)
   const [referral, setReferral] = useState(getReferralFromUrl())
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -24,7 +25,7 @@ export default function Onboarding() {
     if (!gender) { setError('Please select gender'); return }
     setError(null); setBusy(true)
     try {
-      await createProfile({ displayName: name.trim(), gender, referralCode: referral.trim() || null })
+      await createProfile({ displayName: name.trim(), gender, isMarried, referralCode: referral.trim() || null })
     } catch (err) {
       setError(err.message)
       setBusy(false)
@@ -78,6 +79,17 @@ export default function Onboarding() {
               Sandhyavandhanam (3 sandhyas + Gaayatri) will be added to your daily list.
               Mark even one to keep your streak going.
             </div>
+          )}
+          {gender === 'male' && (
+            <>
+              <label className="field-label">Marital status</label>
+              <div className="radio-row">
+                <button type="button" className={`radio-chip ${!isMarried ? 'on' : ''}`}
+                  onClick={() => setIsMarried(false)}>Bachelor</button>
+                <button type="button" className={`radio-chip ${isMarried ? 'on' : ''}`}
+                  onClick={() => setIsMarried(true)}>Married</button>
+              </div>
+            </>
           )}
           <label className="field-label">Referral code (optional)</label>
           <input className="field-input" value={referral} onChange={e => setReferral(e.target.value)}

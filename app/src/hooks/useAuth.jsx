@@ -108,9 +108,10 @@ export function AuthProvider({ children }) {
   const updatePassword = (password) => supabase.auth.updateUser({ password })
 
   // Onboarding: create the profile row (RLS: id must equal auth.uid()).
-  const createProfile = async ({ displayName, gender, referralCode }) => {
+  const createProfile = async ({ displayName, gender, isMarried, referralCode }) => {
     const { error } = await supabase.from('profiles').insert({
       id: session.user.id, display_name: displayName, gender,
+      is_married: gender === 'male' ? !!isMarried : false,
     })
     if (error) throw error
     if (referralCode) {

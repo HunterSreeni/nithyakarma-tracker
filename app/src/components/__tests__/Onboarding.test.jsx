@@ -43,4 +43,29 @@ describe('Onboarding', () => {
       expect.objectContaining({ displayName: 'Ravi', gender: 'male', referralCode: 'ABC123' }),
     ))
   })
+
+  it('only shows marital status for a male selection, defaulting to Bachelor', async () => {
+    render(<Onboarding />)
+    fireEvent.click(screen.getByText(/Get started/))
+    expect(screen.queryByText('Marital status')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('Male'))
+    expect(screen.getByText('Marital status')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Ravi' } })
+    fireEvent.click(screen.getByText(/Begin/))
+    await waitFor(() => expect(createProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ gender: 'male', isMarried: false }),
+    ))
+  })
+
+  it('flows a Married selection through to createProfile', async () => {
+    render(<Onboarding />)
+    fireEvent.click(screen.getByText(/Get started/))
+    fireEvent.click(screen.getByText('Male'))
+    fireEvent.click(screen.getByText('Married'))
+    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Ravi' } })
+    fireEvent.click(screen.getByText(/Begin/))
+    await waitFor(() => expect(createProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ gender: 'male', isMarried: true }),
+    ))
+  })
 })
