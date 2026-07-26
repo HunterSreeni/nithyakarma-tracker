@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.28.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.27.0...app-v0.28.0) (2026-07-26)
+
+
+### Features
+
+* add Samidhadhanam (brahmachari-only) and user-entered Gayatri count ([8c2edfe](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8c2edfe2889c2810fe44da44daa58503a228dbeb))
+* onboard panchangam tradition + tharpanam/observance reminders, fix guided-tour scoping ([712f214](https://github.com/HunterSreeni/nithyakarma-tracker/commit/712f2146f813ca9e3a0a217e7601fa6142489baf))
+
 ## [0.27.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.26.0...app-v0.27.0) (2026-07-24)
 
 
