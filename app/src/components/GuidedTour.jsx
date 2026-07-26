@@ -16,6 +16,15 @@ function markSeen() {
   try { localStorage.setItem(SEEN_KEY, '1') } catch { /* private mode - show once per load */ }
 }
 
+// Set once by useAuth's createProfile, right when onboarding completes. Gates
+// the tour to accounts that just onboarded IN THIS BROWSER SESSION, not just
+// "never seen on this device" - otherwise an existing account signing in on a
+// new/cleared device or a fresh Android install would see the "first-run"
+// tour again.
+function onboardedThisSession() {
+  try { return sessionStorage.getItem('nk_onboarded_session') === '1' } catch { return false }
+}
+
 // Element-less first step renders as a centered popover; anchored steps
 // spotlight the target. The sandhya step is only included when its element is
 // present (male users who track Sandhyavandhanam).
@@ -49,7 +58,7 @@ export function buildSteps(showSandhya) {
 
 export default function GuidedTour({ ready, showSandhya }) {
   useEffect(() => {
-    if (!ready || tourSeen()) return
+    if (!ready || tourSeen() || !onboardedThisSession()) return
     // Only anchor the sandhya step if the card is actually on the page.
     const hasSlots = !!document.querySelector('[data-tour="sandhya-slots"]')
     const d = driver({

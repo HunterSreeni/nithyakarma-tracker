@@ -6,6 +6,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
 import { isDoneToday, countsTowardDayCompletion, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
 import CelebrationModal from './CelebrationModal'
+import GayatriCountModal from './GayatriCountModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import PanchangamBox from './PanchangamBox'
 import MonthlySpecialBanner from './MonthlySpecialBanner'
@@ -23,6 +24,7 @@ export default function TodayPage() {
   const { items, loading, error: loadError, submit, addPractice, reload } =
     useToday(session.user.id, selectedMember?.id ?? null)
   const [celebration, setCelebration] = useState(null)
+  const [gayatriPrompt, setGayatriPrompt] = useState(null) // { item, slot }
   const [busyId, setBusyId] = useState(null)
   const [error, setError] = useState(null)
 
@@ -36,10 +38,12 @@ export default function TodayPage() {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
   })
 
-  const mark = async (item, slot = null) => {
+  const mark = async (item, slot = null, count = null) => {
     setBusyId(item.up.id); setError(null)
     try {
-      const result = await submit(item.up.id, { slot, count: item.practice.target_count ?? null })
+      const result = await submit(item.up.id, {
+        slot, count: item.practice.is_sandhyavandhanam ? count : (item.practice.target_count ?? null),
+      })
       await refresh() // streaks in topbar / switcher
       track('practice_marked', {
         day_complete: !!result.day_complete,
@@ -62,6 +66,8 @@ export default function TodayPage() {
       setBusyId(null)
     }
   }
+
+  const onSlotClick = (item, slot) => setGayatriPrompt({ item, slot })
 
   return (
     <>
@@ -105,7 +111,7 @@ export default function TodayPage() {
         <div className="practice-list">
           {items.map(item => (
             <PracticeCard key={item.up.id} item={item}
-              busy={busyId === item.up.id} onMark={mark} />
+              busy={busyId === item.up.id} onMark={mark} onSlotClick={onSlotClick} />
           ))}
         </div>
       )}
@@ -114,6 +120,16 @@ export default function TodayPage() {
 
       {celebration && (
         <CelebrationModal data={celebration} onClose={() => setCelebration(null)} />
+      )}
+
+      {gayatriPrompt && (
+        <GayatriCountModal slot={gayatriPrompt.slot}
+          onCancel={() => setGayatriPrompt(null)}
+          onConfirm={count => {
+            const { item, slot } = gayatriPrompt
+            setGayatriPrompt(null)
+            mark(item, slot, count)
+          }} />
       )}
 
       <Suspense fallback={null}>
@@ -164,7 +180,7 @@ function SuggestedPractices({ onAdd }) {
   )
 }
 
-function PracticeCard({ item, busy, onMark }) {
+function PracticeCard({ item, busy, onMark, onSlotClick }) {
   const { practice, up, logs } = item
   const done = isDoneToday(practice, logs)
   const slotsDone = new Set(logs.map(l => l.slot))
@@ -206,7 +222,7 @@ function PracticeCard({ item, busy, onMark }) {
               {SANDHYA_SLOTS.map(s => (
                 <button key={s.key} disabled={slotsDone.has(s.key) || busy}
                   className={`slot-btn ${slotsDone.has(s.key) ? 'done' : ''}`}
-                  onClick={() => onMark(item, s.key)}>
+                  onClick={() => onSlotClick(item, s.key)}>
                   {slotsDone.has(s.key) && <Check size={11} strokeWidth={3} />}{s.short}
                 </button>
               ))}
@@ -248,10 +264,13 @@ function AddPracticeDropdown({ existing, onAdd }) {
   const subjectGender = selectedMember?.gender ?? profile.gender
   const upanayanamOk = selectedMember ? selectedMember.upanayanam_done : true
 
+  const brahmachariOk = selectedMember ? selectedMember.upanayanam_done : !profile.is_married
+
   const visible = useMemo(() => catalog.filter(p => {
     if (p.is_sandhyavandhanam && (subjectGender !== 'male' || !upanayanamOk)) return false
+    if (p.requires_brahmachari && (subjectGender !== 'male' || !brahmachariOk)) return false
     return p.name.toLowerCase().includes(search.toLowerCase())
-  }), [catalog, search, subjectGender, upanayanamOk])
+  }), [catalog, search, subjectGender, upanayanamOk, brahmachariOk])
 
   const add = async (p) => {
     setError(null)

@@ -175,6 +175,90 @@ describe('TodayPage - celebration only from a verified RPC response', () => {
   })
 })
 
+describe('TodayPage - Gayatri count popup on Sandhyavandhanam slots', () => {
+  it('clicking a slot opens a count prompt instead of marking immediately', () => {
+    h.items = [sandhyaItem([])]
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Morning'))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('Prathakala Gayatri Count')).toBeInTheDocument()
+    expect(h.submit).not.toHaveBeenCalled()
+  })
+
+  it('confirming the count submits it as the log count for that slot', async () => {
+    h.items = [sandhyaItem([])]
+    h.submit.mockResolvedValue({ saved: true, day_complete: false, overall_streak: 1, practice_name: 'Sandhyavandhanam' })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Morning'))
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '28' } })
+    fireEvent.click(screen.getByText('Save'))
+    await waitFor(() => expect(h.submit).toHaveBeenCalledWith('up-s', { slot: 'morning', count: 28 }))
+  })
+
+  it('cancelling the prompt does not submit anything', () => {
+    h.items = [sandhyaItem([])]
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Morning'))
+    fireEvent.click(screen.getByText('Cancel'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(h.submit).not.toHaveBeenCalled()
+  })
+})
+
+describe('TodayPage - Samidhadhanam hidden from Add dropdown', () => {
+  const samidhaPractice = { id: 20, name: 'Samidhadhanam', icon: '🔥', is_sandhyavandhanam: false, requires_brahmachari: true, cadence: 'daily' }
+  const openDropdown = () => {
+    h.items = [{
+      up: { id: 'up-other', current_streak: 0, sequence_position: 0 },
+      practice: { id: 9, name: 'Vishnu Sahasranamam', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
+      logs: [],
+    }]
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Add an anushtanam to track...'))
+  }
+
+  it('shows Samidhadhanam for an unmarried male self-profile', async () => {
+    h.catalog = [samidhaPractice]
+    h.profile = { ...h.profile, gender: 'male', is_married: false }
+    h.selectedMember = null
+    openDropdown()
+    expect(await screen.findByText('Samidhadhanam')).toBeInTheDocument()
+  })
+
+  it('hides Samidhadhanam for a married male self-profile', async () => {
+    h.catalog = [samidhaPractice]
+    h.profile = { ...h.profile, gender: 'male', is_married: true }
+    h.selectedMember = null
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Samidhadhanam')).not.toBeInTheDocument()
+  })
+
+  it('hides Samidhadhanam for a female profile', async () => {
+    h.catalog = [samidhaPractice]
+    h.profile = { ...h.profile, gender: 'female' }
+    h.selectedMember = null
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Samidhadhanam')).not.toBeInTheDocument()
+  })
+
+  it('shows Samidhadhanam for a family member boy with upanayanam done', async () => {
+    h.catalog = [samidhaPractice]
+    h.selectedMember = { id: 'fm1', gender: 'male', upanayanam_done: true }
+    openDropdown()
+    expect(await screen.findByText('Samidhadhanam')).toBeInTheDocument()
+  })
+
+  it('hides Samidhadhanam for a family member boy without upanayanam', async () => {
+    h.catalog = [samidhaPractice]
+    h.selectedMember = { id: 'fm1', gender: 'male', upanayanam_done: false }
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Samidhadhanam')).not.toBeInTheDocument()
+  })
+})
+
 describe('TodayPage - Sandhyavandhanam hidden from Add dropdown', () => {
   const sandhyaPractice = { id: 1, name: 'Sandhyavandhanam', icon: '🕉', is_sandhyavandhanam: true, cadence: 'daily' }
   // A non-empty item list keeps the empty-day SuggestedPractices section (which

@@ -10,9 +10,10 @@ import { useNotifications } from '../hooks/useNotifications'
 // of a settings toggle.
 export default function NotificationPrompt({ onDone }) {
   const { session, profile } = useAuth()
-  const { enabled, error, testResult, supported, toggle, sendTestNotification } = useNotifications(
-    session.user, { includeSandhya: profile.gender === 'male' },
-  )
+  const {
+    enabled, tharpanamEnabled, observancesEnabled, error, testResult, supported,
+    toggle, toggleTharpanam, toggleObservances, sendTestNotification,
+  } = useNotifications(session.user, { includeSandhya: profile.gender === 'male' })
   const [enabling, setEnabling] = useState(false)
   const [testSent, setTestSent] = useState(false)
 
@@ -58,6 +59,22 @@ export default function NotificationPrompt({ onDone }) {
             {enabling ? 'Enabling...' : 'Enable notifications'}
           </button>
         )}
+
+        {supported && (
+          <>
+            <label className="checkbox-row">
+              <input type="checkbox" checked={tharpanamEnabled} disabled={!enabled}
+                onChange={e => toggleTharpanam(e.target.checked)} />
+              Tharpanam reminders - monthly Amavasya, Karkidaka Vaavu, and the two Sankranti days
+            </label>
+            <label className="checkbox-row">
+              <input type="checkbox" checked={observancesEnabled} disabled={!enabled}
+                onChange={e => toggleObservances(e.target.checked)} />
+              Auspicious-day reminders - Pongal, Sivarathri, and other festivals
+            </label>
+          </>
+        )}
+
         <button className="btn-plain" onClick={onDone}>
           {enabled ? 'Continue' : 'Maybe later'}
         </button>

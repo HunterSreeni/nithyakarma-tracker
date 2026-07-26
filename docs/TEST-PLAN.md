@@ -260,6 +260,9 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Gender required, blocks submit | Unit | ✅ |
 | Referral code flows through from `/r/:code`/`?ref=` to `createProfile` | Unit | ✅ |
 | Male -> Sandhyavandhanam auto-added | Integration + E2E(W, `journey.spec.js` @destructive) | ✅ / ⚠️ manual-gate only |
+| Marital-status chip (Bachelor/Married) shown only for male, defaults Bachelor, flows into `createProfile` | Unit (`Onboarding.test.jsx`) | ✅ |
+| Panchangam tradition chip (Tamil/Malayalam) shown regardless of gender, defaults Tamil, flows into `createProfile` | Unit (`Onboarding.test.jsx`) | ✅ |
+| Notification-permission screen offers Tharpanam + Auspicious-day sub-toggles, disabled until the master toggle is enabled | Unit (`NotificationPrompt.test.jsx`) | ✅ |
 | Female -> no Sandhyavandhanam, lands on suggested-practices empty state | E2E(W, `journey-female.spec.js` @destructive) | ⚠️ manual-gate only |
 | Sandhya-association trigger blocks female / boy-without-upanayanam at the DB layer | Integration (§2, §3) | ✅ |
 | Referral code applied at signup (valid) | Integration (§9) + E2E(W, `referral.spec.js`) | ✅ / ⚠️ **effectively skipped in CI** (missing secrets) |
@@ -275,7 +278,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Sandhya step dropped even for male users if the DOM element is absent | Unit | ✅ |
 | Runs once on first ready render, not before, not again once seen | Unit | ✅ |
 | Marks itself seen via driver.js `onDestroyed` | Unit | ✅ |
-| Tour-seen persistence is per-device (localStorage), not per-account | - | ⬜ (a second account on the same device never seeing the tour is unverified) |
+| Gated to accounts that just onboarded in this browser session (`sessionStorage: nk_onboarded_session`, set by `createProfile`), not just "never seen on this device" | Unit (`GuidedTour.test.jsx`) + live headed-browser check 2026-07-26 | ✅ fixed a real gap - previously an existing account signing in on a new/cleared device or fresh Android install would see the "first-run" tour again |
 | Blocked/unavailable localStorage suppresses the tour rather than re-showing it every load | - | ⬜ |
 
 ### Today / mark & Sandhya 3-slot ← the most heavily tested area
@@ -302,12 +305,19 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | CelebrationModal share card's `data.tier` field | - | ✅ verified 2026-07-23 via the live `submit_practice_log` function definition (Supabase MCP) - it returns `tier`, and `TodayPage.mark()`'s spread carries it through. Not a bug. |
 | p_award_streak passthrough (learning-style marks don't advance streak) | Unit (`useToday.test.js`) + Integration(§17) | ✅ |
 | Client-supplied local date honored within ±1 day, falls back beyond that (anti streak-gaming) | Integration(§10b) | ✅ |
+| Tapping any Sandhya slot (Morning/Noon/Evening) opens a Gayatri-count popup instead of marking immediately, pre-filled 108 but editable to any value | Unit (`TodayPage.test.jsx`) | ✅ |
+| Confirming the popup submits the entered number as the log's `count`; Cancel submits nothing | Unit (`TodayPage.test.jsx`) | ✅ |
+| Non-sandhya practices unaffected - still auto-submit their fixed `target_count` on "Mark Done" | Unit (`TodayPage.test.jsx`) | ✅ |
+| Gayatri count still clamped 1..10000 server-side (`validate_count`) regardless of client input | Integration(§10) | ✅ (pre-existing RPC validation, unchanged) |
 
 ### Add practice / cadences
 | Case | Layer | Status |
 |---|---|---|
 | Sandhya hidden for female / no-upanayanam subject in dropdown | Unit (`TodayPage.test.jsx`) | ✅ |
 | Sandhya shown for self (male) and for family boy with upanayanam | Unit | ✅ |
+| Samidhadhanam hidden for married men, women, and boys without upanayanam in dropdown | Unit (`TodayPage.test.jsx`) | ✅ |
+| Samidhadhanam shown for unmarried men and for family boy with upanayanam | Unit (`TodayPage.test.jsx`) | ✅ |
+| DB trigger blocks a direct insert of Samidhadhanam for a married self / allows unmarried self / gates family boy on upanayanam | Integration(§3b) | ✅ run against production via Supabase MCP 2026-07-26, rolled back |
 | Already-tracking dimmed & disabled | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Add error keeps dropdown open, shows inline error | - | ⬜ |
 | Escape closes dropdown, focus trap active | - | ⬜ (hook `useFocusTrap` itself untested directly; only exercised indirectly via CelebrationModal focus tests) |
@@ -413,6 +423,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Edit name persists, "Saved" state | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Add family member (girl, Bala Sabha opt-in default true) appears as switcher chip + Kids leaderboard | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Boy + upanayanam gets sandhya auto-added | Integration | ✅ |
+| Marital-status toggle (Profile, male only) persists `is_married` optimistically, reverts on failure | - | ⬜ no unit test yet, mirrors the already-tested `panchangam_tradition` toggle pattern |
 | Remove family member: native `confirm()`, cascades logs, resets `selectedMember` if it was the removed one | Integration(§13) | ✅ (cascade only) / ⬜ (the `selectedMember`-reset UI behavior itself) |
 | Community/leaderboard-opt-in decoupling (4 reachable combinations) | - | ⬜ only the individual toggles are tested, not the combination matrix |
 | Tier boundaries match client mirror | Integration + Unit(`tiers.test.js`, `logic-mirrors.test.js`) | ✅ |

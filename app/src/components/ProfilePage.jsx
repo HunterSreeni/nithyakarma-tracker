@@ -19,6 +19,7 @@ export default function ProfilePage() {
   const [optIn, setOptIn] = useState(profile.leaderboard_opt_in)
   const [communityEnabled, setCommunityEnabled] = useState(profile.community_enabled)
   const [tradition, setTradition] = useState(profile.panchangam_tradition ?? 'tamil')
+  const [isMarried, setIsMarried] = useState(profile.is_married)
 
   const toggleOptIn = async (checked) => {
     setOptIn(checked) // optimistic - revert on failure
@@ -36,6 +37,16 @@ export default function ProfilePage() {
       await updateProfile({ panchangam_tradition: value })
     } catch {
       setTradition(prev)
+    }
+  }
+
+  const setMaritalStatus = async (value) => {
+    const prev = isMarried
+    setIsMarried(value) // optimistic - revert on failure
+    try {
+      await updateProfile({ is_married: value })
+    } catch {
+      setIsMarried(prev)
     }
   }
 
@@ -145,6 +156,17 @@ export default function ProfilePage() {
           <button type="button" className={`radio-chip ${tradition === 'malayalam' ? 'on' : ''}`} onClick={() => setTraditionPref('malayalam')}>Malayalam</button>
         </div>
       </div>
+
+      {profile.gender === 'male' && (
+        <div className="card">
+          <h2 className="card-h">Marital status</h2>
+          <label className="field-label">Samidhadhanam is available to unmarried men only</label>
+          <div className="radio-row">
+            <button type="button" className={`radio-chip ${!isMarried ? 'on' : ''}`} onClick={() => setMaritalStatus(false)}>Bachelor</button>
+            <button type="button" className={`radio-chip ${isMarried ? 'on' : ''}`} onClick={() => setMaritalStatus(true)}>Married</button>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h2 className="card-h">Community</h2>
