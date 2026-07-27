@@ -103,6 +103,7 @@ export function PrivacyPage() {
         <li><b>Family members you add:</b> name, gender, upanayanam status and opt-in flags.</li>
         <li><b>Practice data:</b> which anushtanams you track, your daily logs, and your timezone (for reminders).</li>
         <li><b>Notifications:</b> your reminder preference and push tokens for web/Android.</li>
+        <li><b>Advertising (Android only):</b> when ads are shown, Google AdMob uses your device's advertising ID and similar identifiers to serve ads. Ads are skipped entirely for ad-free users.</li>
       </ul>
 
       <h3>How we use it</h3>
@@ -115,7 +116,8 @@ export function PrivacyPage() {
       <ul>
         <li><b>Supabase</b> - authentication and database hosting.</li>
         <li><b>Firebase Cloud Messaging (Google)</b> - delivering Android push reminders.</li>
-        <li><b>Google AdMob</b> - ads on Android only (skipped when ad-free); AdMob may use device identifiers per Google's policies.</li>
+        <li><b>Google AdMob</b> - ads on Android only (skipped when ad-free); AdMob may use device identifiers per Google's policies. On first use we ask for consent where required (EEA/UK), and you can review or change that choice.</li>
+        <li><b>Sentry</b> - anonymous crash and error reports to keep the app stable (no IP addresses or personal data).</li>
         <li><b>WhatsApp</b> - the "share" button simply opens a WhatsApp link with text you choose; we do not send your data to WhatsApp ourselves.</li>
       </ul>
 
@@ -139,10 +141,11 @@ export function PrivacyPage() {
         collect data directly from them.
       </p>
 
-      <h3>Marketing site (nithyakarma.org)</h3>
+      <h3>Web analytics (nithyakarma.org &amp; app.nithyakarma.org)</h3>
       <p>
-        The marketing site at nithyakarma.org uses Cloudflare Web Analytics for basic visit counts.
-        It does not use cookies or collect any personal or identifying information.
+        Both the marketing site at nithyakarma.org and the app at app.nithyakarma.org use Cloudflare
+        Web Analytics for basic visit counts. It does not use cookies or collect any personal or
+        identifying information.
       </p>
 
       <h3>Changes &amp; contact</h3>
