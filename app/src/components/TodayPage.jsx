@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react'
+import { useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import { Flame, Snowflake, Check, Search } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
@@ -15,9 +15,10 @@ import PracticeIcon from '../utils/practiceIcons'
 import { track } from '../utils/analytics'
 import { showInterstitial } from '../utils/ads'
 import { isMilestone, maybeRequestReview } from '../utils/review'
+import { lazyWithRetry } from '../utils/lazyWithRetry'
 
 // Deferred - pulls in driver.js, which only the first-run tour ever needs.
-const GuidedTour = lazy(() => import('./GuidedTour'))
+const GuidedTour = lazyWithRetry(() => import('./GuidedTour'))
 
 export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
