@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.28.0...app-v0.29.0) (2026-07-27)
+
+
+### Features
+
+* add Cloudflare Web Analytics to app subdomain ([ecc1245](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ecc1245200bbec45bc10dc7215b702b56820f826))
+
 ## [0.28.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.27.0...app-v0.28.0) (2026-07-26)
 
 
