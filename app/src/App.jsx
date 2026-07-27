@@ -1,31 +1,32 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import AuthPage from './components/AuthPage'
 import Layout from './components/Layout'
 import TodayPage from './components/TodayPage'
+import { lazyWithRetry } from './utils/lazyWithRetry'
 
 // Deferred: only fetched when actually navigated to, keeping them out of the
 // initial bundle everyone downloads just to see Today.
-const Onboarding = lazy(() => import('./components/Onboarding'))
-const NotificationPrompt = lazy(() => import('./components/NotificationPrompt'))
-const HistoryPage = lazy(() => import('./components/HistoryPage'))
-const SabhaPage = lazy(() => import('./components/SabhaPage'))
-const ReferralsPage = lazy(() => import('./components/ReferralsPage'))
-const ProfilePage = lazy(() => import('./components/ProfilePage'))
-const TermsPage = lazy(() => import('./components/LegalPages').then(m => ({ default: m.TermsPage })))
-const PrivacyPage = lazy(() => import('./components/LegalPages').then(m => ({ default: m.PrivacyPage })))
-const AboutPage = lazy(() => import('./components/InfoPages').then(m => ({ default: m.AboutPage })))
-const KarmaPage = lazy(() => import('./components/InfoPages').then(m => ({ default: m.KarmaPage })))
-const ResetPassword = lazy(() => import('./components/ResetPassword'))
-const RamayanaMasamPage = lazy(() => import('./components/RamayanaMasamPage'))
+const Onboarding = lazyWithRetry(() => import('./components/Onboarding'))
+const NotificationPrompt = lazyWithRetry(() => import('./components/NotificationPrompt'))
+const HistoryPage = lazyWithRetry(() => import('./components/HistoryPage'))
+const SabhaPage = lazyWithRetry(() => import('./components/SabhaPage'))
+const ReferralsPage = lazyWithRetry(() => import('./components/ReferralsPage'))
+const ProfilePage = lazyWithRetry(() => import('./components/ProfilePage'))
+const TermsPage = lazyWithRetry(() => import('./components/LegalPages').then(m => ({ default: m.TermsPage })))
+const PrivacyPage = lazyWithRetry(() => import('./components/LegalPages').then(m => ({ default: m.PrivacyPage })))
+const AboutPage = lazyWithRetry(() => import('./components/InfoPages').then(m => ({ default: m.AboutPage })))
+const KarmaPage = lazyWithRetry(() => import('./components/InfoPages').then(m => ({ default: m.KarmaPage })))
+const ResetPassword = lazyWithRetry(() => import('./components/ResetPassword'))
+const RamayanaMasamPage = lazyWithRetry(() => import('./components/RamayanaMasamPage'))
 
 // Lazy: verse content + page code only download when Learning is opened,
 // not on every app load (Intent 2.1a - the first code-split route).
-const LearningHub = lazy(() => import('./components/LearningHub'))
-const LearningPage = lazy(() => import('./components/LearningPage'))
-const RamayanamPage = lazy(() => import('./components/RamayanamPage'))
-const KandamPage = lazy(() => import('./components/KandamPage'))
+const LearningHub = lazyWithRetry(() => import('./components/LearningHub'))
+const LearningPage = lazyWithRetry(() => import('./components/LearningPage'))
+const RamayanamPage = lazyWithRetry(() => import('./components/RamayanamPage'))
+const KandamPage = lazyWithRetry(() => import('./components/KandamPage'))
 
 function Gate() {
   const { session, profile, loading, justOnboarded, clearJustOnboarded } = useAuth()
