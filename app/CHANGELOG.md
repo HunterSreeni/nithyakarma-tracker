@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.0...app-v0.29.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* auto-reload on stale chunk fetch, strip analytics from Android build ([4df56de](https://github.com/HunterSreeni/nithyakarma-tracker/commit/4df56de7838092aacd2afa686e8509982060d5ed))
+
 ## [0.29.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.28.0...app-v0.29.0) (2026-07-27)
 
 
