@@ -40,6 +40,26 @@ export const LEARNING_CONTENT = {
     typeLabel: { refrain: 'Refrain', stanza: 'Stanza' },
     youtubeUrl: 'https://www.youtube.com/watch?v=UpYEUdZBNRo',
   },
+  'lalitha-sahasranamam': {
+    title: 'Lalitha Sahasranamam',
+    subtitle: 'The 1000 names of Lalitha Devi, in Sanskrit.',
+    languages: [
+      { key: 'sanskrit', label: 'Sanskrit' },
+    ],
+    typeLabel: { dhyanam: 'Dhyanam', shloka: 'Shloka' },
+    youtubeUrl: 'https://www.youtube.com/watch?v=zgG-gjioU1g',
+  },
+  'soundarya-lahari': {
+    title: 'Soundarya Lahari',
+    subtitle: "Adi Shankaracharya's 100 verses in praise of the Devi, read along in the language you read best.",
+    languages: [
+      { key: 'english', label: 'English' },
+      { key: 'malayalam', label: 'Malayalam' },
+      { key: 'sanskrit', label: 'Sanskrit' },
+    ],
+    typeLabel: { anandalahari: 'Ananda Lahari', soundaryalahari: 'Soundarya Lahari' },
+    youtubeUrl: 'https://www.youtube.com/watch?v=RKEKnVyaDl0',
+  },
   // The full Ramayanam (6 kandams, hundreds of sargas each) is too large for
   // this flat-list reader - its own route (/learning/ramayanam) goes to the
   // kandam picker (RamayanamPage) instead, which leads to the sarga-aware
