@@ -580,11 +580,21 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 10. Three Learning items added 2026-07-31 ship with deliberate, not-yet-filled
     language gaps (real published sources weren't found, so the gap was left rather
     than faked): Lalitha Sahasranamam has no English/Tamil/Malayalam, Soundarya Lahari has no
-    Tamil, Devi Mahatmyam has no Sanskrit. None of the new Devi Mahatmyam PDFs (39
-    files, English/Malayalam/Tamil across 13 chapters) have been opened on a real
-    device yet - chapter-boundary splits were verified programmatically
-    (`pdftotext` + visual page-render spot-checks by the sourcing agent), not by a
-    human reading them end to end in the app.
+    Tamil, Devi Mahatmyam has no Sanskrit.
+11. **`PdfViewer` had never been opened on a real Android device before 2026-07-31**
+    (only unit-tested with pdf.js fully mocked) - manually verifying the new Devi
+    Mahatmyam reader surfaced that every PDF in the app, old and new, failed to
+    render on-device: pdfjs-dist 6.x (pinned since the Learning tab's first PDF
+    reader shipped) calls brand-new JS engine methods unconditionally during
+    ordinary document parsing (`Uint8Array.prototype.toHex`, then
+    `Map.prototype.getOrInsertComputed`), neither available on a real emulator's
+    WebView despite it self-reporting as Chromium 133. Fixed by downgrading to
+    4.x, which needs no such thing. This was very likely broken in production too,
+    not just on this emulator - real Android WebView versions vary a lot, and this
+    had no manual on-device check between the Ramayanam reader shipping and now.
+    No automated test would have caught this class of bug (unit tests mock pdf.js
+    entirely); manual device verification before release is the only thing that
+    would.
 
 **Smaller untested surfaces worth a look:** HistoryPage's 300-log cap at scale;
 PdfViewer never renders a real PDF (pdf.js fully mocked); optimistic-toggle failures
