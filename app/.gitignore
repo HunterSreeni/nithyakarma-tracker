@@ -8,10 +8,6 @@ test-results/
 # learning-content Supabase Storage bucket, not read by the app itself.
 scripts/content/ramayanam-pdfs/
 
-# Copied fresh from node_modules/pdfjs-dist by predev/prebuild - see
-# scripts/copy-pdfjs-wasm.cjs.
-public/pdfjs-wasm/
-
 # Logs
 logs
 *.log
