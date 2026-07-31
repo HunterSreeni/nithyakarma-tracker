@@ -69,6 +69,15 @@ export const LEARNING_CONTENT = {
     title: 'Ramayanam',
     subtitle: 'Read Valmiki’s Ramayanam, kandam by kandam.',
   },
+  // Devi Mahatmyam (13 chapters) is also too large for this flat-list
+  // reader - its own route (/learning/devi-mahatmyam) goes straight to
+  // DeviMahatmyamPage (no picker page needed, unlike Ramayanam, since it's
+  // a single work rather than several kandams). LearningPage itself never
+  // renders for this slug.
+  'devi-mahatmyam': {
+    title: 'Devi Mahatmyam',
+    subtitle: 'Read the Durga Saptashati, chapter by chapter.',
+  },
 }
 
 export default function LearningPage() {
