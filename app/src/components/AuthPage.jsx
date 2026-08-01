@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import Turnstile from './Turnstile'
+import Turnstile, { TURNSTILE_ENABLED } from './Turnstile'
 
 export default function AuthPage() {
   const { signInGoogle, signInEmail, signUpEmail, resetPassword } = useAuth()
@@ -91,8 +91,10 @@ export default function AuthPage() {
             <Turnstile ref={turnstileRef} onVerify={setCaptchaToken} />
             {error && <div className="auth-error" role="alert">{error}</div>}
             {notice && <div className="auth-notice">{notice}</div>}
-            <button className="btn-auth" type="submit" disabled={busy}>
-              {mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send reset link'}
+            <button className="btn-auth" type="submit" disabled={busy || (TURNSTILE_ENABLED && !captchaToken)}>
+              {TURNSTILE_ENABLED && !captchaToken
+                ? 'Verifying...'
+                : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send reset link'}
             </button>
           </form>
 

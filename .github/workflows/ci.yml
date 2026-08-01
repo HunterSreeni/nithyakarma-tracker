@@ -56,6 +56,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+          VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
       # Non-destructive specs only. The full journey (@destructive) deletes a
       # shared live account and must be re-seeded first, so it is a manual
       # pre-release gate, not a CI gate. E2E_EMAIL/PASSWORD are the e2efull

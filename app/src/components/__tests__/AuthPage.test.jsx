@@ -9,6 +9,15 @@ const resetPassword = vi.fn().mockResolvedValue({ error: null })
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ signInGoogle, signInEmail, signUpEmail, resetPassword }),
 }))
+// Real Turnstile needs a live Cloudflare widget/network round trip - not
+// available in jsdom. Mock it as always-verified so submit stays enabled,
+// matching TURNSTILE_ENABLED === false (no site key) behavior in these unit
+// tests: captchaToken stays null and every auth call gets null, same as
+// before this widget existed.
+vi.mock('../Turnstile', () => ({
+  default: () => null,
+  TURNSTILE_ENABLED: false,
+}))
 
 import AuthPage from '../AuthPage'
 
