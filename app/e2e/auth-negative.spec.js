@@ -13,7 +13,11 @@ test.describe('Auth edge cases', () => {
     const signIn = page.getByRole('button', { name: 'Sign In' })
     await expect(signIn).toBeEnabled({ timeout: 20000 })
     await signIn.click()
-    await expect(page.getByText(/Invalid login credentials/i)).toBeVisible({ timeout: 15000 })
+    // Whatever Supabase's exact rejection reason - bad credentials, or (when
+    // Auth's captcha protection is on and this run has no Turnstile token to
+    // offer, as in CI) "no captcha_token found" - a bad submit must surface
+    // a visible error and never let the user through.
+    await expect(page.locator('.auth-error')).toBeVisible({ timeout: 15000 })
     // stays on the auth screen
     await expect(page.getByText('Continue with Google')).toBeVisible()
   })
