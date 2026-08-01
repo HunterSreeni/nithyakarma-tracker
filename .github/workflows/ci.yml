@@ -56,6 +56,13 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+      # No VITE_TURNSTILE_SITE_KEY here on purpose: Cloudflare Turnstile's
+      # bot-detection reliably never resolves a token for a headless CI
+      # browser (confirmed - it can hang 40s+ with zero callback), and even
+      # when it occasionally does resolve, Supabase still rejected the
+      # request with "no captcha_token found". Real users get a real browser
+      # and resolve fine; CI stays Turnstile-free per Turnstile.jsx's own
+      # design (a no-op until a site key is configured).
       # Non-destructive specs only. The full journey (@destructive) deletes a
       # shared live account and must be re-seeded first, so it is a manual
       # pre-release gate, not a CI gate. E2E_EMAIL/PASSWORD are the e2efull

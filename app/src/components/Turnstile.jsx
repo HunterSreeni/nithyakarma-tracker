@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 
 const SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY
+export const TURNSTILE_ENABLED = Boolean(SITE_KEY)
 
 let scriptPromise = null
 function loadTurnstileScript() {

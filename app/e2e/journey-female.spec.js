@@ -34,7 +34,7 @@ test('female onboarding reaches an actionable Today via the suggested-practices 
 
   // Empty-day activation (Intent 1.5): no Sandhyavandhanam card, "Suggested to
   // start" nudge instead - the narrow-scope gate this spec exists to close.
-  await expect(page.getByText('Suggested to start')).toBeVisible()
+  await expect(page.getByText('Suggested to start')).toBeVisible({ timeout: 15000 })
   await expect(page.locator('.practice-card', { hasText: 'Sandhyavandhanam' })).toHaveCount(0)
 
   // First-run tour still runs, minus the sandhya-slots step (nothing to anchor on).

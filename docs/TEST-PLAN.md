@@ -183,11 +183,17 @@ running things manually.** Nothing in CI would catch a regression in either area
     fields, different script maps), default Tamil; native-script lookup misses fall
     back to raw value rather than blanking.
 13. **Learning Hub / verse reading** - flat reader (Hanuman Chalisa, Vishnu
-    Sahasranamam - language toggle, YouTube link, no per-verse "mark learned"
-    affordance by design); Ramayanam kandam picker (6 kandams, Uttara excluded);
-    Kandam sarga PDF reader (URL param > last-read localStorage > default 1; pdf.js
-    canvas rendering, not iframe, since WebView has no native PDF plugin); stale
-    revalidation failures swallowed silently once cached content is already shown.
+    Sahasranamam, Sai Baba Aarti, Lalitha Sahasranamam, Soundarya Lahari -
+    language toggle, YouTube link, no per-verse "mark learned" affordance by
+    design; Lalitha Sahasranamam ships Sanskrit-only, Soundarya Lahari has no
+    Tamil - both deliberate content gaps, not bugs); Ramayanam kandam picker (6
+    kandams, Uttara excluded); Kandam sarga PDF reader (URL param > last-read
+    localStorage > default 1; pdf.js canvas rendering, not iframe, since WebView
+    has no native PDF plugin); Devi Mahatmyam chapter PDF reader (13 chapters, no
+    picker page since it's a single work not several kandams; English/Malayalam/
+    Tamil only, no Sanskrit yet - no genuine full-text Devanagari source found);
+    stale revalidation failures swallowed silently once cached content is already
+    shown.
 14. **Ramayana Masam page** - static Karkidakam-reading explainer, no data fetching.
 15. **Sabha (leaderboard)** - opt-in gated (`community_enabled`) both at the nav-tab
     level and independently re-checked on direct `/sabha` navigation; Week/Month/Kids
@@ -403,6 +409,8 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Language toggle (Sanskrit/Malayalam only) switches PDF url | Unit | ✅ |
 | PdfViewer: renders canvas per page, error on load failure, re-renders on src change | Unit (`PdfViewer.test.jsx`) | ⚠️ `pdf.js` fully mocked - **no test exercises a real PDF byte stream/canvas pipeline** |
 | RamayanaMasamPage: lists exactly the 6 Karkidakam kandams, Uttara excluded from the list | Unit (`RamayanaMasamPage.test.jsx`) | ✅ |
+| Devi Mahatmyam reader: chapter resolution (URL param > localStorage > default 1), charita grouping shown, prev/next bounds (1-13), only sourced languages offered (no Sanskrit), per-language attribution link | Unit (`DeviMahatmyamPage.test.jsx`) | ✅ |
+| Devi Mahatmyam reader: real device/browser render of a chapter PDF (this app's PDFs are scanned-image sources with no text layer for 2 of 3 languages - no test confirms they're legible, not just present) | Manual | ⬜ not yet manually verified |
 
 ### Sabha / leaderboard
 | Case | Layer | Status |
@@ -569,6 +577,24 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 9. `logic-mirrors.test.js` compares JS against **hand-copied SQL comments**, not a
    live DB query - it can pass while silently disagreeing with the deployed function
    if a migration lands without the comment being updated in the same commit.
+10. Three Learning items added 2026-07-31 ship with deliberate, not-yet-filled
+    language gaps (real published sources weren't found, so the gap was left rather
+    than faked): Lalitha Sahasranamam has no English/Tamil/Malayalam, Soundarya Lahari has no
+    Tamil, Devi Mahatmyam has no Sanskrit.
+11. **`PdfViewer` had never been opened on a real Android device before 2026-07-31**
+    (only unit-tested with pdf.js fully mocked) - manually verifying the new Devi
+    Mahatmyam reader surfaced that every PDF in the app, old and new, failed to
+    render on-device: pdfjs-dist 6.x (pinned since the Learning tab's first PDF
+    reader shipped) calls brand-new JS engine methods unconditionally during
+    ordinary document parsing (`Uint8Array.prototype.toHex`, then
+    `Map.prototype.getOrInsertComputed`), neither available on a real emulator's
+    WebView despite it self-reporting as Chromium 133. Fixed by downgrading to
+    4.x, which needs no such thing. This was very likely broken in production too,
+    not just on this emulator - real Android WebView versions vary a lot, and this
+    had no manual on-device check between the Ramayanam reader shipping and now.
+    No automated test would have caught this class of bug (unit tests mock pdf.js
+    entirely); manual device verification before release is the only thing that
+    would.
 
 **Smaller untested surfaces worth a look:** HistoryPage's 300-log cap at scale;
 PdfViewer never renders a real PDF (pdf.js fully mocked); optimistic-toggle failures

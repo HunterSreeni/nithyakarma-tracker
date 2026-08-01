@@ -15,5 +15,8 @@ describe('LearningHub', () => {
     expect(screen.getByText('Vishnu Sahasranamam').closest('a')).toHaveAttribute('href', '/learning/vishnu-sahasranamam')
     expect(screen.getByText('Ramayanam').closest('a')).toHaveAttribute('href', '/learning/ramayanam')
     expect(screen.getByText('Sai Baba Aarti').closest('a')).toHaveAttribute('href', '/learning/sai-baba-aarti')
+    expect(screen.getByText('Lalitha Sahasranamam').closest('a')).toHaveAttribute('href', '/learning/lalitha-sahasranamam')
+    expect(screen.getByText('Soundarya Lahari').closest('a')).toHaveAttribute('href', '/learning/soundarya-lahari')
+    expect(screen.getByText('Devi Mahatmyam').closest('a')).toHaveAttribute('href', '/learning/devi-mahatmyam')
   })
 })

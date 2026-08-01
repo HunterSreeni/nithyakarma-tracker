@@ -27,6 +27,7 @@ const LearningHub = lazyWithRetry(() => import('./components/LearningHub'))
 const LearningPage = lazyWithRetry(() => import('./components/LearningPage'))
 const RamayanamPage = lazyWithRetry(() => import('./components/RamayanamPage'))
 const KandamPage = lazyWithRetry(() => import('./components/KandamPage'))
+const DeviMahatmyamPage = lazyWithRetry(() => import('./components/DeviMahatmyamPage'))
 
 function Gate() {
   const { session, profile, loading, justOnboarded, clearJustOnboarded } = useAuth()
@@ -92,6 +93,8 @@ function Gate() {
           <Route path="/learning/ramayanam" element={<RamayanamPage />} />
           <Route path="/learning/ramayanam/:kandam" element={<KandamPage />} />
           <Route path="/learning/ramayanam/:kandam/:sarga" element={<KandamPage />} />
+          <Route path="/learning/devi-mahatmyam" element={<DeviMahatmyamPage />} />
+          <Route path="/learning/devi-mahatmyam/:chapter" element={<DeviMahatmyamPage />} />
           <Route path="/learning/:slug" element={<LearningPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/sabha" element={<SabhaPage />} />

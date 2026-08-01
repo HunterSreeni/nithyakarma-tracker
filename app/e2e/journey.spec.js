@@ -79,19 +79,26 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
   })
 
   test('sandhya 3-slot: 1-2 slots progress, 3rd completes the day', async () => {
-    // Slot 1 - verified save + share card, no ad on web
+    // Slot 1 - Gayatri count popup (pre-filled 108) confirms before the mark
+    // is submitted, then verified save + share card, no ad on web
     await page.getByRole('button', { name: 'Morning' }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByRole('button', { name: 'Save' }).click()
     await expect(page.getByText('Punyam grows daily', { exact: false })).toBeVisible({ timeout: 15000 })
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByText('1 of 3 sandhyas done')).toBeVisible()
 
     // Slot 2 - still progressing
     await page.getByRole('button', { name: 'Noon' }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByRole('button', { name: 'Save' }).click()
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByText('2 of 3 sandhyas done')).toBeVisible()
 
     // Slot 3 - day complete
     await page.getByRole('button', { name: 'Evening' }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByRole('button', { name: 'Save' }).click()
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByText('All 3 sandhyas done')).toBeVisible()
   })
@@ -137,6 +144,53 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await page.getByRole('link', { name: /Sabha/ }).first().click()
     await page.getByRole('button', { name: /Kids/ }).click()
     await expect(page.locator('.lb-row', { hasText: 'Devika' })).toBeVisible({ timeout: 15000 })
+  })
+
+  // Sandhyavandhanam/Samidhadhanam are both gated on gender==='male' &&
+  // upanayanam_done for family members - Arjun (boy, upanayanam done) should
+  // get both offered, Karthik (boy, no upanayanam) and Devika (girl, above)
+  // should get neither.
+  test('add two boys (upanayanam true/false) - Sandhya/Samidhadhanam dropdown gating', async () => {
+    await page.getByRole('link', { name: /Profile/ }).first().click()
+    await page.getByRole('button', { name: '+ Add family member' }).click()
+    await page.getByLabel("Child's name").fill('Arjun')
+    await page.getByRole('button', { name: 'Boy' }).click()
+    await page.getByLabel(/Upanayanam done/).check()
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    await expect(page.locator('.fam-row', { hasText: 'Arjun' })).toBeVisible({ timeout: 15000 })
+
+    await page.getByRole('button', { name: '+ Add family member' }).click()
+    await page.getByLabel("Child's name").fill('Karthik')
+    await page.getByRole('button', { name: 'Boy' }).click()
+    // leave "Upanayanam done" unchecked
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    await expect(page.locator('.fam-row', { hasText: 'Karthik' })).toBeVisible({ timeout: 15000 })
+
+    await page.getByRole('link', { name: /Today/ }).first().click()
+
+    // Arjun (upanayanam done): both practices offered
+    await page.locator('.ps-chip', { hasText: 'Arjun' }).click()
+    await page.getByRole('button', { name: /Add an anushtanam/ }).click()
+    await expect(page.getByRole('button', { name: /Sandhyavandhanam/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Samidhadhanam/ })).toBeVisible()
+    await page.keyboard.press('Escape')
+
+    // Karthik (no upanayanam): neither offered
+    await page.locator('.ps-chip', { hasText: 'Karthik' }).click()
+    await page.getByRole('button', { name: /Add an anushtanam/ }).click()
+    await expect(page.getByRole('button', { name: /Sandhyavandhanam/ })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Samidhadhanam/ })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+
+    // Devika (girl): neither offered
+    await page.locator('.ps-chip', { hasText: 'Devika' }).click()
+    await page.getByRole('button', { name: /Add an anushtanam/ }).click()
+    await expect(page.getByRole('button', { name: /Sandhyavandhanam/ })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Samidhadhanam/ })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+
+    // back to self for the remaining tests
+    await page.locator('.ps-chip', { hasText: 'Me' }).click()
   })
 
   test('edit profile name', async () => {

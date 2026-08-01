@@ -12,6 +12,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 // Renders every page stacked in one scrolling column, matching how a sarga
 // PDF reads top to bottom - no toolbar/thumbnail chrome, this is a reader,
 // not a general-purpose PDF viewer.
+//
+// Pinned to pdfjs-dist 4.x, not the current 6.x: 6.x moved JBIG2/OpenJPEG
+// image decoding to WASM (needing an explicit wasmUrl) and started calling
+// brand-new JS engine methods unconditionally (Uint8Array.prototype.toHex,
+// Map.prototype.getOrInsertComputed, ...) for basic document parsing, not
+// just decoding. Confirmed missing on a real Android emulator's WebView
+// despite it self-reporting as Chromium 133 - every PDF failed to load, not
+// just scanned ones. 4.x's decoders are pure JS with no such dependency.
 export default function PdfViewer({ src, title }) {
   const containerRef = useRef(null)
   const [loading, setLoading] = useState(true)
