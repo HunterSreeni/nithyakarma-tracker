@@ -17,11 +17,19 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         def appVersionName = "0.29.1" // x-release-please-version
-        // versionCode derived from versionName (major*10000 + minor*100 + patch) so it
-        // strictly increases with every release-please release automatically, instead of
-        // being hardcoded - Play Store rejects a re-upload with a duplicate versionCode.
+        // versionCode = (major*10000 + minor*100 + patch) * 20000 + minutes-since-epoch.
+        // Pure version-derived versionCode (major*10000+minor*100+patch) collided the
+        // moment we rebuilt the *same* versionName to re-upload a closed-testing AAB
+        // with no version bump (e.g. after fixing an env var) - Play rejects a re-upload
+        // with a duplicate versionCode, and release-please only bumps versionName on
+        // real releases, not local rebuilds. Minutes-since-epoch as the low digits makes
+        // versionCode strictly increase on every single build, version bump or not, so
+        // any local `bundleRelease`/`assembleRelease` is always uploadable. The *20000
+        // multiplier just keeps the version bump visible in the number; ordering across
+        // builds relies entirely on wall-clock time moving forward, not on that digit.
         def (major, minor, patch) = appVersionName.tokenize('.').collect { it.toInteger() }
-        versionCode major * 10000 + minor * 100 + patch
+        def computedVersionCode = (major * 10000 + minor * 100 + patch) * 20000 + (int) (System.currentTimeMillis() / 60000)
+        versionCode computedVersionCode
         versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
