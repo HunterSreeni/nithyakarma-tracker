@@ -1,17 +1,64 @@
 # 04 - Migration Ledger
 
-35 migrations in `app/supabase/migrations/`, 35 applied to project
-`fkrifejzhnhknkuyhjhp`. Verified 18 July 2026, ledger extended 20 July 2026.
+58 migrations in `app/supabase/migrations/`, 58 applied to project
+`fkrifejzhnhknkuyhjhp`. Verified 18 July 2026, ledger extended 20 July 2026, extended
+again 4 August 2026 after the batches below.
+
+## 2-4 August 2026
+
+Written 2 August; **could not be applied that day** because the Supabase MCP in this dev
+environment was authenticated to a different, unrelated project ("Kalanjali2026" - a
+deliberate account switch for other work, not an error). Re-authenticated to
+`fkrifejzhnhknkuyhjhp` 4 August 2026 - all 6 applied that day, in this order, plus a
+`send-reminders` function redeploy (version 13) to match.
+
+| Migration | What it does |
+|---|---|
+| `20260802090000_any_practice_completes_day_and_tier_up` | `submit_practice_log`: day-completion `bool_and` -> `bool_or` (any one scheduled practice completes the day, not all); adds `tier_up` to the RPC's return |
+| `20260802093000_streak_decay_cron` | New `decay_stale_streaks()` + daily `pg_cron` job - zeroes streaks that went stale while a subject was inactive (previously never decayed, see 09-STATUS-LEDGER.md) |
+| `20260802150000_monthly_specials_all_months` | `monthly_specials.route` made nullable; **reshapes the PK** from `malayalam_month` alone to `(calendar, month)` so the table can hold both traditions; seeds the 11 remaining Malayalam months |
+| `20260802153000_avani_avittam_and_advance_notify` | New `panchangam_observances.advance_notify` column; seeds Avani Avittam (Yajurveda); widens `notification_deliveries.slot` CHECK for `observance_advance` |
+| `20260804060000_monthly_specials_tamil_months` | Seeds all 12 Tamil months into the reshaped `monthly_specials` (`calendar = 'tamil'`) - closes the gap where `profiles.panchangam_tradition` defaults to `'tamil'` but only a Malayalam banner existed |
+| `20260804070000_decay_stale_streaks_revoke_execute` | `revoke execute on function decay_stale_streaks() from anon, authenticated, public` - the initial migration missed this repo's usual internal-only-function revoke, caught by `mcp__supabase__get_advisors` right after applying (function had no `auth.uid()` scoping and was reachable via `/rest/v1/rpc/decay_stale_streaks`) |
+
+**Two bugs caught before applying, both fixed in the committed files, not just live:**
+`20260802150000` originally spelled the last Malayalam month `'Midhunam'` - the real
+value loaded in `panchangam_days.malayalam_month` is `'Mithunam'`, so that row would have
+silently never matched (no CHECK constraint on the column, no error, just a banner that
+never shows for that month). Caught by cross-checking `select distinct malayalam_month
+from panchangam_days` before applying. The Tamil month spellings in `20260804060000`
+(`'Karthikai'` not `'Karthigai'`, etc.) were verified the same way beforehand specifically
+because of this near-miss.
+
+`MonthlySpecialBanner.jsx` was also updated this session to branch on
+`profile.panchangam_tradition` (mirroring `PanchangamBox.jsx`) - before this batch it
+queried `monthly_specials` by `malayalam_month` unconditionally, so a Tamil-tradition user
+(the default) never saw a banner match at all even before the Tamil rows existed.
+
+## 4 August 2026, Learning tab content
+
+| Migration | What it does |
+|---|---|
+| `20260804090000_five_more_learning_content_texts` | `has_learning_content = true` for 5 practices (Dakshinamurthy Stotram, Aditya Hrudayam, Subrahmanya Bhujangam, Mukundamala, Sri Rudram) |
+| `20260804100000_sandhyavandhanam_samidhadhanam_video_content` | Same flag for Sandhyavandhanam and Samidhadhanam - video-only Learning entries, see [09-STATUS-LEDGER.md](09-STATUS-LEDGER.md#4-august-additions---learning-tab-content) |
+
+Both are schema-identical single-column `UPDATE`s - the actual content is either verse
+JSON in the `learning-content` Storage bucket (first migration; **not yet uploaded**, see
+the status ledger) or a `youtubeUrl` baked into `LearningPage.jsx` (second migration,
+fully live).
 
 ## Drift status: closed, with a caveat
 
 Every migration **name** matches 1:1 between git and the database. Nothing is applied
 remotely that is missing from git, and nothing in git is unapplied.
 
-**However, 10 of the 31 have different timestamp prefixes** between the local filename
-and the recorded remote version. This is a leftover from the reconstruction work that
+**However, 18 of the 58 have different timestamp prefixes** between the local filename
+and the recorded remote version. 10 are a leftover from the reconstruction work that
 closed Intent R4 - the DDL was re-applied through the MCP, which stamped its own
-timestamps.
+timestamps. The other 8 are the 4 August 2026 batches below - `mcp__supabase__apply_migration`
+always stamps the version at actual apply time regardless of the `name` argument passed
+(same mechanism, different cause: these were simply applied after being written, not
+reconstructed).
 
 | Migration name | Local filename prefix | Remote version |
 |---|---|---|
@@ -26,13 +73,21 @@ timestamps.
 | `drop_learning_content_list_policy` | `20260716061818` | `20260716061839` |
 | `punya_weighting_and_streak_exempt_logs` | `20260717090000` | `20260717055954` |
 | `fix_leaderboard_score_ambiguity` | `20260717093000` | `20260717060635` |
+| `any_practice_completes_day_and_tier_up` | `20260802090000` | `20260804030844` |
+| `streak_decay_cron` | `20260802093000` | `20260804030856` |
+| `monthly_specials_all_months` | `20260802150000` | `20260804030912` |
+| `avani_avittam_and_advance_notify` | `20260802153000` | `20260804030923` |
+| `monthly_specials_tamil_months` | `20260804060000` | `20260804030941` |
+| `decay_stale_streaks_revoke_execute` | `20260804070000` | `20260804031049` |
+| `five_more_learning_content_texts` | `20260804090000` | `20260804041154` |
+| `sandhyavandhanam_samidhadhanam_video_content` | `20260804100000` | `20260804045249` |
 
 **Why this is safe:** the *relative ordering* is identical in both sets. Every migration
 sorts into the same sequence locally as remotely, so a clean replay from git produces the
 same schema. The mismatch is cosmetic.
 
 **Why it still matters:** a naive drift check comparing filename prefixes to
-`list_migrations` versions will report 10 false positives. Compare **names**, not
+`list_migrations` versions will report 18 false positives. Compare **names**, not
 timestamps.
 
 ---

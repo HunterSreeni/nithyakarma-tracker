@@ -284,6 +284,174 @@ closes the "no agreement tests" gap noted above for at least these three.
 
 ---
 
+## 2 August additions
+
+> All SQL in this section was applied to production 4 August 2026 (2 days after being
+> written - the Supabase MCP was on a different, unrelated project in between) - see
+> [04-MIGRATIONS.md](04-MIGRATIONS.md#2-4-august-2026). `send-reminders` was redeployed
+> the same day so the advance-notification code actually runs, not just the schema.
+
+### User-reported bug fixes
+
+Reported directly against the live Android app, both confirmed real and fixed in code:
+
+- **Streak never decayed.** `current_streak` (`profiles`/`family_members`/
+  `user_practices`) was only ever written from inside `submit_practice_log`, i.e. only
+  when a subject completed a day/practice again - going inactive just froze it at its
+  last value forever, reported as "streak stuck at 1 after 2 days of no input". Fixed by
+  a new `decay_stale_streaks()` function on a daily `pg_cron` job, using the same
+  alive/dead boundary `streak_after_completion` already defines (freeze credits are
+  **not** spent by the decay sweep, only by an actual completion). Migration
+  `20260802093000_streak_decay_cron`.
+- **Day-completion required every practice, not any one.** `submit_practice_log`'s
+  day-completion aggregate was `bool_and` across every `affects_streak` practice - what
+  the user reported as "marking Temple Visit doesn't update my streak" was this working
+  as designed (they track other practices too), but on discussion the product decision
+  changed: any **one** scheduled practice now completes the day (`bool_or`). Punya was
+  already unconditional per-practice and is unaffected. Migration
+  `20260802090000_any_practice_completes_day_and_tier_up`; client mirror
+  `utils/cadence.js`'s new `dayComplete()`.
+- **WhatsApp share image was cropped.** The `.share-card` element was a fixed-width,
+  auto-height ~2:1 landscape banner with no aspect-ratio handling before
+  `html-to-image`'s `toPng()` captured it - WhatsApp Status forces a fixed ~9:16 portrait
+  frame and center-crops anything else. Reflowed to a real 9:16 card
+  (`CelebrationModal.jsx`, `index.css`). No migration involved, this one's fully live.
+
+### New: tier-up celebration
+
+`submit_practice_log` now returns `tier_up` (a punya-tier boundary was crossed this
+mark) alongside the existing `tier`. New `TierUpModal.jsx`, sequenced to show after the
+streak `CelebrationModal` if both fire from the same mark (a `pendingTierUpRef` in
+`TodayPage.jsx` holds it until the celebration closes, so the two never stack).
+Migration `20260802090000` (same one as the day-completion change above).
+
+### New: monthly specials for all 12 Malayalam months
+
+`monthly_specials` had exactly one row (Karkidakam -> Ramayana Masam) since it was built
+20 July. `MonthlySpecialBanner.jsx` was already fully data-driven ("a DB row, not a code
+change" per its own header comment), so this was a content migration:
+`monthly_specials.route` made nullable, 11 new rows added. Only Kanni (-> Navaratri ->
+the already-built Devi Mahatmyam/Lalitha Sahasranamam page) got a real linked route;
+the other 10 render as an info-only banner (title + one-sentence subtitle, no link) since
+they don't have a matching reading-practice page built yet. Migration
+`20260802150000_monthly_specials_all_months`.
+
+### New: "in 3 days" advance notifications + Avani Avittam
+
+`send-reminders`'s 06:00 `calendar` window previously only ever checked *today* against
+`panchangam_observances`. It now also resolves `today + 3` (per user local date) and runs
+the identical rule engine against that future date, firing a new `observance_advance`
+delivery slot gated by the same `tharpanam_enabled`/`observances_enabled` toggles each
+category already uses. Not every rule qualifies - `panchangam_observances` gained an
+`advance_notify` column, `false` only for `monthly_amavasya` (routine ~12x/year, would be
+noise), `true` elsewhere. Pure logic (`bestAdvanceMatch`, `addDays`) lives in
+`_shared/observanceMatch.ts`, unit tested in the same file the `edge-functions` CI job
+already points at (no CI config change needed).
+
+Also added: **Avani Avittam** (Yajurveda Upakarma only - `thithi = Purnima` +
+`nakshatra = Shravana`). Rigveda and Samaveda observe it on different days by design
+(verified via drikpanchang.com/astroved.com - Rigveda is the Shravana-nakshatra day
+without the Purnima constraint, ~1 day earlier most years; Samaveda falls in a different
+month, Bhadrapada, entirely) and were deliberately left unseeded rather than guessed at.
+Migration `20260802153000_avani_avittam_and_advance_notify`.
+
+### New: monthly specials for all 12 Tamil months, and a real tradition branch
+
+`profiles.panchangam_tradition` (`'tamil'`|`'malayalam'`, default `'tamil'`) already drove
+`PanchangamBox.jsx`'s panchangam info box, but `MonthlySpecialBanner.jsx` ignored it
+entirely - it queried `monthly_specials` by `malayalam_month` unconditionally, so a
+Tamil-tradition user (the default) never got a banner match even before any Tamil content
+existed. Fixed alongside adding the content, not as a separate bug: `monthly_specials`'s
+key was reshaped from `malayalam_month` alone to `(calendar, month)` (migration
+`20260802150000`, done as part of the Malayalam-months work above rather than a second
+migration), then `20260804060000_monthly_specials_tamil_months` seeded all 12 Tamil
+months (Chithirai through Panguni). `MonthlySpecialBanner.jsx` now branches on
+`panchangam_tradition` the same way `PanchangamBox.jsx` does. None of the 12 Tamil rows
+have a route yet (same reasoning as most of the Malayalam set) - all render as
+info-only banners.
+
+Caught before applying: the Malayalam seed originally spelled the last month
+`'Midhunam'`; the real value in `panchangam_days.malayalam_month` is `'Mithunam'`. No
+CHECK constraint would have caught this - it would have silently just never matched.
+Found by cross-checking `panchangam_days` before applying, which is also why the Tamil
+month spellings (`'Karthikai'`, not the more common `'Karthigai'`) were verified the same
+way up front rather than assumed.
+
+### Fixed: `decay_stale_streaks()` was publicly callable
+
+`mcp__supabase__get_advisors` flagged this immediately after applying the migrations
+above: `decay_stale_streaks()` takes no arguments and sweeps every subject
+unconditionally (no `auth.uid()` scoping, unlike every other `SECURITY DEFINER` function
+in this schema), so it should never have been reachable through the public REST API -
+but the initial migration missed the `revoke execute ... from anon, authenticated,
+public` every other internal-only function here already carries. Not a data leak (the
+sweep only zeroes already-stale streaks, doesn't read or return anything), but anyone
+could have forced an early/extra run via `/rest/v1/rpc/decay_stale_streaks`. Fixed same
+session, migration `20260804070000_decay_stale_streaks_revoke_execute`.
+
+### Roadmap clarification: "Temple visit tracking" row, above
+
+The `⬜ Open` roadmap item (`docs/ROADMAP.md`) is specifically the **location/map**
+version - picking *which* nearby temple via device location + a place-data source, with
+its own open design question about whether it should feed the existing streak. That
+remains genuinely unbuilt. It's a different, narrower thing from the plain "Temple Visit"
+checkbox `practices` row that shipped 20 July (`temple-visit`, `affects_streak = true`)
+and whose streak participation was one of the two bugs fixed above - that part already
+answers the roadmap's open design question (yes, it feeds the existing streak) for
+whenever the richer version gets built.
+
+## 4 August additions - Learning tab content
+
+### New: 5 texts with full reading content
+
+Dakshinamurthy Stotram, Aditya Hrudayam, Subrahmanya Bhujangam, Mukundamala and Sri
+Rudram (Namakam+Chamakam) all now have `has_learning_content = true` and a
+`LEARNING_CONTENT` entry in `LearningPage.jsx`. Verse text sourced from `vignanam.org`
+(English/Sanskrit/Malayalam/Tamil, same IAST convention already used for Vishnu
+Sahasranamam etc.), verified against independent verse-count citations before wiring - a
+real error was caught this way (the seed migration for one of the Malayalam months
+earlier in the day had `'Midhunam'` where `panchangam_days` actually stores `'Mithunam'`;
+the same cross-check habit here caught nothing wrong, but is why it was done).
+`app/scripts/content/{slug}.json` holds all 5 files, matching the schema every existing
+Learning entry already uses (`id`, `type`, one field per language).
+
+> ⚠️ **The 5 JSON files are not yet uploaded to the `learning-content` Storage bucket.**
+> `has_learning_content = true` is live in the database (migration
+> `20260804041154_five_more_learning_content_texts` applied), so all 5 show up as cards
+> on the Learning tab - but opening any of them right now hits a 404 against Storage and
+> shows "Could not load content" instead of verses. No MCP tool covers Storage uploads and
+> the bucket's writes are service-role only (no client-side policy) - upload
+> `app/scripts/content/{dakshinamurthy-stotram,aditya-hrudayam,subrahmanya-bhujangam,
+> mukundamala,sri-rudram}.json` to that bucket (same filenames) via the Supabase Dashboard
+> to close this out. Not a code gap - the files are ready, this is purely the one upload
+> step this session's tools can't reach.
+
+### New: video-only Learning entries for Sandhyavandhanam and Samidhadhanam
+
+Both practices needed a genuinely different design from every other Learning entry:
+Rigveda/Yajurveda/Samaveda/Atharvaveda have different mantras and step sequences for
+both rituals (researched, not assumed - see `docs/ROADMAP.md`'s new "Sandhyavandhanam /
+Samidhadhanam Learning content, per-Veda" section for the full per-Veda sourcing table),
+so no single reading text could honestly stand in for all four traditions. Rather than
+ship an incomplete or wrong-Veda text, or leave the practices without any Learning
+presence, both now carry `has_learning_content = true` with a `youtubeUrl` only (no
+`languages` key) - a watch-along video, Krishna Yajurveda, both from the same
+established publisher (Giri Bhakti) for consistency. This needed two small code changes,
+not just data:
+
+- `LearningPage.jsx` used to assume every entry had `languages` (would crash on
+  `meta.languages.map` otherwise) and always called `useLearning(slug)`, which would 404
+  against a JSON file that was never going to exist and show a scary error banner under a
+  perfectly working video. Now gated on `hasVerses = (meta.languages?.length ?? 0) > 0` -
+  skips the language switcher and verse-fetch UI entirely when false.
+- `useLearning(slug)` now treats a falsy `slug` as "nothing to fetch" (`loading` resolves
+  to `false` immediately, no network call, no error) rather than fetching
+  `null.json`/erroring - `LearningPage` passes `null` instead of the real slug for
+  video-only entries.
+
+Migration `20260804045249_sandhyavandhanam_samidhadhanam_video_content`. Unlike the 5
+texts above, this one needed no Storage upload - fully live already.
+
 ## Corrections owed to the planning docs
 
 `docs/UPGRADE-PLAN.md` should be updated to reflect:

@@ -105,11 +105,68 @@ no third-party SMTP relay or Zoho needed. Both directions verified working.
   `POST_NOTIFICATIONS` - see `docs/architecture/06-ANDROID.md`.
 - **Open design question, settle before building:** does a temple visit feed the
   existing daily streak, or is it a parallel streak? Feeding the existing one risks
-  diluting what the nitya karma streak means.
+  diluting what the nitya karma streak means. **Partial precedent as of 2 Aug 2026:** the
+  plain "Temple Visit" checkbox practice (no location/map, shipped 20 July as
+  `temple-visit`) already feeds the existing streak (`affects_streak = true`) - worth
+  reusing that answer here unless this richer version is meant to be deliberately
+  different.
 - Schema sketch: `temples (id, name, lat, lon, source, verified)` and
   `temple_visits (owner_id, family_member_id, temple_id, visited_at, log_date)`.
   Note `temple_visits` needs `on delete cascade` back to `profiles`, or
   `delete_account` will orphan rows.
+
+### Sandhyavandhanam / Samidhadhanam Learning content, per-Veda (deferred - researched 4 Aug 2026)
+
+> Raised 4 Aug 2026 alongside the batch of 5 new Learning-tab texts (see
+> [09-STATUS-LEDGER.md](architecture/09-STATUS-LEDGER.md)). Both practices ship with a
+> watch-along YouTube video for now (`has_learning_content = true`, no verse content) -
+> full reading content is this item, not yet built.
+
+**Confirmed by research, not assumed:** Rigveda, Yajurveda, Samaveda and Atharvaveda each
+have genuinely different mantras and step sequences for both rituals - not minor
+variation, different Rishi lists and a different procedure per source. A single text
+would be wrong for most readers outside whichever Veda it happened to represent, so
+neither practice got full reading content in this batch, unlike the 5 stotras that did
+(Dakshinamurthy Stotram, Aditya Hrudayam, Subrahmanya Bhujangam, Mukundamala, Sri
+Rudram) - those are single fixed texts, universally the same regardless of the reader's
+Veda.
+
+**Sandhyavandhanam - sourcing is solid, but English-transliteration only:**
+
+| Veda | Source | Coverage |
+|---|---|---|
+| Rigveda | archive.org, "Rigveda Sandhyavandanam" (Bharati Web) | Complete procedure (~11 pages: achamanam through gayatri japam). English only |
+| Yajurveda | Shri Kainkaryam Kriya Trust (srikkt.org) | Complete, 22 numbered steps. English only |
+| Samaveda | Same trust, srikkt.org | Complete, same step structure. English only |
+| Atharvaveda | Transcription based on Sandhya Parishishta | Complete (achamanam/marjanam/etc). English + some Devanagari |
+
+None of the four have the Devanagari + Malayalam + Tamil companion pages `vignanam.org`
+gave for the 5 stotras above - wiring this as-is would be a step down in language parity
+from everything else on the Learning tab. Getting regional-language versions would need a
+second research pass per Veda. The Yajurveda source doesn't specify Krishna vs Shukla;
+treat it as Krishna Yajurveda for consistency with the existing Avani Avittam
+(`panchangam_observances`) content, which already assumes Krishna Yajurveda for this
+app's audience, unless a Shukla-specific split is wanted too.
+
+**Scale:** each Veda's procedure is 20-40+ distinct named steps. Four Vedas is closer to
+100-150+ Learning-tab entries, not a quick follow-on to the 5-text batch above - budget
+it as its own piece of work, likely with a Veda switcher (tabs) alongside the existing
+language switcher.
+
+**Samidhadhanam - real per-Veda mantras exist, but far harder to source cleanly than
+Sandhyavandhanam:**
+
+| Veda | Source | Status |
+|---|---|---|
+| Rigveda | Ashvalayana Grhyasutra (via dharmawiki.org) | Real Sanskrit+IAST+meaning, but embedded in a scholarly survey page, not a clean standalone liturgy |
+| Yajurveda | stotranidhi.com has a dedicated page | **Telugu-only** - no English/Sanskrit/Tamil/Malayalam version exists on that site |
+| Samaveda | Gobhila Grhyasutra referenced everywhere | Could not locate the actual mantra text itself online, only summaries describing it |
+| Atharvaveda | - | No dedicated source found at all |
+
+A Veda-neutral core mantra does exist and is well sourced (Atharva Veda 19.64 +
+Agnivesya Grhyasutra 1.4.1, via dharmawiki.org, real Sanskrit+IAST+English) - offered as
+an option 4 Aug 2026, declined in favor of deferring the whole practice rather than
+shipping something not labeled per-Veda like everything else on the tab.
 
 ### Panchangam / calendar integration
 - A calendar view showing the daily panchangam - **thithi**, nakshatra, and the

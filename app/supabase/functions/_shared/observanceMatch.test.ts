@@ -3,44 +3,44 @@
 // checked against an equivalent plain-JS port before writing this file;
 // run this for real before the first production deploy of Phase 3).
 import { assertEquals } from "jsr:@std/assert@1"
-import { bestMatch, type ObservanceRule, type PanchangamRow } from "./observanceMatch.ts"
+import { addDays, bestAdvanceMatch, bestMatch, type ObservanceRule, type PanchangamRow } from "./observanceMatch.ts"
 
 const rules: ObservanceRule[] = [
   {
     key: "monthly_amavasya", category: "tharpanam", title: "t", message: "m",
     match_thithi: "Amavasya", match_tamil_month: null, match_tamil_day: null,
     match_malayalam_month: null, match_malayalam_day: null, match_nakshatra: null,
-    day_offset: 0, priority: 0,
+    day_offset: 0, priority: 0, advance_notify: true,
   },
   {
     key: "karkidaka_vaavu", category: "tharpanam", title: "t", message: "m",
     match_thithi: "Amavasya", match_tamil_month: null, match_tamil_day: null,
     match_malayalam_month: "Karkidakam", match_malayalam_day: null, match_nakshatra: null,
-    day_offset: 0, priority: 10,
+    day_offset: 0, priority: 10, advance_notify: true,
   },
   {
     key: "makara_sankranti_tharpanam", category: "tharpanam", title: "t", message: "m",
     match_thithi: null, match_tamil_month: "Thai", match_tamil_day: 1,
     match_malayalam_month: null, match_malayalam_day: null, match_nakshatra: null,
-    day_offset: 0, priority: 5,
+    day_offset: 0, priority: 5, advance_notify: true,
   },
   {
     key: "onam_thiruvonam", category: "observance", title: "t", message: "m",
     match_thithi: null, match_tamil_month: null, match_tamil_day: null,
     match_malayalam_month: "Chingam", match_malayalam_day: null, match_nakshatra: "Shravana",
-    day_offset: 0, priority: 0,
+    day_offset: 0, priority: 0, advance_notify: true,
   },
   {
     key: "maha_sivarathri_makaram", category: "observance", title: "t", message: "m",
     match_thithi: "Krishna Chaturdashi", match_tamil_month: null, match_tamil_day: null,
     match_malayalam_month: "Makaram", match_malayalam_day: null, match_nakshatra: null,
-    day_offset: 1, priority: 0,
+    day_offset: 1, priority: 0, advance_notify: true,
   },
   {
     key: "naraka_chaturdashi", category: "observance", title: "t", message: "m",
     match_thithi: "Krishna Chaturdashi", match_tamil_month: "Aippasi", match_tamil_day: null,
     match_malayalam_month: null, match_malayalam_day: null, match_nakshatra: null,
-    day_offset: -1, priority: 0,
+    day_offset: -1, priority: 0, advance_notify: true,
   },
 ]
 
@@ -99,4 +99,22 @@ Deno.test("tharpanam and observance categories never cross-match", () => {
 Deno.test("missing row for a rule's day_offset never matches", () => {
   const match = bestMatch({ 0: row({ thithi: "Krishna Trayodashi" }) }, rules, "observance")
   assertEquals(match, null)
+})
+
+Deno.test("addDays adds/subtracts calendar days without drifting across a month boundary", () => {
+  assertEquals(addDays("2026-07-30", 3), "2026-08-02")
+  assertEquals(addDays("2026-08-02", -3), "2026-07-30")
+  assertEquals(addDays("2026-12-30", 3), "2027-01-02")
+})
+
+Deno.test("bestAdvanceMatch finds a rule normal bestMatch would also find, when advance_notify is true", () => {
+  const match = bestAdvanceMatch({ 0: row({ tamil_month: "Thai", tamil_day: 1 }) }, rules, "tharpanam")
+  assertEquals(match?.key, "makara_sankranti_tharpanam")
+})
+
+Deno.test("bestAdvanceMatch skips a rule with advance_notify = false, even if it would otherwise match", () => {
+  const noAdvanceRules = rules.map((r) => r.key === "monthly_amavasya" ? { ...r, advance_notify: false } : r)
+  const amavasyaRow = row({ thithi: "Amavasya", tamil_month: "Aippasi", malayalam_month: "Thulam" })
+  assertEquals(bestMatch({ 0: amavasyaRow }, noAdvanceRules, "tharpanam")?.key, "monthly_amavasya")
+  assertEquals(bestAdvanceMatch({ 0: amavasyaRow }, noAdvanceRules, "tharpanam"), null)
 })

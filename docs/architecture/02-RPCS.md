@@ -1,7 +1,9 @@
 # 02 - Postgres Functions and RPCs
 
-All 13 functions in schema `public`, verified against `pg_proc` on 18 July 2026,
-`submit_practice_log`'s day-completion step re-verified 20 July 2026.
+All 14 functions in schema `public`, verified against `pg_proc` on 18 July 2026,
+`submit_practice_log`'s day-completion step re-verified 20 July 2026. `submit_practice_log`'s
+`bool_or` day-completion change, `tier_up`, and the new `decay_stale_streaks()` were applied
+4 August 2026 - see [04-MIGRATIONS.md](04-MIGRATIONS.md#2-4-august-2026).
 
 | Function | Security | Lang | Called from |
 |---|---|---|---|
@@ -10,6 +12,7 @@ All 13 functions in schema `public`, verified against `pg_proc` on 18 July 2026,
 | [`get_leaderboard`](#get_leaderboard) | DEFINER | plpgsql | Client RPC |
 | [`get_my_referrals`](#get_my_referrals) | DEFINER | sql | Client RPC |
 | [`delete_account`](#delete_account) | DEFINER | plpgsql | Client RPC |
+| [`decay_stale_streaks`](#decay_stale_streaks) | DEFINER | plpgsql | `pg_cron` only |
 | [`streak_after_completion`](#streak_after_completion) | INVOKER | plpgsql | Internal |
 | [`check_sandhya_eligibility`](#check_sandhya_eligibility) | DEFINER | plpgsql | Trigger |
 | [`tier_for`](#tier_for) | INVOKER | sql | Internal |
@@ -64,19 +67,24 @@ this SECURITY DEFINER function is the only way a log can be created.
 10. **Award punya** to the subject (`profiles` or `family_members`) by `punya_value`.
 11. **Tier-up top-up** - if `freeze_cap_for(new_punya) > freeze_cap_for(old_punya)`, raise
     `freeze_credits` to the new cap.
-12. **Day completion** - `bool_and` across *every scheduled practice for that subject*
+12. **Day completion** - `bool_or` across *every scheduled practice for that subject*
     **where `practices.affects_streak = true`**, counting only logs with
-    `counts_toward_streak = true`. The `affects_streak` filter (added `20260719060618`)
-    fixes a real bug: `hanuman-chalisa` (Learning page) is a daily-cadence practice logged
-    with `p_award_streak = false`, so its logs never satisfy `counts_toward_streak`. Before
-    this filter existed, that practice still joined the `bool_and` every day and could never
-    be satisfied - marking a single verse permanently froze the subject's day completion
-    and overall streak, even though the UI's `isDoneToday` (which doesn't filter
-    `counts_toward_streak`) showed the day as done. `affects_streak = false` now excludes
-    Learning-style practices from the day-completion check entirely - they earn punya but
-    neither advance nor block the streak.
+    `counts_toward_streak = true` - **any one** of them is enough (changed from `bool_and`
+    to `bool_or` in `20260802090000`; marking only one of several tracked practices used to
+    leave the day/streak untouched, which read as a bug against practices like Temple Visit).
+    The `affects_streak` filter (added `20260719060618`) still applies unchanged: it fixes a
+    real bug where `hanuman-chalisa` (Learning page) is a daily-cadence practice logged with
+    `p_award_streak = false`, so its logs never satisfy `counts_toward_streak` - without the
+    filter that practice would always join the set and could singlehandedly force
+    `day_complete = true` every day regardless of anything else, even though it's meant to
+    be pure reference content. `affects_streak = false` excludes Learning-style practices
+    from the day-completion check entirely - they earn punya but neither advance nor block
+    the streak.
 13. **Subject streak** - if the day just completed and `last_complete_date` is not today,
     delegate to `streak_after_completion`, then persist streak, best, date and credits.
+14. **Tier-up flag** - `tier_for(new_punya) is distinct from tier_for(old_punya)`, returned
+    as `tier_up` so the client can show a tier-up celebration (added `20260802090000`). This
+    is independent of `day_complete` - punya, and therefore tier, can change on any mark.
 
 ### Returns
 
@@ -91,6 +99,7 @@ this SECURITY DEFINER function is the only way a log can be created.
   "best_streak": 30,
   "punya": 415,
   "tier": "Yogi",
+  "tier_up": false,
   "sequence_position": null,
   "freeze_used": false,
   "freeze_credits": 3
@@ -99,7 +108,7 @@ this SECURITY DEFINER function is the only way a log can be created.
 
 `day_complete` drives `CelebrationModal`, the interstitial ad, the in-app review prompt
 and `suppressTodayNudgesIfScheduled()`. `freeze_used` drives the "a freeze saved your
-streak" message.
+streak" message. `tier_up` drives `TierUpModal`.
 
 ---
 
@@ -121,6 +130,38 @@ The streak state machine, isolated as a pure function so it can be unit-tested i
 
 `new_best` is `greatest(p_best, new_streak)`. **One freeze covers exactly one missed
 day** - a two-day gap always resets regardless of credits held.
+
+---
+
+## decay_stale_streaks
+
+```sql
+decay_stale_streaks() returns void
+```
+
+`current_streak` on `profiles`/`family_members`/`user_practices` is otherwise only ever
+written from inside `submit_practice_log` - i.e. only when the subject completes a day (or
+logs a practice) again. An inactive subject's streak just froze at its last value forever,
+which read as "streak stuck at 1" (fixed `20260802093000`). This function sweeps all three
+tables once daily via `pg_cron` (`decay-stale-streaks-daily`, `30 20 * * *` UTC) and zeroes
+any streak whose owner has fallen outside the same alive/dead boundary
+`streak_after_completion` and the per-practice increment condition already use:
+
+- `profiles` / `family_members`: alive if `last_complete_date` is today, yesterday, or
+  exactly 2 days ago with a freeze credit still available (the same gap a completion would
+  bridge with a freeze) - freeze credits are **not** spent by this sweep, only an actual
+  completion spends one.
+- `user_practices`: alive if `last_log_date` is today or `prev_scheduled(cadence, today)`.
+
+A single fixed UTC time is an approximation for a global user base; the userbase is
+India-centric so 20:30 UTC (~02:00 IST) was picked to sit well clear of local midnight.
+
+Takes no arguments and sweeps every subject unconditionally (no `auth.uid()` scoping,
+unlike every other `DEFINER` function above) - meant for `pg_cron` only. The initial
+migration missed the usual `revoke execute ... from anon, authenticated, public` this
+repo gives every internal-only function; `mcp__supabase__get_advisors` flagged it as
+publicly callable via `/rest/v1/rpc/decay_stale_streaks` right after applying, fixed same
+session in `20260804070000_decay_stale_streaks_revoke_execute`.
 
 ---
 

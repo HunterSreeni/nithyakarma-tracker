@@ -6,7 +6,9 @@
 // practice still incomplete).
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { loadConfig, sendFCM, sendWebPush } from "../_shared/push.ts";
-import { bestMatch, type ObservanceRule } from "../_shared/observanceMatch.ts";
+import { addDays, bestAdvanceMatch, bestMatch, type ObservanceRule } from "../_shared/observanceMatch.ts";
+
+const ADVANCE_DAYS = 3;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -57,12 +59,6 @@ function slotFor(hour: number, minute: number): string | null {
   return null;
 }
 
-function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
 Deno.serve(async (req: Request) => {
   const config = await loadConfig(supabase);
   const authHeader = req.headers.get("Authorization");
@@ -94,11 +90,17 @@ Deno.serve(async (req: Request) => {
 
   const ids = [...userSlot.keys()];
   const dates = [...new Set(userDate.values())];
+  // Also resolve each date's advance target (today + ADVANCE_DAYS) so the
+  // "in N days" push can run the same rule engine against that future date.
+  const advanceDates = [...new Set(dates.map((d) => addDays(d, ADVANCE_DAYS)))];
   // panchangam_observances rules can look a day either side (day_offset: +1
   // for a night-observance like Sivarathri, attributed to the earlier
   // calendar day; -1 for a pre-dawn observance like Naraka Chaturdashi,
-  // attributed to the later one) - fetch a 3-day window per distinct date.
-  const panchangamDates = [...new Set(dates.flatMap((d) => [addDays(d, -1), d, addDays(d, 1)]))];
+  // attributed to the later one) - fetch a 1-day window either side of every
+  // date we'll match rules against, today's and the advance target's alike.
+  const panchangamDates = [...new Set(
+    [...dates, ...advanceDates].flatMap((d) => [addDays(d, -1), d, addDays(d, 1)]),
+  )];
 
   const [{ data: subs }, { data: ups }, { data: profiles }, { data: panchangamRows }, { data: observanceRules }] = await Promise.all([
     supabase.from("push_subscriptions").select("user_id, endpoint, p256dh, auth_key, platform").in("user_id", ids),
@@ -171,6 +173,28 @@ Deno.serve(async (req: Request) => {
       if (calendarPrefs.observances) {
         const rule = bestMatch(rowsByOffset as any, rules, "observance");
         if (rule) sent += await deliver(uid, date, "observance", rule.title, rule.message);
+      }
+
+      // "In N days" heads-up for the same two categories, gated by the same
+      // preference each already uses - a rule only fires here if it's also
+      // marked advance_notify (see migration 20260802153000).
+      const advanceDate = addDays(date, ADVANCE_DAYS);
+      const advanceRowsByOffset = {
+        [-1]: panchangamByDate.get(addDays(advanceDate, -1)),
+        0: panchangamByDate.get(advanceDate),
+        1: panchangamByDate.get(addDays(advanceDate, 1)),
+      };
+      if (calendarPrefs.tharpanam) {
+        const rule = bestAdvanceMatch(advanceRowsByOffset as any, rules, "tharpanam");
+        if (rule) {
+          sent += await deliver(uid, advanceDate, "observance_advance", `In ${ADVANCE_DAYS} days: ${rule.title}`, rule.message);
+        }
+      }
+      if (calendarPrefs.observances) {
+        const rule = bestAdvanceMatch(advanceRowsByOffset as any, rules, "observance");
+        if (rule) {
+          sent += await deliver(uid, advanceDate, "observance_advance", `In ${ADVANCE_DAYS} days: ${rule.title}`, rule.message);
+        }
       }
       continue;
     }

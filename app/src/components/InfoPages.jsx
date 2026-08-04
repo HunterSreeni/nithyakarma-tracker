@@ -93,10 +93,11 @@ export function KarmaPage() {
 
       <h3>Streaks</h3>
       <p>
-        Your overall streak grows by one for every day you complete <i>all</i> your scheduled
-        practices. Miss a day and the streak normally resets - unless you have a streak freeze
-        available, in which case one freeze is spent automatically to cover a single missed day and
-        your streak keeps climbing.
+        Your overall streak grows by one for every day you complete <i>at least one</i> of your
+        scheduled practices - mark more of them if you have time, for the extra punya, but one is
+        enough to keep the streak alive. Miss a day entirely and the streak normally resets - unless
+        you have a streak freeze available, in which case one freeze is spent automatically to cover
+        a single missed day and your streak keeps climbing.
       </p>
 
       <h3>Streak freezes</h3>

@@ -1,8 +1,14 @@
 # 01 - Database
 
 Supabase project `fkrifejzhnhknkuyhjhp`, Postgres 17.6.1.141, schema `public`.
-**RLS is enabled on all 13 tables.** Verified 18 July 2026, columns refreshed 20 July 2026
+**RLS is enabled on all 15 tables.** Verified 18 July 2026, columns refreshed 20 July 2026
 against a live schema pull (see `README.md`'s "Keeping this current" for the regen query).
+`monthly_specials` and `panchangam_observances` (added 20/23 July 2026) were missing from
+this doc entirely until 2 August 2026 - documented below from migration DDL, not a fresh
+live pull. All 6 migrations applied 4 August 2026 (`submit_practice_log` bool_or/tier_up,
+`decay_stale_streaks`, the `monthly_specials` calendar/month reshape plus Tamil-month
+seed, Avani Avittam/`advance_notify`) - see
+[04-MIGRATIONS.md](04-MIGRATIONS.md#2-4-august-2026) - are reflected below and are live.
 
 Row counts below are production values at verification time and are indicative only.
 
@@ -23,6 +29,8 @@ Row counts below are production values at verification time and are indicative o
 | [`notification_deliveries`](#notification_deliveries) | 59 | Send ledger, doubles as dedupe |
 | [`analytics_events`](#analytics_events) | 151 | First-party event stream |
 | [`app_config`](#app_config) | 5 | Server-side config and secrets |
+| [`monthly_specials`](#monthly_specials) | 24 | One row per Tamil or Malayalam month, drives `MonthlySpecialBanner` |
+| [`panchangam_observances`](#panchangam_observances) | 17 | Rule table for tharpanam/auspicious-day notifications |
 
 ---
 
@@ -302,8 +310,8 @@ before sending and treats a duplicate-key error as "already sent, skip".
 |---|---|---|
 | `id` | uuid PK | `gen_random_uuid()` |
 | `user_id` | uuid | FK `profiles.id` |
-| `reminder_date` | date | The user's **local** date |
-| `slot` | text | CHECK in (`morning`, `afternoon`, `evening`, `nudge`, `nudge_morning`) |
+| `reminder_date` | date | The user's **local** date (for `observance_advance`, the *future* date being advance-notified, not today) |
+| `slot` | text | CHECK in (`morning`, `afternoon`, `evening`, `nudge`, `nudge_morning`, `tharpanam`, `observance`, `observance_advance`) - this doc listed only the first 5 until 2 Aug 2026; `tharpanam`/`observance` were added 23 July, `observance_advance` 4 August |
 | `endpoint` | text | Truncated to 500 chars by the sender |
 | `sent_at` | timestamptz | `now()` |
 
@@ -376,6 +384,80 @@ job reads `cron_secret` from here to authenticate to the edge function.
 > Secrets in table rows is a known compromise. They were rotated in July 2026. Edge
 > function env vars or Supabase Vault is the better long-term home. See
 > [09-STATUS-LEDGER.md](09-STATUS-LEDGER.md).
+
+---
+
+## monthly_specials
+
+Drives `MonthlySpecialBanner` on the Today page - a general framework, not
+Karkidakam-specific. Added `20260720140000` with one seed row (Karkidakam, PK
+`malayalam_month` only). `20260802150000` filled in the other 11 Malayalam months and
+**reshaped the key** from `malayalam_month` to `(calendar, month)` - `profiles.
+panchangam_tradition` already lets a user pick Tamil or Malayalam (`PanchangamBox.jsx`),
+but the original single-calendar key meant `MonthlySpecialBanner` could only ever show
+the Malayalam row regardless of that preference. `20260804060000` then seeded the Tamil
+side (`calendar = 'tamil'`) so the (default) Tamil-tradition user actually gets a banner
+too. Purely additive to add another month later: one row, no code change.
+
+| Column | Type | Default / Constraint |
+|---|---|---|
+| `calendar` | text NOT NULL | **Added `20260802150000`.** CHECK in (`'tamil'`, `'malayalam'`) |
+| `month` | text NOT NULL | **Renamed from `malayalam_month` `20260802150000`.** e.g. `'Karkidakam'`, `'Margazhi'` - spelling matches `panchangam_days.malayalam_month`/`.tamil_month` exactly |
+| `title` | text NOT NULL | |
+| `subtitle` | text NOT NULL | One-sentence description |
+| `route` | text NULL | In-app route to link to. **Nullable since `20260802150000`** - most months don't have a dedicated page yet, and render as an info-only banner (no link) instead |
+
+**PK:** `(calendar, month)` - replaced the old `malayalam_month`-only PK in `20260802150000`.
+
+**RLS:** `SELECT` for `authenticated`, `USING (true)`. No insert/update policy - writes
+are service-role only (migration writes via `INSERT`, no client-facing write path).
+
+**Current contents:** 24 rows - 12 Malayalam, 12 Tamil (one per month in each calendar).
+`('malayalam', 'Karkidakam')` -> `/ramayana-masam` and `('malayalam', 'Kanni')` ->
+`/learning/devi-mahatmyam` are the only two with a real route; every other row (all 12
+Tamil rows included) has `route = null` and renders as an info-only banner - none of the
+Tamil months tie naturally to an existing tracked practice or reading page yet.
+
+`MonthlySpecialBanner.jsx` reads `profile.panchangam_tradition` (default `'tamil'`) to
+pick `calendar`, and the matching `day.tamil_month`/`day.malayalam_month` field to pick
+`month` - mirroring the branch `PanchangamBox.jsx` already used for the panchangam info
+box.
+
+---
+
+## panchangam_observances
+
+A small static **rule table**, not per-date rows - tharpanam and auspicious-day
+("observance") push notifications. See
+[07-NOTIFICATIONS.md](07-NOTIFICATIONS.md#system-3-tharpanam-and-auspicious-day-observance-notifications)
+for the full matching design (`day_offset`, priority tiebreaks, the pure `bestMatch()`/
+`bestAdvanceMatch()` functions). Added `20260723053622`, extended `20260723060516` (more
+festivals) and `20260802153000` (Avani Avittam + `advance_notify`).
+
+| Column | Type | Default / Constraint |
+|---|---|---|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `key` | text UNIQUE | e.g. `'monthly_amavasya'`, `'avani_avittam'` |
+| `category` | text | CHECK in (`tharpanam`, `observance`) |
+| `title` | text | |
+| `message` | text | |
+| `match_thithi` | text NULL | |
+| `match_tamil_month` | text NULL | |
+| `match_tamil_day` | int NULL | |
+| `match_malayalam_month` | text NULL | |
+| `match_malayalam_day` | int NULL | |
+| `match_nakshatra` | text NULL | |
+| `day_offset` | int | `0` - which neighboring `panchangam_days` row to match against, see 07-NOTIFICATIONS.md |
+| `priority` | int | `0` - tiebreak when multiple rules match the same day |
+| `advance_notify` | boolean | `true` - added `20260802153000`. `false` only for `monthly_amavasya`; gates the "in 3 days" push, see 07-NOTIFICATIONS.md |
+
+All `match_*` columns are nullable; a rule matches when every **non-null** `match_*`
+column equals the corresponding `panchangam_days` column - `null` means "don't care".
+
+**RLS:** `SELECT` for `authenticated`, `USING (true)`. Writes are service-role only.
+
+**Current contents:** 17 rows (16 as of 23 July 2026, plus `avani_avittam` added
+2 August 2026).
 
 ---
 

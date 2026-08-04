@@ -1,5 +1,10 @@
 # 07 - Notification Architecture
 
+> The "in 3 days" advance notifications and Avani Avittam (2 August 2026) were applied to
+> the live database 4 August 2026 - see [04-MIGRATIONS.md](04-MIGRATIONS.md#2-4-august-2026).
+> `send-reminders` was redeployed the same day (version 13) with the matching code - live
+> end to end.
+
 There are **two independent notification systems** running side by side. Understanding
 which is which is essential before changing either.
 
@@ -139,12 +144,29 @@ its own toggle), which doesn't fit the one-slot-per-user shape the rest of `slot
 uses. The two real slot values it can produce are `tharpanam` and `observance`.
 
 **Data-driven, not per-date rows.** `panchangam_observances` is a small static rule
-table (16 rows as of 23 July 2026), not an events calendar - every occasion reduces to a
+table (17 rows as of 2 Aug 2026), not an events calendar - every occasion reduces to a
 pattern against a `panchangam_days` row (`thithi`/`tamil_month`/`tamil_day`/
 `malayalam_month`/`malayalam_day`/`nakshatra`), so unlike `panchangam_days` itself this
 table never needs annual regeneration. Matching is a pure function,
 `_shared/observanceMatch.ts`'s `bestMatch()`, unit tested independent of the Deno
 handler (see "Deno testing in CI" below).
+
+**"In N days" advance notifications (added 2 Aug 2026).** Same `06:00 calendar` window,
+same two categories, same `tharpanam_enabled`/`observances_enabled` toggles - but also
+resolves `today + 3` per user's local date and runs the identical rule engine against
+*that* date (with the same `day_offset` neighboring-day logic, just relative to the
+future date instead of today). A match delivers under a third slot,
+`observance_advance`, titled `"In 3 days: <title>"`, deduped on
+`(user, reminder_date = the future date, slot)` like every other slot - so a given
+occasion gets exactly one advance push, fired the one day the lookahead lands exactly
+3 days out.
+
+Not every rule deserves this - a routine event that recurs ~12x/year (`monthly_amavasya`)
+would turn into monthly noise, unlike a once-a-year occasion. `panchangam_observances`
+has a `advance_notify boolean not null default true` column for this;
+`_shared/observanceMatch.ts`'s `bestAdvanceMatch()` wraps `bestMatch()` with a filter on
+it. Currently `false` only for `monthly_amavasya` - every named yearly occasion,
+including the two sankranti tharpanams and `karkidaka_vaavu`, defaults `true`.
 
 `day_offset` lets a rule match against a **neighboring day's** row instead of its own
 candidate day, and can point either direction - this is the solar-noon-sampling
@@ -166,7 +188,11 @@ practice, not a new gap:
 pattern as Karthigai Deepam below), the two Sankranti tharpanams, monthly Amavasya,
 Karkidaka Vaavu, Maha Sivarathri, Krishna Janmashtami, Vinayaka Chaturthi,
 Vijayadashami, Naraka Chaturdashi (Deepavali), Karthigai Deepam (Karthikai month +
-Krittika nakshatra, not thithi), Skanda Sashti. Not seeded, no reliable rule found yet:
+Krittika nakshatra, not thithi), Skanda Sashti. Added 2 Aug 2026: **Avani Avittam**
+(Yajurveda Upakarma only - `thithi = Purnima` + `nakshatra = Shravana`; Rigveda and
+Samaveda observe it on different days by design and were deliberately left unseeded
+rather than guessed at, see the plan discussion for that migration). Not seeded, no
+reliable rule found yet:
 the exact main-Diwali Lakshmi Puja day (distinct from Naraka Chaturdashi) needs
 sub-day precision the current noon-sampling can't give - two consecutive days can both
 show `thithi = 'Amavasya'` when that tithi happens to span both noons, and picking the
@@ -184,7 +210,9 @@ not Node/Vite, and vitest can't parse `Deno.test`/`jsr:` imports (it's excluded 
 vitest's discovery in `vite.config.js` for that reason). A dedicated `edge-functions`
 job in `.github/workflows/ci.yml` (`denoland/setup-deno@v2`, `deno test`) now runs it on
 every push/PR - added and verified (`deno test` run locally, all cases passing) 23 July
-2026, same session as the festival set above.
+2026, same session as the festival set above. `bestAdvanceMatch()` and `addDays()` cases
+were added to the same file 2 Aug 2026 (no CI config change needed - the job already
+points at this file, not a glob).
 
 ## Extension point history
 

@@ -18,9 +18,13 @@
 // threshold moved from >= 3 slots to >= 1 - marking just 1 of the 3 sandhyas
 // now completes the day; get_leaderboard's independent slot-count check moved
 // with it, see migration 20260720160000_sandhya_one_slot_completes_day).
+//
+// Updated 2026-08-02: day completion moved from bool_and (every affects_streak
+// practice) to bool_or (any one of them) - see migration
+// 20260802090000_any_practice_completes_day_and_tier_up.
 
 import { describe, it, expect } from 'vitest'
-import { isScheduled, isDoneToday, countsTowardDayCompletion, SANDHYA_SLOTS } from '../cadence'
+import { isScheduled, isDoneToday, countsTowardDayCompletion, dayComplete, SANDHYA_SLOTS } from '../cadence'
 import { tierFor, TIERS } from '../tiers'
 
 // ---------------------------------------------------------------------------
@@ -214,6 +218,10 @@ describe('isDoneToday vs the SQL day-completion bool_and', () => {
 // excluded from the day-completion set entirely, so it can neither advance nor
 // block the streak. Migration 20260719060618_practices_affects_streak.
 //
+// 2026-08-02: the aggregate itself moved from bool_and to bool_or - ANY one
+// gating practice completes the day, not all of them. Migration
+// 20260802090000_any_practice_completes_day_and_tier_up.
+//
 //   ... from user_practices up2 join practices p2 on p2.id = up2.practice_id
 //       where up2.owner_id = up.owner_id
 //         and up2.family_member_id is not distinct from up.family_member_id
@@ -222,16 +230,16 @@ describe('isDoneToday vs the SQL day-completion bool_and', () => {
 describe('affects_streak gating', () => {
   const sqlDayComplete = (practices) => {
     const gating = practices.filter(p => p.affects_streak)
-    if (!gating.length) return false // bool_and over zero rows is NULL -> coalesce false
-    return gating.every(p => sqlPracticeComplete(p, p.logs))
+    if (!gating.length) return false // bool_or over zero rows is NULL -> coalesce false
+    return gating.some(p => sqlPracticeComplete(p, p.logs))
   }
 
-  it('a learning-style practice cannot block day completion', () => {
+  it('a learning-style practice cannot complete the day on its own', () => {
     const day = [
-      { is_sandhyavandhanam: false, affects_streak: true, logs: [{ counts_toward_streak: true }] },
+      { is_sandhyavandhanam: false, affects_streak: true, logs: [] },
       { is_sandhyavandhanam: false, affects_streak: false, logs: [{ counts_toward_streak: false }] },
     ]
-    expect(sqlDayComplete(day)).toBe(true)
+    expect(sqlDayComplete(day)).toBe(false)
   })
 
   it('and cannot complete the day on its own either', () => {
@@ -241,11 +249,50 @@ describe('affects_streak gating', () => {
     expect(sqlDayComplete(day)).toBe(false)
   })
 
-  it('a streak-affecting practice still gates as before', () => {
+  it('any one streak-affecting practice completes the day, not all of them', () => {
     const day = [
       { is_sandhyavandhanam: false, affects_streak: true, logs: [] },
       { is_sandhyavandhanam: false, affects_streak: true, logs: [{ counts_toward_streak: true }] },
     ]
+    expect(sqlDayComplete(day)).toBe(true)
+  })
+
+  it('no gating practice logged means the day is not complete', () => {
+    const day = [
+      { is_sandhyavandhanam: false, affects_streak: true, logs: [] },
+      { is_sandhyavandhanam: false, affects_streak: true, logs: [] },
+    ]
     expect(sqlDayComplete(day)).toBe(false)
+  })
+})
+
+describe('dayComplete mirrors the SQL bool_or day-completion aggregate', () => {
+  const item = (overrides, logs) => ({
+    practice: { is_sandhyavandhanam: false, cadence: 'daily', affects_streak: true, ...overrides },
+    logs,
+  })
+  const DATE = new Date(2026, 6, 20) // a Monday, irrelevant to 'daily' cadence
+
+  it('true as soon as any one gating practice is logged', () => {
+    const items = [
+      item({}, []),
+      item({}, [{ counts_toward_streak: true }]),
+    ]
+    expect(dayComplete(items, DATE)).toBe(true)
+  })
+
+  it('false when nothing is logged', () => {
+    const items = [item({}, []), item({}, [])]
+    expect(dayComplete(items, DATE)).toBe(false)
+  })
+
+  it('a non-affects_streak (Learning-style) log cannot complete the day alone', () => {
+    const items = [item({ affects_streak: false }, [{ counts_toward_streak: true }])]
+    expect(dayComplete(items, DATE)).toBe(false)
+  })
+
+  it('a weekly practice not scheduled today does not count', () => {
+    const items = [item({ cadence: 'weekly', weekday: (DATE.getDay() + 1) % 7 }, [{ counts_toward_streak: true }])]
+    expect(dayComplete(items, DATE)).toBe(false)
   })
 })

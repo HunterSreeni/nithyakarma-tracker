@@ -86,7 +86,12 @@ Three properties worth preserving in any refactor:
    This is what guarantees "no ad on a failed save".
 3. **Celebration is gated on a real streak.** Callers only show `CelebrationModal` when
    `data.day_complete && data.overall_streak >= 1` - fixed 2026-07-20, it used to fire on
-   every successful submit including partial marks and 0-streak completions.
+   every successful submit including partial marks and 0-streak completions. Since
+   `20260802090000`, `day_complete` is `bool_or`-based (any one scheduled practice, not
+   all), so it stays true for every remaining mark that day - `TodayPage.mark()` additionally
+   snapshots `dayComplete(items)` (see `utils/cadence.js`) before calling `submit()` and only
+   treats the day as *just* completed (celebration, milestone review prompt) when it flips
+   false -> true on this specific mark, not on every mark after.
 4. **Suppression is centralized.** `if (data.day_complete) suppressTodayNudgesIfScheduled()`
    lives here rather than in the pages, so every caller of `useToday` gets it for free.
    As of 2026-07-20, `LearningPage` is no longer one of those callers - it's pure reading,
@@ -159,7 +164,8 @@ fragility with no test coverage:
 |---|---|
 | `utils/cadence.js` `isScheduled()` | SQL `is_scheduled()` |
 | `utils/tiers.js` `tierFor()` / `TIERS` | SQL `tier_for()` / `freeze_cap_for()` |
-| `utils/cadence.js` `isDoneToday()` | The day-completion `bool_and` in `submit_practice_log` |
+| `utils/cadence.js` `isDoneToday()` / `countsTowardDayCompletion()` | The per-practice completion check in `submit_practice_log` |
+| `utils/cadence.js` `dayComplete()` | The day-completion `bool_or` (any one practice) in `submit_practice_log` |
 
 > `panchangamScript.js` covers **month names only**. Thithi names, all 27 nakshatras, and
 > the kalam labels have no native-script mapping yet - that is the gap the Malayalam
