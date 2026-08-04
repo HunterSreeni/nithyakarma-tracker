@@ -16,6 +16,7 @@ export interface ObservanceRule {
   match_nakshatra: string | null
   day_offset: number
   priority: number
+  advance_notify: boolean
 }
 
 export interface PanchangamRow {
@@ -65,4 +66,23 @@ export function bestMatch(
     if (!best || rule.priority > best.priority) best = rule
   }
   return best
+}
+
+// Same as bestMatch, restricted to rules worth an advance ("in N days") push -
+// a routine monthly tithi like Amavasya (advance_notify = false) is too
+// frequent to warrant one, unlike a named yearly occasion.
+export function bestAdvanceMatch(
+  rowsByOffset: Record<number, PanchangamRow | undefined>,
+  rules: ObservanceRule[],
+  category: "tharpanam" | "observance",
+): ObservanceRule | null {
+  return bestMatch(rowsByOffset, rules.filter((r) => r.advance_notify), category)
+}
+
+// date-only (YYYY-MM-DD) arithmetic, UTC-anchored to avoid DST shifting the
+// day - the string is a calendar date, not an instant.
+export function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + "T00:00:00Z")
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
 }
