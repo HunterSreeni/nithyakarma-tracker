@@ -30,7 +30,7 @@ const NAKSHATRAS = [
   'Uttara Bhadrapada', 'Revati',
 ]
 const TITHI_NAMES = [
-  'Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami', 'Shashthi', 'Saptami', 'Ashtami',
+  'Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami', 'Sashti', 'Saptami', 'Ashtami',
   'Navami', 'Dashami', 'Ekadashi', 'Dwadashi', 'Trayodashi', 'Chaturdashi',
 ]
 const TAMIL_MONTHS = ['Chithirai', 'Vaikasi', 'Aani', 'Aadi', 'Aavani', 'Purattasi', 'Aippasi', 'Karthikai', 'Margazhi', 'Thai', 'Maasi', 'Panguni']

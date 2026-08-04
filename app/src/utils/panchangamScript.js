@@ -64,7 +64,7 @@ export const TAMIL_NAKSHATRA_SCRIPT = {
 
 const TAMIL_TITHI_SCRIPT = {
   Pratipada: 'பிரதமை', Dwitiya: 'துவிதியை', Tritiya: 'திருதியை', Chaturthi: 'சதுர்த்தி',
-  Panchami: 'பஞ்சமி', Shashthi: 'சஷ்டி', Saptami: 'சப்தமி', Ashtami: 'அஷ்டமி',
+  Panchami: 'பஞ்சமி', Sashti: 'சஷ்டி', Saptami: 'சப்தமி', Ashtami: 'அஷ்டமி',
   Navami: 'நவமி', Dashami: 'தசமி', Ekadashi: 'ஏகாதசி', Dwadashi: 'துவாதசி',
   Trayodashi: 'திரயோதசி', Chaturdashi: 'சதுர்த்தசி',
   Purnima: 'பௌர்ணமி', Amavasya: 'அமாவாசை',
@@ -82,7 +82,7 @@ export const TAMIL_KALAM_SCRIPT = {
 
 const MALAYALAM_TITHI_SCRIPT = {
   Pratipada: 'പ്രഥമ', Dwitiya: 'ദ്വിതീയ', Tritiya: 'തൃതീയ', Chaturthi: 'ചതുർത്ഥി',
-  Panchami: 'പഞ്ചമി', Shashthi: 'ഷഷ്ഠി', Saptami: 'സപ്തമി', Ashtami: 'അഷ്ടമി',
+  Panchami: 'പഞ്ചമി', Sashti: 'ഷഷ്ഠി', Saptami: 'സപ്തമി', Ashtami: 'അഷ്ടമി',
   Navami: 'നവമി', Dashami: 'ദശമി', Ekadashi: 'ഏകാദശി', Dwadashi: 'ദ്വാദശി',
   Trayodashi: 'ത്രയോദശി', Chaturdashi: 'ചതുർദശി',
   Purnima: 'പൗർണ്ണമി', Amavasya: 'അമാവാസി',
