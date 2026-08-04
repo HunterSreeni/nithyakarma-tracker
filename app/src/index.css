@@ -183,6 +183,7 @@ input, select { font-family: 'DM Sans', sans-serif; }
 /* panchangam box */
 .panchangam-box { background: #fff; border-radius: 12px; padding: 0.7rem 0.9rem; margin-top: 0.6rem; border: 1.5px solid var(--cream); }
 .monthly-special { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; background: var(--saffron-50); border: 1.5px solid var(--saffron-200); border-radius: 12px; padding: 0.7rem 0.9rem; margin-top: 0.6rem; text-decoration: none; color: inherit; }
+.monthly-special-static { cursor: default; }
 .ms-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--ink); }
 .ms-subtitle { font-size: 0.74rem; color: var(--text-2); margin-top: 2px; }
 .ms-dismiss { flex-shrink: 0; background: none; border: none; color: var(--text-2); padding: 4px; }
@@ -303,12 +304,15 @@ a.verse-card { text-decoration: none; color: inherit; }
 .cel-streak span { color: var(--action); }
 .cel-sub { font-size: 0.78rem; color: var(--text-2); margin-top: 4px; font-weight: 300; }
 .cel-freeze { display: inline-flex; align-items: center; gap: 5px; margin-top: 0.7rem; font-size: 0.76rem; font-weight: 700; color: var(--saffron-700); background: var(--saffron-50); border: 1px solid var(--saffron-200); border-radius: 100px; padding: 6px 14px; }
-.share-card { margin: 1.1rem auto 0; width: 280px; border-radius: 16px; background: linear-gradient(160deg, var(--saffron-950), var(--saffron-900) 55%, var(--saffron-700)); color: #fff; text-align: left; padding: 1.1rem 1.1rem 0.9rem; position: relative; overflow: hidden; }
-.share-card .sc-mark { position: absolute; right: -10px; top: -10px; opacity: 0.1; color: #fff; }
-.sc-brand { font-family: 'Sora', sans-serif; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; }
-.sc-days { font-family: 'Sora', sans-serif; font-size: 2rem; font-weight: 700; margin-top: 0.5rem; line-height: 1; }
-.sc-days span { font-size: 0.9rem; color: #fff; font-weight: 500; }
-.sc-practice { font-size: 0.74rem; color: #fff; margin-top: 6px; font-weight: 300; }
+/* Portrait (9:16) to match WhatsApp Status' fixed frame - a wider/shorter
+   card gets center-cropped there instead of shown in full. */
+.share-card { margin: 1.1rem auto 0; width: 240px; aspect-ratio: 9 / 16; border-radius: 20px; background: linear-gradient(160deg, var(--saffron-950), var(--saffron-900) 55%, var(--saffron-700)); color: #fff; text-align: center; padding: 1.3rem 1.1rem 1.1rem; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
+.share-card .sc-mark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0.1; color: #fff; }
+.sc-brand { position: relative; font-family: 'Sora', sans-serif; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; }
+.sc-center { position: relative; }
+.sc-days { font-family: 'Sora', sans-serif; font-size: 3.2rem; font-weight: 700; line-height: 1; }
+.sc-days-label { font-size: 0.95rem; color: #fff; font-weight: 500; margin-top: 2px; }
+.sc-practice { position: relative; font-size: 0.78rem; color: #fff; font-weight: 300; }
 .btn-whatsapp { display: inline-flex; align-items: center; gap: 8px; margin-top: 1rem; background: #25D366; color: #fff; border: none; border-radius: 100px; padding: 11px 22px; font-weight: 700; font-size: 0.76rem; }
 .btn-youtube { display: inline-flex; align-items: center; gap: 8px; margin: 0.9rem 0; background: #FF0000; color: #fff; text-decoration: none; border: none; border-radius: 100px; padding: 11px 22px; font-weight: 700; font-size: 0.76rem; }
 .btn-plain { margin-top: 0.7rem; background: none; border: none; color: var(--text-2); font-size: 0.72rem; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
@@ -330,6 +334,7 @@ a.verse-card { text-decoration: none; color: inherit; }
 .lb-body { flex: 1; min-width: 0; }
 .lb-name { font-weight: 700; font-size: 0.78rem; }
 .tier-badge { display: inline-block; font-family: 'Sora', sans-serif; font-size: 0.52rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; padding: 2px 7px; border-radius: 100px; margin-top: 3px; }
+.tier-up-badge { font-size: 0.7rem; padding: 5px 14px; margin: 0.6rem 0; }
 .tier-rishi { background: #f3e8ff; color: #7c3aed; }
 .tier-yogi { background: var(--saffron-100); color: var(--saffron-700); }
 .tier-sadhaka { background: #dbeafe; color: #1d4ed8; }

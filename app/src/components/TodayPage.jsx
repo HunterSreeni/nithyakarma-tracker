@@ -4,8 +4,9 @@ import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
-import { isDoneToday, countsTowardDayCompletion, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
+import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
 import CelebrationModal from './CelebrationModal'
+import TierUpModal from './TierUpModal'
 import GayatriCountModal from './GayatriCountModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import PanchangamBox from './PanchangamBox'
@@ -25,9 +26,13 @@ export default function TodayPage() {
   const { items, loading, error: loadError, submit, addPractice, reload } =
     useToday(session.user.id, selectedMember?.id ?? null)
   const [celebration, setCelebration] = useState(null)
+  const [tierUp, setTierUp] = useState(null)
   const [gayatriPrompt, setGayatriPrompt] = useState(null) // { item, slot }
   const [busyId, setBusyId] = useState(null)
   const [error, setError] = useState(null)
+  // Holds a tier-up until the streak celebration (if any) has been dismissed,
+  // so the two modals never stack on top of each other.
+  const pendingTierUpRef = useRef(null)
 
   const subjectName = selectedMember?.name ?? profile.display_name
   const subjectStreak = selectedMember?.current_streak ?? profile.current_streak
@@ -41,11 +46,17 @@ export default function TodayPage() {
 
   const mark = async (item, slot = null, count = null) => {
     setBusyId(item.up.id); setError(null)
+    // Any one scheduled practice now completes the day, so day_complete stays
+    // true for every remaining mark that day - snapshot whether it was already
+    // true before this log, so the celebration/review-prompt/ad-milestone logic
+    // below only fires on the mark that FIRST completed the day, not every one after.
+    const wasComplete = dayComplete(items)
     try {
       const result = await submit(item.up.id, {
         slot, count: item.practice.is_sandhyavandhanam ? count : (item.practice.target_count ?? null),
       })
       await refresh() // streaks in topbar / switcher
+      const justCompleted = !!result.day_complete && !wasComplete
       track('practice_marked', {
         day_complete: !!result.day_complete,
         freeze_used: !!result.freeze_used,
@@ -55,11 +66,19 @@ export default function TodayPage() {
       // Ad fires here - after the verified save, BEFORE the celebration reward
       // (Intent 0.2). At a streak milestone, ask for a review instead (Intent 1.4);
       // never both, and never on a failed save (we are past submit()).
-      const milestone = result.day_complete && isMilestone(result.overall_streak ?? 0)
+      const milestone = justCompleted && isMilestone(result.overall_streak ?? 0)
       const reviewed = milestone ? await maybeRequestReview() : false
       if (!reviewed) await showInterstitial(profile)
-      if (result.day_complete && (result.overall_streak ?? 0) >= 1) {
+      const willCelebrate = justCompleted && (result.overall_streak ?? 0) >= 1
+      if (willCelebrate) {
         setCelebration({ ...result, subjectName })
+      }
+      if (result.tier_up) {
+        if (willCelebrate) {
+          pendingTierUpRef.current = result.tier
+        } else {
+          setTierUp({ tier: result.tier })
+        }
       }
     } catch (err) {
       setError(err.message)
@@ -120,7 +139,17 @@ export default function TodayPage() {
       <AddPracticeDropdown existing={items.map(i => i.practice.id)} onAdd={addPractice} />
 
       {celebration && (
-        <CelebrationModal data={celebration} onClose={() => setCelebration(null)} />
+        <CelebrationModal data={celebration} onClose={() => {
+          setCelebration(null)
+          if (pendingTierUpRef.current) {
+            setTierUp({ tier: pendingTierUpRef.current })
+            pendingTierUpRef.current = null
+          }
+        }} />
+      )}
+
+      {tierUp && (
+        <TierUpModal tier={tierUp.tier} onClose={() => setTierUp(null)} />
       )}
 
       {gayatriPrompt && (

@@ -45,9 +45,12 @@ export default function CelebrationModal({ data, onClose }) {
         )}
 
         <div className="share-card" ref={cardRef}>
-          <Flame className="sc-mark" size={80} strokeWidth={1.5} />
+          <Flame className="sc-mark" size={150} strokeWidth={1.2} />
           <div className="sc-brand">Nithyakarma</div>
-          <div className="sc-days">{streak} <span>day{streak === 1 ? '' : 's'} streak</span></div>
+          <div className="sc-center">
+            <div className="sc-days">{streak}</div>
+            <div className="sc-days-label">day{streak === 1 ? '' : 's'} streak</div>
+          </div>
           <div className="sc-practice">
             {data.practice_name}<br />
             {data.subjectName} · {data.tier} tier

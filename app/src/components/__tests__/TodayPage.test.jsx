@@ -4,7 +4,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 // Child components pull in ads/router/localStorage - not under test here.
 vi.mock('../ProfileSwitcher', () => ({ default: () => null }))
 vi.mock('../CelebrationModal', () => ({
-  default: ({ data }) => (data ? <div data-testid="celebration">{data.practice_streak}</div> : null),
+  default: ({ data, onClose }) => (
+    data ? <div data-testid="celebration"><button onClick={onClose}>close-celebration</button>{data.practice_streak}</div> : null
+  ),
+}))
+vi.mock('../TierUpModal', () => ({
+  default: ({ tier }) => <div data-testid="tier-up">{tier}</div>,
 }))
 vi.mock('../GuidedTour', () => ({ default: () => null }))
 vi.mock('../PanchangamBox', () => ({ default: () => null }))
@@ -172,6 +177,61 @@ describe('TodayPage - celebration only from a verified RPC response', () => {
     fireEvent.click(screen.getByText('Mark Done'))
     await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
     expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
+  })
+})
+
+describe('TodayPage - any one practice completes the day (2026-08-02)', () => {
+  const doneItem = {
+    up: { id: 'up-done', current_streak: 1, sequence_position: 0 },
+    practice: { id: 1, name: 'Already Done', is_sandhyavandhanam: false, cadence: 'daily', affects_streak: true },
+    logs: [{ counts_toward_streak: true }],
+  }
+  const undoneItem = {
+    up: { id: 'up-undone', current_streak: 0, sequence_position: 0 },
+    practice: { id: 5, name: 'Vishnu', is_sandhyavandhanam: false, cadence: 'daily', affects_streak: true },
+    logs: [],
+  }
+
+  it('does not re-show the celebration on a second mark once the day was already complete', async () => {
+    h.items = [doneItem, undoneItem]
+    h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 5, practice_streak: 1 })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+    expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
+  })
+})
+
+describe('TodayPage - tier-up celebration', () => {
+  const singleItem = {
+    up: { id: 'up1', current_streak: 0, sequence_position: 0 },
+    practice: { id: 5, name: 'Vishnu', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
+    logs: [],
+  }
+
+  it('shows the tier-up modal when a mark crosses a tier boundary', async () => {
+    h.items = [singleItem]
+    h.submit.mockResolvedValue({
+      saved: true, day_complete: false, overall_streak: 0, practice_streak: 1,
+      tier_up: true, tier: 'Sadhaka',
+    })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(screen.getByTestId('tier-up')).toHaveTextContent('Sadhaka'))
+  })
+
+  it('waits for the streak celebration to close before showing a simultaneous tier-up', async () => {
+    h.items = [singleItem]
+    h.submit.mockResolvedValue({
+      saved: true, day_complete: true, overall_streak: 1, practice_streak: 1,
+      tier_up: true, tier: 'Yogi',
+    })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(screen.getByTestId('celebration')).toBeInTheDocument())
+    expect(screen.queryByTestId('tier-up')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('close-celebration'))
+    await waitFor(() => expect(screen.getByTestId('tier-up')).toHaveTextContent('Yogi'))
   })
 })
 

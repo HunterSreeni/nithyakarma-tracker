@@ -44,6 +44,17 @@ export function countsTowardDayCompletion(practice, logs) {
   return isDoneToday(practice, logs.filter(l => l.counts_toward_streak !== false))
 }
 
+// Mirrors the day-completion `bool_or` in submit_practice_log: the day counts
+// if ANY one affects_streak, scheduled practice has a counting log today - not
+// all of them (changed 2026-08-02, see migration
+// 20260802090000_any_practice_completes_day_and_tier_up).
+export function dayComplete(items, date = new Date()) {
+  return items.some(({ practice, logs }) =>
+    practice.affects_streak !== false &&
+    isScheduled(practice, date) &&
+    countsTowardDayCompletion(practice, logs))
+}
+
 export function localDateString(date = new Date()) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
