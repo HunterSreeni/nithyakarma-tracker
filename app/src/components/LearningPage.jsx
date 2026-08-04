@@ -78,13 +78,85 @@ export const LEARNING_CONTENT = {
     title: 'Devi Mahatmyam',
     subtitle: 'Read the Durga Saptashati, chapter by chapter.',
   },
+  'dakshinamurthy-stotram': {
+    title: 'Dakshinamurthy Stotram',
+    subtitle: "Adi Shankaracharya's hymn to Shiva as the silent Guru, read along in the language you read best.",
+    languages: [
+      { key: 'english', label: 'English' },
+      { key: 'malayalam', label: 'Malayalam' },
+      { key: 'tamil', label: 'Tamil' },
+      { key: 'sanskrit', label: 'Sanskrit' },
+    ],
+    typeLabel: { shantipatha: 'Shanti Patha', dhyanam: 'Dhyanam', stotram: 'Stotram' },
+  },
+  'aditya-hrudayam': {
+    title: 'Aditya Hrudayam',
+    subtitle: 'Agastya’s hymn to Surya, recited to Rama before his battle with Ravana, read along in the language you read best.',
+    languages: [
+      { key: 'english', label: 'English' },
+      { key: 'malayalam', label: 'Malayalam' },
+      { key: 'tamil', label: 'Tamil' },
+      { key: 'sanskrit', label: 'Sanskrit' },
+    ],
+    typeLabel: { dhyanam: 'Dhyanam', shloka: 'Shloka' },
+  },
+  'subrahmanya-bhujangam': {
+    title: 'Subrahmanya Bhujangam',
+    subtitle: "Adi Shankaracharya's hymn to Subrahmanya, composed at Tiruchendur, read along in the language you read best.",
+    languages: [
+      { key: 'english', label: 'English' },
+      { key: 'malayalam', label: 'Malayalam' },
+      { key: 'tamil', label: 'Tamil' },
+      { key: 'sanskrit', label: 'Sanskrit' },
+    ],
+    typeLabel: { shloka: 'Shloka' },
+  },
+  mukundamala: {
+    title: 'Mukundamala',
+    subtitle: "Kulasekhara Alwar's garland of verses to Krishna, read along in the language you read best.",
+    languages: [
+      { key: 'english', label: 'English' },
+      { key: 'malayalam', label: 'Malayalam' },
+      { key: 'tamil', label: 'Tamil' },
+      { key: 'sanskrit', label: 'Sanskrit' },
+    ],
+    typeLabel: { shloka: 'Shloka' },
+  },
+  'sri-rudram': {
+    title: 'Sri Rudram',
+    subtitle: 'The Namakam and Chamakam of the Krishna Yajurveda, anuvaka by anuvaka, read along in the language you read best.',
+    languages: [
+      { key: 'english', label: 'English' },
+      { key: 'malayalam', label: 'Malayalam' },
+      { key: 'tamil', label: 'Tamil' },
+      { key: 'sanskrit', label: 'Sanskrit' },
+    ],
+    typeLabel: { anuvaka: 'Anuvaka', closing: 'Closing' },
+  },
+  // Video-only (no `languages`) - Rigveda, Yajurveda, Samaveda and
+  // Atharvaveda each have genuinely different mantras/procedure for both of
+  // these, and no single text can honestly stand in for all four. A full
+  // per-Veda switcher is real future work (see docs/ROADMAP.md), so for now
+  // this is a watch-along video rather than an incomplete or wrong-Veda
+  // reading text.
+  sandhyavandhanam: {
+    title: 'Sandhyavandhanam',
+    subtitle: 'Watch the Yajurveda Trikala Sandhyavandanam procedure, with English instructions.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=gNojvhazzQU',
+  },
+  samidhadhanam: {
+    title: 'Samidhadhanam',
+    subtitle: 'Watch the Yajurveda Samidhadhanam (Agnikaryam) procedure, with English instructions.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=8vq5Chkx2Mw',
+  },
 }
 
 export default function LearningPage() {
   const { slug } = useParams()
   const meta = LEARNING_CONTENT[slug]
-  const { verses, loading, error: loadError } = useLearning(slug)
-  const [language, setLanguage] = useState(meta?.languages[0]?.key ?? 'english')
+  const hasVerses = (meta?.languages?.length ?? 0) > 0
+  const { verses, loading, error: loadError } = useLearning(hasVerses ? slug : null)
+  const [language, setLanguage] = useState(meta?.languages?.[0]?.key ?? 'english')
 
   if (!meta) return <ErrorBanner message="This learning content doesn't exist" />
 
@@ -94,35 +166,41 @@ export default function LearningPage() {
       <h1 className="greet">{meta.title}</h1>
       <div className="greet-sub">{meta.subtitle}</div>
 
-      <a className="btn-youtube" href={meta.youtubeUrl} target="_blank" rel="noopener noreferrer">
-        <CirclePlay size={16} strokeWidth={2.5} /> Watch on YouTube
-      </a>
+      {meta.youtubeUrl && (
+        <a className="btn-youtube" href={meta.youtubeUrl} target="_blank" rel="noopener noreferrer">
+          <CirclePlay size={16} strokeWidth={2.5} /> Watch on YouTube
+        </a>
+      )}
 
-      <div className="lang-select" role="group" aria-label="Language">
-        <Languages size={14} strokeWidth={2.5} />
-        {meta.languages.map(l => (
-          <button key={l.key} type="button"
-            className={`lang-btn ${language === l.key ? 'on' : ''}`}
-            aria-pressed={language === l.key}
-            onClick={() => setLanguage(l.key)}>
-            {l.label}
-          </button>
-        ))}
-      </div>
+      {hasVerses && (
+        <>
+          <div className="lang-select" role="group" aria-label="Language">
+            <Languages size={14} strokeWidth={2.5} />
+            {meta.languages.map(l => (
+              <button key={l.key} type="button"
+                className={`lang-btn ${language === l.key ? 'on' : ''}`}
+                aria-pressed={language === l.key}
+                onClick={() => setLanguage(l.key)}>
+                {l.label}
+              </button>
+            ))}
+          </div>
 
-      {loading ? <div className="spinner-wrap">Loading...</div> : loadError ? (
-        <ErrorBanner message={loadError} />
-      ) : (
-        <div className="verse-list">
-          {verses.map(v => (
-            <div key={v.id} className="verse-card">
-              <div className="v-body">
-                <div className="verse-type">{meta.typeLabel[v.type] ?? v.type}</div>
-                <div className="verse-text">{v[language]}</div>
-              </div>
+          {loading ? <div className="spinner-wrap">Loading...</div> : loadError ? (
+            <ErrorBanner message={loadError} />
+          ) : (
+            <div className="verse-list">
+              {verses.map(v => (
+                <div key={v.id} className="verse-card">
+                  <div className="v-body">
+                    <div className="verse-type">{meta.typeLabel[v.type] ?? v.type}</div>
+                    <div className="verse-text">{v[language]}</div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </>
   )

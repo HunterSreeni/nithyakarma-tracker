@@ -46,6 +46,9 @@ export function useLearning(slug) {
   }, [slug])
 
   useEffect(() => {
+    // Video-only entries (no verse JSON exists at all, e.g. Sandhyavandhanam)
+    // pass no slug - nothing to fetch, and no error either.
+    if (!slug) { setLoading(false); return }
     let cancelled = false
     const isCancelled = () => cancelled
     setLoading(true); setError('')
@@ -56,7 +59,7 @@ export function useLearning(slug) {
     // navigation or a slug switch; the flag stops it writing stale verses
     // into a hook instance that has already moved on.
     return () => { cancelled = true }
-  }, [loadContent])
+  }, [loadContent, slug])
 
   return { verses, loading, error }
 }

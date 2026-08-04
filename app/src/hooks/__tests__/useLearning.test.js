@@ -70,6 +70,14 @@ describe('useLearning content loading', () => {
     expect(result.current.error).not.toBe('')
   })
 
+  it('skips fetching entirely for a null slug (video-only entries)', async () => {
+    const { result } = renderHook(() => useLearning(null))
+    expect(result.current.loading).toBe(false)
+    expect(result.current.verses).toEqual([])
+    expect(result.current.error).toBe('')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('loads different content when the slug changes', async () => {
     const { result, rerender } = renderHook(({ slug }) => useLearning(slug), {
       initialProps: { slug: 'hanuman-chalisa' },

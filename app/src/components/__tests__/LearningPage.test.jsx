@@ -63,6 +63,32 @@ describe('LearningPage - Vishnu Sahasranamam has its own language set and video'
   })
 })
 
+describe('LearningPage - Dakshinamurthy Stotram has no video link', () => {
+  it('renders verses in all 4 languages, omits the YouTube button entirely', () => {
+    h.slug = 'dakshinamurthy-stotram'
+    h.verses = [{ id: 'shanti-patha', type: 'shantipatha', english: 'e', malayalam: 'm', tamil: 't', sanskrit: 's' }]
+    render(<LearningPage />)
+    expect(screen.getByText('Shanti Patha')).toBeInTheDocument()
+    expect(screen.getByText('e')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Tamil'))
+    expect(screen.getByText('t')).toBeInTheDocument()
+    expect(screen.queryByText('Watch on YouTube')).not.toBeInTheDocument()
+  })
+})
+
+describe('LearningPage - Sandhyavandhanam is video-only (no verse content)', () => {
+  it('shows the video, omits the language switcher and verse list entirely', () => {
+    h.slug = 'sandhyavandhanam'
+    h.verses = []
+    render(<LearningPage />)
+    expect(screen.getByText('Sandhyavandhanam')).toBeInTheDocument()
+    expect(screen.getByText('Watch on YouTube').closest('a'))
+      .toHaveAttribute('href', 'https://www.youtube.com/watch?v=gNojvhazzQU')
+    expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
+  })
+})
+
 describe('LearningPage - Sai Baba Aarti is English-only and labels refrain/stanza', () => {
   it('renders the refrain and stanza types, offers only English, links its own video', () => {
     h.slug = 'sai-baba-aarti'
