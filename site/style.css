@@ -116,13 +116,15 @@ header.site-head {
 nav.site-nav {
   display: flex;
   align-items: center;
-  gap: 1.4rem;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.4rem;
   font-size: 0.95rem;
 }
 nav.site-nav a {
   color: var(--text-2);
   text-decoration: none;
   font-weight: 500;
+  white-space: nowrap;
 }
 nav.site-nav a:hover, nav.site-nav a[aria-current="page"] { color: var(--ink); }
 nav.site-nav a.btn, nav.site-nav a.btn:hover { color: #fff; }
