@@ -37,22 +37,54 @@ describe('shareUrl', () => {
   })
 })
 
+// Fake <img> that resolves onload on the next microtask, like a real decoded
+// data: URL image would (synchronously in practice, but never assume that).
+class FakeImage {
+  naturalWidth = 240
+  naturalHeight = 427
+  set src(_v) { queueMicrotask(() => this.onload?.()) }
+}
+
 describe('shareCardToWhatsApp', () => {
-  const cardEl = { offsetWidth: 240 }
+  const cardEl = { offsetWidth: 240, style: {} }
+  let realCreateElement
 
   beforeEach(() => {
     vi.clearAllMocks()
+    cardEl.style = {}
     h.toPng.mockResolvedValue('data:image/png;base64,ZmFrZS1wbmc=')
     h.getUri.mockResolvedValue({ uri: 'file:///cache/nithyakarma-streak.png' })
+
+    // cardToDataUrl upscales html-to-image's (small, but reliably correct -
+    // see share.js's header comment) natural-size capture via a plain
+    // canvas, entirely past html-to-image's own scaling options - every one
+    // of which silently dropped content on real Android WebView. Stub the
+    // canvas/Image pair that step uses; jsdom's own <canvas> has no real
+    // getContext (needs the optional `canvas` npm package).
+    vi.stubGlobal('Image', FakeImage)
+    realCreateElement = document.createElement.bind(document)
+    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+      if (tag !== 'canvas') return realCreateElement(tag)
+      return {
+        width: 0, height: 0,
+        getContext: () => ({ drawImage: vi.fn() }),
+        toDataURL: () => 'data:image/png;base64,dXBzY2FsZWQ=',
+      }
+    })
   })
 
   it('native: writes the PNG to the cache directory and shares the file:// uri with the caption', async () => {
     h.isNative = true
     await shareCardToWhatsApp(cardEl, { streak: 48, referralCode: 'abc123' })
 
-    expect(h.toPng).toHaveBeenCalledWith(cardEl, { pixelRatio: 4.5 })
+    expect(h.toPng).toHaveBeenCalledWith(cardEl, { pixelRatio: 1 })
+    // The margin override is applied for the capture, then reset afterwards
+    // - not left on the (hidden, reused) export node between shares.
+    expect(cardEl.style.margin).toBe('')
+    // 'dXBzY2FsZWQ=' = base64 for 'upscaled' - the canvas-upscaled result,
+    // not html-to-image's raw (small) output.
     expect(h.writeFile).toHaveBeenCalledWith(expect.objectContaining({
-      data: 'ZmFrZS1wbmc=', directory: 'CACHE',
+      data: 'dXBzY2FsZWQ=', directory: 'CACHE',
     }))
     expect(h.shareNative).toHaveBeenCalledWith({
       files: ['file:///cache/nithyakarma-streak.png'],
