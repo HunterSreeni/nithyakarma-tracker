@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.29.4](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.3...app-v0.29.4) (2026-08-06)
+
+
+### Bug Fixes
+
+* capture WhatsApp share card without losing content or offset ([44b0b2e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/44b0b2e39eb69110ecf4b604b43d56a963402496))
+* capture WhatsApp share card without losing content or offset ([6ba9389](https://github.com/HunterSreeni/nithyakarma-tracker/commit/6ba9389f0d0a1f5ecf3df301c7940d8091e63ee6))
+
 ## [0.29.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.2...app-v0.29.3) (2026-08-06)
 
 
