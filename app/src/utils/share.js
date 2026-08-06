@@ -9,12 +9,16 @@ export function shareUrl(referralCode) {
   return `${base}/r/${referralCode}`
 }
 
-// Renders the on-screen share card to a PNG. pixelRatio 2 for a crisp image
-// on higher-density phone screens. Loaded on demand - CelebrationModal is in
-// the eager initial bundle, and most opens never click share.
+// Renders the on-screen share card to a PNG. The card is a small 240px-wide
+// element, but WhatsApp's status editor places small images oddly instead of
+// centering them - so we export at ~1080px wide (real phone screen
+// resolution) rather than just pixel-doubling the tiny preview. Loaded on
+// demand - CelebrationModal is in the eager initial bundle, and most opens
+// never click share.
 async function cardToDataUrl(cardEl) {
   const { toPng } = await import('html-to-image')
-  return toPng(cardEl, { pixelRatio: 2 })
+  const pixelRatio = 1080 / cardEl.offsetWidth
+  return toPng(cardEl, { pixelRatio })
 }
 
 async function dataUrlToBlob(dataUrl) {

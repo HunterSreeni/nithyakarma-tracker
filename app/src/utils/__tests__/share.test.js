@@ -38,7 +38,7 @@ describe('shareUrl', () => {
 })
 
 describe('shareCardToWhatsApp', () => {
-  const cardEl = {}
+  const cardEl = { offsetWidth: 240 }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -50,7 +50,7 @@ describe('shareCardToWhatsApp', () => {
     h.isNative = true
     await shareCardToWhatsApp(cardEl, { streak: 48, referralCode: 'abc123' })
 
-    expect(h.toPng).toHaveBeenCalledWith(cardEl, { pixelRatio: 2 })
+    expect(h.toPng).toHaveBeenCalledWith(cardEl, { pixelRatio: 4.5 })
     expect(h.writeFile).toHaveBeenCalledWith(expect.objectContaining({
       data: 'ZmFrZS1wbmc=', directory: 'CACHE',
     }))
