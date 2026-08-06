@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.2...app-v0.29.3) (2026-08-06)
+
+
+### Bug Fixes
+
+* export WhatsApp share card at full status resolution ([7894292](https://github.com/HunterSreeni/nithyakarma-tracker/commit/7894292e488b4b0c58a24416602d723607cd7984))
+
 ## [0.29.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.1...app-v0.29.2) (2026-08-06)
 
 
