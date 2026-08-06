@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.29.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.1...app-v0.29.2) (2026-08-06)
+
+
+### Bug Fixes
+
+* silence 8am/8pm streak-nudge push once the day is already complete ([9b4bc62](https://github.com/HunterSreeni/nithyakarma-tracker/commit/9b4bc62aa416c58112bed95d44ba2948e7239ebc))
+* silence 8am/8pm streak-nudge push once the day is already complete ([588f7a9](https://github.com/HunterSreeni/nithyakarma-tracker/commit/588f7a9b83fd00129350a383565a2855022a07c6))
+
 ## [0.29.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.0...app-v0.29.1) (2026-07-27)
 
 
