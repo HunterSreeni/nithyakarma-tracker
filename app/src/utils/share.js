@@ -9,16 +9,58 @@ export function shareUrl(referralCode) {
   return `${base}/r/${referralCode}`
 }
 
-// Renders the on-screen share card to a PNG. The card is a small 240px-wide
-// element, but WhatsApp's status editor places small images oddly instead of
-// centering them - so we export at ~1080px wide (real phone screen
-// resolution) rather than just pixel-doubling the tiny preview. Loaded on
-// demand - CelebrationModal is in the eager initial bundle, and most opens
-// never click share.
+// Renders the share card to a PNG at ~1080px wide (real phone screen
+// resolution) - WhatsApp's status editor places small images oddly instead
+// of centering them. `cardEl` must be the hidden, isolated export node
+// (CelebrationModal's exportCardRef), not the visible on-screen preview -
+// capturing the preview directly bakes in its ancestor modal's
+// padding/margin as an offset (confirmed on-device: a 211px/81px content
+// shift, clipped at the far edge).
+//
+// Every html-to-image scaling knob tried here broke content on real Android
+// WebView, each a different way (confirmed on-device, not guessed):
+//   - `pixelRatio` alone: canvas enlarges, content doesn't - matches the
+//     long-standing upstream bug bubkoo/html-to-image#72.
+//   - `pixelRatio` + explicit `width`/`height`: canvas sizes correctly, but
+//     all text silently drops from the render (icon and background paint fine).
+//   - CSS `zoom` pre-scaling the source node: drops BOTH text and icon,
+//     canvas reverts to the unscaled natural size regardless.
+// A bare capture at the node's natural (small) size with no scaling option
+// at all renders every element correctly, every time. So: capture reliably
+// small, then upscale the resulting PNG ourselves via a plain canvas -
+// entirely past this library's own scaling code. Loaded on demand -
+// CelebrationModal is in the eager initial bundle, and most opens never
+// click share.
 async function cardToDataUrl(cardEl) {
   const { toPng } = await import('html-to-image')
-  const pixelRatio = 1080 / cardEl.offsetWidth
-  return toPng(cardEl, { pixelRatio })
+  // .share-card has its own margin-top (index.css:309, not auto - the
+  // horizontal auto margins are already neutralized by the export wrapper
+  // having no width to center within). Capturing an element doesn't normally
+  // include its own external margin, but html-to-image's clone does bake it
+  // in here as a leading gap. Zero it for the capture only.
+  cardEl.style.margin = '0'
+  try {
+    const naturalDataUrl = await toPng(cardEl, { pixelRatio: 1 })
+    return await upscaleDataUrl(naturalDataUrl, 1080)
+  } finally {
+    cardEl.style.margin = ''
+  }
+}
+
+function upscaleDataUrl(dataUrl, targetWidth) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const ratio = targetWidth / img.naturalWidth
+      const canvas = document.createElement('canvas')
+      canvas.width = targetWidth
+      canvas.height = Math.round(img.naturalHeight * ratio)
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => reject(new Error('Failed to load rendered share card for upscaling'))
+    img.src = dataUrl
+  })
 }
 
 async function dataUrlToBlob(dataUrl) {
