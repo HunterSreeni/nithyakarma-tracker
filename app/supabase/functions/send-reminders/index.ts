@@ -7,6 +7,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { loadConfig, sendFCM, sendWebPush } from "../_shared/push.ts";
 import { addDays, bestAdvanceMatch, bestMatch, type ObservanceRule } from "../_shared/observanceMatch.ts";
+import { dayComplete } from "../_shared/dayComplete.ts";
 
 const ADVANCE_DAYS = 3;
 
@@ -105,7 +106,7 @@ Deno.serve(async (req: Request) => {
   const [{ data: subs }, { data: ups }, { data: profiles }, { data: panchangamRows }, { data: observanceRules }] = await Promise.all([
     supabase.from("push_subscriptions").select("user_id, endpoint, p256dh, auth_key, platform").in("user_id", ids),
     supabase.from("user_practices")
-      .select("id, owner_id, family_member_id, practice:practices(cadence, weekday, is_sandhyavandhanam)")
+      .select("id, owner_id, family_member_id, practice:practices(cadence, weekday, is_sandhyavandhanam, affects_streak)")
       .in("owner_id", ids).is("family_member_id", null),
     supabase.from("profiles").select("id, gender").in("id", ids),
     supabase.from("panchangam_days")
@@ -119,7 +120,7 @@ Deno.serve(async (req: Request) => {
   const upIds = (ups ?? []).map((u: any) => u.id);
   const { data: logs } = upIds.length
     ? await supabase.from("practice_logs")
-        .select("user_practice_id, log_date, slot").in("user_practice_id", upIds).in("log_date", dates)
+        .select("user_practice_id, log_date, slot, counts_toward_streak").in("user_practice_id", upIds).in("log_date", dates)
     : { data: [] };
 
   const logsByUp = new Map<string, any[]>();
@@ -128,8 +129,6 @@ Deno.serve(async (req: Request) => {
     list.push(l);
     logsByUp.set(l.user_practice_id, list);
   }
-  const isScheduled = (p: any, dateStr: string) =>
-    p.cadence !== "weekly" || new Date(dateStr + "T12:00:00Z").getUTCDay() === p.weekday;
 
   async function deliver(uid: string, date: string, slot: string, title: string, body: string) {
     let count = 0;
@@ -202,12 +201,13 @@ Deno.serve(async (req: Request) => {
     const mine = (ups ?? []).filter((u: any) => u.owner_id === uid);
 
     if (slot === "nudge" || slot === "nudge_morning") {
-      const incomplete = mine.some((u: any) => {
-        if (!isScheduled(u.practice, date)) return false;
-        const dayLogs = (logsByUp.get(u.id) ?? []).filter((l: any) => l.log_date === date);
-        return u.practice.is_sandhyavandhanam ? dayLogs.length < 3 : dayLogs.length === 0;
-      });
-      if (!incomplete || !mine.length) continue;
+      // Mirrors cadence.js's dayComplete / the SQL bool_or day-completion
+      // aggregate: ANY ONE affects_streak, scheduled practice logged today
+      // (any 1 of 3 sandhya slots included) already secures the streak, so
+      // the nudge must stay silent - not require every practice logged.
+      if (!mine.length) continue;
+      const items = mine.map((u: any) => ({ practice: u.practice, logs: logsByUp.get(u.id) ?? [] }));
+      if (dayComplete(items, date)) continue;
     } else {
       // sandhya slot reminders only for male users tracking sandhyavandhanam
       if (genderById.get(uid) !== "male") continue;

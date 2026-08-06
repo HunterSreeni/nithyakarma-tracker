@@ -113,7 +113,7 @@ automatic coverage than exists. Three parallel jobs on every PR and push to `mai
 | Job | Runs | Notes |
 |---|---|---|
 | `verify` | `npm run lint` -> `npm run test` (all Vitest, 61 files) -> `npm run build` | Full unit/component/hook/util suite, real gate |
-| `edge-functions` | `deno test supabase/functions/_shared/observanceMatch.test.ts` | Added 2026-07-23; only Deno test in the repo; `send-reminders`/`send-test-notification` themselves have **zero** test coverage |
+| `edge-functions` | `deno test supabase/functions/_shared/observanceMatch.test.ts` + `deno test supabase/functions/_shared/dayComplete.test.ts` | `dayComplete.test.ts` added 2026-08-06 (fixed the 8am/8pm nudge push firing after the streak was already secured via a different practice, or via 1-of-3 sandhya slots); `send-reminders`'s `Deno.serve` handler itself still has **zero** test coverage - only its two extracted pure helpers do |
 | `e2e` | `npx playwright test --grep-invert "@destructive"` | Excludes any test titled with `@destructive` |
 
 **What the `e2e` job's filter actually leaves running:**
@@ -559,8 +559,9 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
    §9b) - frequent CI runs would eventually fail for real, not skip. Deliberately
    left manual; referral correctness is already fully covered at the DB layer.
 6. `send-reminders` and `send-test-notification` (the actual push-sending Deno
-   functions) have no test coverage at all - only their shared `observanceMatch.ts`
-   helper does.
+   functions, i.e. their `Deno.serve` handlers) have no test coverage at all -
+   only their shared `observanceMatch.ts` and (as of 2026-08-06) `dayComplete.ts`
+   helpers do.
 7. The three `android-*.sh` scripts assert only "process didn't crash" (plus a
    manually-reviewed screenshot) - no programmatic verification of on-screen text or
    server-side state is possible (WebView exposes no accessibility tree; correctness
