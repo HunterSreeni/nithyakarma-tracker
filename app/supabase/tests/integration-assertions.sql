@@ -466,7 +466,7 @@ begin
   declare
     v_slot text;
   begin
-    foreach v_slot in array array['morning','afternoon','evening','nudge','nudge_morning','tharpanam','observance']
+    foreach v_slot in array array['morning','afternoon','evening','nudge','nudge_morning','tharpanam','observance','freeze_applied']
     loop
       v_failed := false;
       begin
@@ -477,6 +477,41 @@ begin
       end;
       if v_failed then raise exception 'FAIL: slot % rejected by the notification_deliveries CHECK constraint', v_slot; end if;
     end loop;
+  end;
+
+  -- 19. decay_stale_streaks() proactively spends a freeze credit (and logs a
+  -- freeze_events row) for whoever it protects, instead of just leaving the
+  -- streak untouched with the credit unspent (2026-08-09 bug: "freeze not
+  -- utilised, notification never fires"). A gap-1 subject with no credit
+  -- still just decays, same as before, and gets no freeze_events row.
+  -- decay_stale_streaks() is global (no owner scoping), but the whole script
+  -- rolls back, so this is safe to run against production per the header.
+  declare
+    v_kid3 uuid; v_kid4 uuid;
+  begin
+    insert into family_members (parent_id, name, gender, current_streak, last_complete_date, freeze_credits)
+      values (v_uid, 'Freeze Protected Kid', 'female', 7, current_date - 2, 2) returning id into v_kid3;
+    insert into family_members (parent_id, name, gender, current_streak, last_complete_date, freeze_credits)
+      values (v_uid, 'Freeze Decayed Kid', 'female', 3, current_date - 2, 0) returning id into v_kid4;
+
+    perform decay_stale_streaks();
+
+    if (select current_streak from family_members where id = v_kid3) <> 7 then
+      raise exception 'FAIL: decay_stale_streaks should not reset a freeze-protected streak';
+    end if;
+    if (select freeze_credits from family_members where id = v_kid3) <> 1 then
+      raise exception 'FAIL: decay_stale_streaks did not spend the freeze credit it protected with';
+    end if;
+    if not exists (select 1 from freeze_events where family_member_id = v_kid3 and streak_preserved = 7) then
+      raise exception 'FAIL: decay_stale_streaks did not log a freeze_events row for the protected streak';
+    end if;
+
+    if (select current_streak from family_members where id = v_kid4) <> 0 then
+      raise exception 'FAIL: decay_stale_streaks should still reset a streak with no freeze credit';
+    end if;
+    if exists (select 1 from freeze_events where family_member_id = v_kid4) then
+      raise exception 'FAIL: decay_stale_streaks logged a freeze_events row for a subject with no credit';
+    end if;
   end;
 
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';

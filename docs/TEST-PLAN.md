@@ -446,6 +446,8 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | `freeze_cap_for` tier boundaries | Integration(§14) + Unit(`logic-mirrors.test.js`) | ✅ |
 | Freeze state machine: gap-0 continues, gap-1-with-credit continues+consumes, gap-1-no-credit resets, gap-2 resets without consuming | Integration(§14) | ✅ |
 | Simultaneous tier-up freeze top-up + consume in one call, via a kid subject | Integration(§14) | ✅ |
+| `decay_stale_streaks()` proactively spends a freeze credit + logs `freeze_events` for a gap-1 subject it protects; gap-1-no-credit still just decays, no event logged | Integration(§19) | ✅ (2026-08-09) |
+| `send-freeze-notifications` turns today's `freeze_events` into a push, dedup'd via `notification_deliveries` | - | ⬜ manual only (no edge-function-level test, matching `send-reminders` convention) |
 
 ### Error / offline / resilience (cross-cutting)
 | Case | Layer | Status |
@@ -455,6 +457,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | `friendlyError()` NOT used in `AuthPage`, `ProfilePage` actions, or `KandamPage`/`PdfViewer` (hardcoded "Could not load this page.") | - | ⬜ |
 | Optimistic-toggle silent revert on failure (tradition pref, community/leaderboard opt-in, tharpanam/observance) gives no visible error to the user | - | ⬜ |
 | Global 12s Supabase fetch timeout; old WebView without `AbortSignal.timeout` falls back to unbounded fetch | - | ⬜ |
+| `useAuth.loadProfile()` runs its two queries in parallel, not sequentially (stacked sequential timeouts blew past App.jsx's 15s stuck watchdog on a slow reconnect) | Unit(`useAuth.test.jsx`) | ✅ (2026-08-09) |
 | Watchdog (15s) vs fetch-timeout (12s) race on a genuinely hung request | - | ⬜ |
 
 ### Accessibility (WCAG 2.1 AA)
