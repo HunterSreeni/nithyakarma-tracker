@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.29.5](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.4...app-v0.29.5) (2026-08-09)
+
+
+### Bug Fixes
+
+* load profile and family_members in parallel, not sequentially ([b7b1352](https://github.com/HunterSreeni/nithyakarma-tracker/commit/b7b135215e21e3aff031a41c48200d090080fd83))
+* proactively consume a freeze credit and notify on streak decay ([644fb37](https://github.com/HunterSreeni/nithyakarma-tracker/commit/644fb37d99e5a0556285d3a816136cbd1f8e44df))
+* stuck-loading reload wall + streak freeze not consumed/notified ([3154822](https://github.com/HunterSreeni/nithyakarma-tracker/commit/3154822e8262eb9575c00cba15410442fabc8d35))
+
 ## [0.29.4](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.3...app-v0.29.4) (2026-08-06)
 
 
