@@ -26,9 +26,14 @@ if (!url || !key) {
 // Bounding the request turns that silent hang into an ordinary rejection, which the
 // existing error paths already handle. Applies to PostgREST queries too - they have
 // the same unbounded-fetch exposure.
-// Deliberately below the 15s stuck-screen watchdog in App.jsx's Gate(), so a hung
-// request resolves into a normal signed-out/error render before the user is ever
-// shown the "Taking longer than expected" fallback.
+//
+// NOT sufficient on its own for the refresh call specifically (2026-08-10): auth-js's
+// GoTrueClient catches this abort, classifies it as a retryable error, and retries the
+// refresh internally with backoff for up to ~30s (its own AUTO_REFRESH_TICK_DURATION_MS),
+// regardless of what this constant is set to - shrinking it just buys more, shorter
+// retries within roughly the same ~30s total. That's why the "stuck" watchdog in
+// App.jsx's Gate() is sized in terms of this value (worst case ~30s here, plus another
+// ~1x this for loadProfile after it resolves) rather than being set safely below it.
 const REQUEST_TIMEOUT_MS = 12000
 
 // AbortSignal.timeout/any are Chrome 116+; minSdkVersion is 24, so a device on an

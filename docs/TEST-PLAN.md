@@ -458,7 +458,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Optimistic-toggle silent revert on failure (tradition pref, community/leaderboard opt-in, tharpanam/observance) gives no visible error to the user | - | ⬜ |
 | Global 12s Supabase fetch timeout; old WebView without `AbortSignal.timeout` falls back to unbounded fetch | - | ⬜ |
 | `useAuth.loadProfile()` runs its two queries in parallel, not sequentially (stacked sequential timeouts blew past App.jsx's 15s stuck watchdog on a slow reconnect) | Unit(`useAuth.test.jsx`) | ✅ (2026-08-09) |
-| Watchdog (15s) vs fetch-timeout (12s) race on a genuinely hung request | - | ⬜ |
+| Gate() stuck watchdog (55s) doesn't fire while auth-js is still legitimately retrying a token refresh internally (~30s budget) on a stale-session resume - root cause of the Reload wall reappearing in prod after the 2026-08-09 loadProfile fix, which only addressed a later, smaller stage | Unit(`App.test.jsx`) | ✅ (2026-08-10) |
 
 ### Accessibility (WCAG 2.1 AA)
 | Check | Where | Status |

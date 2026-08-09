@@ -23,9 +23,16 @@ describe('App Gate loading watchdog', () => {
     expect(screen.queryByText('Taking longer than expected.')).not.toBeInTheDocument()
   })
 
-  it('offers a Reload fallback instead of hanging forever once loading exceeds the watchdog timeout', () => {
+  it('does not show the Reload fallback at 15s - auth-js can legitimately still be retrying a token refresh internally at that point (2026-08-10 fix)', () => {
     render(<App />)
     act(() => { vi.advanceTimersByTime(15000) })
+    expect(screen.queryByText('Taking longer than expected.')).not.toBeInTheDocument()
+    expect(screen.getByText('Loading...')).toBeInTheDocument()
+  })
+
+  it('offers a Reload fallback instead of hanging forever once loading exceeds the watchdog timeout', () => {
+    render(<App />)
+    act(() => { vi.advanceTimersByTime(55000) })
     expect(screen.getByText('Taking longer than expected.')).toBeInTheDocument()
     expect(screen.getByText('Reload')).toBeInTheDocument()
   })
