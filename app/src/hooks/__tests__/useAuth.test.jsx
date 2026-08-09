@@ -17,12 +17,14 @@ vi.mock('@capacitor/app', () => ({ App: { addListener: (...args) => mockAddListe
 const getSession = vi.fn()
 const setSession = vi.fn().mockResolvedValue({ data: {}, error: null })
 const signInWithOAuth = vi.fn()
+const signOut = vi.fn().mockResolvedValue({ error: null })
 vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: () => getSession(),
       setSession: (...a) => setSession(...a),
       signInWithOAuth: (...a) => signInWithOAuth(...a),
+      signOut: (...a) => signOut(...a),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
     from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }), order: () => Promise.resolve({ data: [] }) }) }) })),
@@ -42,6 +44,7 @@ beforeEach(() => {
   mockNative.mockReturnValue(false)
   resumeCb = undefined
   urlOpenCb = undefined
+  localStorage.clear() // the profile cache is real localStorage, not mocked - don't leak between tests
 })
 
 describe('useAuth loading', () => {
@@ -73,6 +76,55 @@ describe('useAuth loading', () => {
     // profiles request hasn't resolved yet - proves the two run in parallel.
     await waitFor(() => expect(calls).toEqual(expect.arrayContaining(['profiles', 'family_members'])))
     resolveProfile({ data: { id: 'u1' } })
+  })
+})
+
+describe('profile cache (cold-restart instant resume)', () => {
+  const CACHE_KEY = 'nk_profile_cache_v1'
+
+  it('renders session/profile from the cache immediately, before getSession() ever resolves', () => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      userId: 'u1', email: 'a@b.com', profile: { id: 'u1', display_name: 'Cached User' }, familyMembers: [],
+    }))
+    getSession.mockReturnValue(new Promise(() => {})) // deliberately never resolves in this test
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    expect(result.current.loading).toBe(false)
+    expect(result.current.session.user.id).toBe('u1')
+    expect(result.current.profile.display_name).toBe('Cached User')
+  })
+
+  it('writes profile + familyMembers to the cache once a fresh loadProfile resolves', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+    supabase.from.mockImplementation((table) => {
+      if (table === 'profiles') {
+        return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'u1', display_name: 'Fresh' } }) }) }) }
+      }
+      return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }) }
+    })
+    renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY))
+      expect(cached?.profile?.display_name).toBe('Fresh')
+    })
+  })
+
+  it('clears the cache when getSession() reports no session', async () => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ userId: 'u1', email: 'a@b.com', profile: {}, familyMembers: [] }))
+    getSession.mockResolvedValue({ data: { session: null } })
+    renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(localStorage.getItem(CACHE_KEY)).toBe(null))
+  })
+
+  it('signOut() clears the cache immediately, without waiting on the network call to settle', async () => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ userId: 'u1', email: 'a@b.com', profile: {}, familyMembers: [] }))
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    let resolveSignOut
+    signOut.mockReturnValue(new Promise((res) => { resolveSignOut = res }))
+    result.current.signOut()
+    expect(localStorage.getItem(CACHE_KEY)).toBe(null)
+    resolveSignOut({ error: null })
   })
 })
 

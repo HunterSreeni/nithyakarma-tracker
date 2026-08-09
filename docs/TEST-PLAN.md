@@ -459,6 +459,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Global 12s Supabase fetch timeout; old WebView without `AbortSignal.timeout` falls back to unbounded fetch | - | ⬜ |
 | `useAuth.loadProfile()` runs its two queries in parallel, not sequentially (stacked sequential timeouts blew past App.jsx's 15s stuck watchdog on a slow reconnect) | Unit(`useAuth.test.jsx`) | ✅ (2026-08-09) |
 | Gate() stuck watchdog (55s) doesn't fire while auth-js is still legitimately retrying a token refresh internally (~30s budget) on a stale-session resume - root cause of the Reload wall reappearing in prod after the 2026-08-09 loadProfile fix, which only addressed a later, smaller stage | Unit(`App.test.jsx`) | ✅ (2026-08-10) |
+| `useAuth` renders session/profile from a localStorage cache instantly on cold restart (no wait on getSession()+loadProfile()), writes it on every fresh `loadProfile()`, and clears it on sign-out/no-session so a cold restart doesn't just sit on a blank spinner while auth-js's refresh retry runs in the background | Unit(`useAuth.test.jsx`) | ✅ (2026-08-10) |
 
 ### Accessibility (WCAG 2.1 AA)
 | Check | Where | Status |
