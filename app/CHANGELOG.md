@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.29.6](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.5...app-v0.29.6) (2026-08-09)
+
+
+### Bug Fixes
+
+* kill root cause of stuck-loading reload wall on Android resume ([2778275](https://github.com/HunterSreeni/nithyakarma-tracker/commit/2778275b0648263ea5caf861606f2797b02a428c))
+* render session/profile from cache instantly on cold restart ([5ec9287](https://github.com/HunterSreeni/nithyakarma-tracker/commit/5ec9287c6f17fe96e68127ab584ef7f872b1647e))
+* stop stuck-loading watchdog from firing during auth-js's own refresh retries ([116a90d](https://github.com/HunterSreeni/nithyakarma-tracker/commit/116a90dd18198921f813fca841fca4b8778c5ac4))
+
 ## [0.29.5](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.4...app-v0.29.5) (2026-08-09)
 
 
