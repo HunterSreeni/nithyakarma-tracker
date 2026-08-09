@@ -24,11 +24,18 @@ export function AuthProvider({ children }) {
   const [justOnboarded, setJustOnboarded] = useState(false)
   const clearJustOnboarded = useCallback(() => setJustOnboarded(false), [])
 
+  // Parallel, not sequential: each Supabase call is independently capped at
+  // REQUEST_TIMEOUT_MS (see lib/supabase.js), but two of those stacked one
+  // after another can still add up to ~2x that - enough to blow past the
+  // 15s "stuck" watchdog in App.jsx's Gate() on a just-reconnected network
+  // (e.g. resuming from a long background), landing on the "Taking longer
+  // than expected" Reload wall instead of finishing normally.
   const loadProfile = useCallback(async (uid) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle()
+    const [{ data }, { data: fam }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
+      supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
+    ])
     setProfile(data ?? null)
-    const { data: fam } = await supabase.from('family_members')
-      .select('*').eq('parent_id', uid).order('name')
     setFamilyMembers(fam ?? [])
   }, [])
 

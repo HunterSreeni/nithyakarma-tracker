@@ -31,6 +31,7 @@ vi.mock('../../lib/supabase', () => ({
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
 
 import { AuthProvider, useAuth } from '../useAuth'
+import { supabase } from '../../lib/supabase'
 
 function wrapper({ children }) {
   return <AuthProvider>{children}</AuthProvider>
@@ -55,6 +56,23 @@ describe('useAuth loading', () => {
     getSession.mockResolvedValue({ data: { session: null } })
     const { result } = renderHook(() => useAuth(), { wrapper })
     await waitFor(() => expect(result.current.loading).toBe(false))
+  })
+
+  it('loads profile and family_members in parallel, not sequentially - stacking two capped requests one after another is what blew past the 15s stuck watchdog on a slow reconnect', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1' } } } })
+    let resolveProfile
+    const profilePromise = new Promise((res) => { resolveProfile = res })
+    const calls = []
+    supabase.from.mockImplementation((table) => {
+      calls.push(table)
+      if (table === 'profiles') return { select: () => ({ eq: () => ({ maybeSingle: () => profilePromise }) }) }
+      return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }) }
+    })
+    renderHook(() => useAuth(), { wrapper })
+    // family_members must already have been requested even though the
+    // profiles request hasn't resolved yet - proves the two run in parallel.
+    await waitFor(() => expect(calls).toEqual(expect.arrayContaining(['profiles', 'family_members'])))
+    resolveProfile({ data: { id: 'u1' } })
   })
 })
 
