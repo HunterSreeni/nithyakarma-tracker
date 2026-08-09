@@ -36,6 +36,21 @@ function Gate() {
   // something upstream still manages to hang despite the guards in useAuth,
   // don't leave the user staring at a spinner forever.
   const [stuck, setStuck] = useState(false)
+  // 55s, not 15s: getSession() routes token refresh through auth-js's own
+  // GoTrueClient, which retries a failed/timed-out refresh internally with
+  // backoff for up to ~30s (its hardcoded AUTO_REFRESH_TICK_DURATION_MS) -
+  // our REQUEST_TIMEOUT_MS abort (lib/supabase.js) doesn't stop that, it just
+  // gets caught and retried by auth-js, so one flaky reconnect (radio/DNS
+  // still settling right after Android wakes the WebView - the exact moment
+  // a stale-token resume happens) can chain 2-3 of those 12s timeouts into
+  // ~30-37s before getSession() resolves. loadProfile() runs after that,
+  // capped at another ~12s. A 15s watchdog fired mid-recovery and showed the
+  // Reload wall even though the app was about to load fine on its own - this
+  // is why the wall kept reappearing after the loadProfile-only fix
+  // (2026-08-09) shipped: that fix addressed a real but smaller compounding
+  // issue one stage later, not this one. See lib/supabase.js for the timeout
+  // this budgets against.
+  const STUCK_TIMEOUT_MS = 55000
   // Fires the notification prompt exactly once, right when onboarding
   // actually completes - driven by useAuth's justOnboarded flag, not by
   // session/profile timing. Session appearing before profile has loaded also
@@ -52,7 +67,7 @@ function Gate() {
   }, [justOnboarded, clearJustOnboarded])
   useEffect(() => {
     if (!loading) { setStuck(false); return }
-    const t = setTimeout(() => setStuck(true), 15000)
+    const t = setTimeout(() => setStuck(true), STUCK_TIMEOUT_MS)
     return () => clearTimeout(t)
   }, [loading])
   if (loading) {

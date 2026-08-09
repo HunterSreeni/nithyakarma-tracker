@@ -9,13 +9,49 @@ const AuthContext = createContext(null)
 // matching intent-filter). Web keeps using window.location.origin.
 const NATIVE_OAUTH_REDIRECT = 'org.nithyakarma.app://auth-callback'
 
+// Last-known session/profile/familyMembers, so a cold restart (Android kills
+// the WebView process after long backgrounding - see App.jsx's Gate() watchdog
+// comment) can paint the app instantly from what we showed last time instead
+// of blocking behind a fresh getSession()+loadProfile() round trip, which on a
+// stale/expired token can legitimately take up to ~30-40s (auth-js's own
+// refresh-retry budget). Self-corrects once that real fetch resolves - see
+// loadProfile() below, which is the sole writer, and signOut()/the "no
+// session" branches below, which are the sole clearers.
+const PROFILE_CACHE_KEY = 'nk_profile_cache_v1'
+
+function readProfileCache() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(PROFILE_CACHE_KEY))
+    return cached?.userId ? cached : null
+  } catch {
+    return null // corrupt JSON / private-mode storage access - just skip the cache
+  }
+}
+
+function writeProfileCache(session, profile, familyMembers) {
+  try {
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+      userId: session.user.id, email: session.user.email, profile, familyMembers,
+    }))
+  } catch {
+    // quota / private mode - caching is an optimization, not required
+  }
+}
+
+function clearProfileCache() {
+  try { localStorage.removeItem(PROFILE_CACHE_KEY) } catch { /* ignore */ }
+}
+
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [familyMembers, setFamilyMembers] = useState([])
+  // Cheap (a few KB of JSON) - fine to read once per render rather than thread
+  // through a ref, and only its first-render value is ever used below.
+  const cached = readProfileCache()
+  const [session, setSession] = useState(cached && { user: { id: cached.userId, email: cached.email } })
+  const [profile, setProfile] = useState(cached?.profile ?? null)
+  const [familyMembers, setFamilyMembers] = useState(cached?.familyMembers ?? [])
   // null = self, otherwise a family_members row (parent tracks the child)
   const [selectedMember, setSelectedMember] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cached)
   // Set only by createProfile() completing - the one true "onboarding just
   // finished" signal. Session-appears-before-profile-loads is NOT a reliable
   // proxy for this: it also happens on every live sign-in of an *existing*
@@ -30,13 +66,20 @@ export function AuthProvider({ children }) {
   // 15s "stuck" watchdog in App.jsx's Gate() on a just-reconnected network
   // (e.g. resuming from a long background), landing on the "Taking longer
   // than expected" Reload wall instead of finishing normally.
-  const loadProfile = useCallback(async (uid) => {
+  // Takes the full session (not just the id) so it can key the cache by
+  // session.user.email too - see writeProfileCache above.
+  const loadProfile = useCallback(async (session) => {
+    const uid = session.user.id
     const [{ data }, { data: fam }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
     ])
-    setProfile(data ?? null)
-    setFamilyMembers(fam ?? [])
+    const profile = data ?? null
+    const familyMembers = fam ?? []
+    setProfile(profile)
+    setFamilyMembers(familyMembers)
+    writeProfileCache(session, profile, familyMembers)
+    return { profile, familyMembers }
   }, [])
 
   useEffect(() => {
@@ -45,13 +88,14 @@ export function AuthProvider({ children }) {
     // loading stuck true - it gates the entire app (see App.jsx's Gate()).
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
-      if (session) await loadProfile(session.user.id).catch(() => {})
+      if (session) await loadProfile(session).catch(() => {})
+      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache() }
       setLoading(false)
     }).catch(() => setLoading(false))
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
-      if (session) await loadProfile(session.user.id).catch(() => {})
-      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null) }
+      if (session) await loadProfile(session).catch(() => {})
+      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache() }
     })
 
     // Re-validate the session when the app returns to the foreground. A tab
@@ -104,7 +148,10 @@ export function AuthProvider({ children }) {
     supabase.auth.signInWithPassword({ email, password, options: { captchaToken } })
   const signUpEmail = (email, password, captchaToken) =>
     supabase.auth.signUp({ email, password, options: { captchaToken } })
-  const signOut = () => supabase.auth.signOut()
+  // Clear our own cache eagerly rather than waiting on onAuthStateChange's
+  // SIGNED_OUT branch - avoids a window where a fast subsequent reload (or a
+  // different user signing in on a shared device) could still read stale data.
+  const signOut = () => { clearProfileCache(); return supabase.auth.signOut() }
 
   // Recovery: email a reset link that returns to /reset, then set the new password.
   const resetPassword = (email, captchaToken) =>
@@ -141,7 +188,7 @@ export function AuthProvider({ children }) {
       }
     }
     track('onboarding_complete', { gender, referred: !!referralCode })
-    await loadProfile(session.user.id)
+    await loadProfile(session)
     setJustOnboarded(true)
     // Lets GuidedTour know this account just onboarded in this browser
     // session, since justOnboarded itself gets cleared by App.jsx's Gate
@@ -152,7 +199,7 @@ export function AuthProvider({ children }) {
   const updateProfile = async (fields) => {
     const { error } = await supabase.from('profiles').update(fields).eq('id', session.user.id)
     if (error) throw error
-    await loadProfile(session.user.id)
+    await loadProfile(session)
   }
 
   const addFamilyMember = async ({ name, gender, upanayanamDone, balaSabhaOptIn }) => {
@@ -172,7 +219,7 @@ export function AuthProvider({ children }) {
         })
       }
     }
-    await loadProfile(session.user.id)
+    await loadProfile(session)
     return data
   }
 
@@ -180,7 +227,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.from('family_members').delete().eq('id', id)
     if (error) throw error
     if (selectedMember?.id === id) setSelectedMember(null)
-    await loadProfile(session.user.id)
+    await loadProfile(session)
   }
 
   // Deletes the auth user, which cascades to the profile and all owned rows
@@ -196,7 +243,7 @@ export function AuthProvider({ children }) {
     session, profile, familyMembers, selectedMember, setSelectedMember, loading,
     signInGoogle, signInEmail, signUpEmail, signOut, resetPassword, updatePassword,
     createProfile, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount,
-    refresh: () => session && loadProfile(session.user.id),
+    refresh: () => session && loadProfile(session),
     justOnboarded, clearJustOnboarded,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
