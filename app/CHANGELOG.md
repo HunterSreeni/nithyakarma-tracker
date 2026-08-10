@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.29.7](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.6...app-v0.29.7) (2026-08-10)
+
+
+### Bug Fixes
+
+* address code-review findings on the streak and Today-cache work ([96ee301](https://github.com/HunterSreeni/nithyakarma-tracker/commit/96ee301ca403b8e71850af0bc2fb5830af7df734))
+* decay streaks against each subject's own local day, not one UTC date ([2e8c91e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/2e8c91ee303b2a381b20299821e94632977d3e62))
+* stop the streak freeze being spent without bridging the gap ([9c577d6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/9c577d63574ce7f6afb04f9e047983e2887a336f))
+* streak freeze correctness, timezone-aware decay, and instant Today reopen ([50d5646](https://github.com/HunterSreeni/nithyakarma-tracker/commit/50d564618c67d25442bd8ea4e87228390c84d84c))
+
+
+### Performance Improvements
+
+* paint the Today list from cache instead of a spinner on reopen ([0f55c58](https://github.com/HunterSreeni/nithyakarma-tracker/commit/0f55c5847e1ad202d8fe300a2ed0f953c88790fd))
+
 ## [0.29.6](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.5...app-v0.29.6) (2026-08-09)
 
 
