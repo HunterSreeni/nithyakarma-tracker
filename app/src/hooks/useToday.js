@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { isScheduled, localDateString } from '../utils/cadence'
 import { friendlyError } from '../utils/friendlyError'
 import { suppressTodayNudgesIfScheduled } from '../utils/notifications'
+import { readTodayCache, writeTodayCache } from '../utils/todayCache'
 
 // Loads the selected subject's practices + today's logs.
 // Streaks/punya are maintained server-side by submit_practice_log.
@@ -11,10 +12,15 @@ export function useToday(ownerId, familyMemberId = null) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const load = useCallback(async () => {
+  // fromCache is passed only by the mount effect. Refreshes after a mark must
+  // NOT seed from the cache: it still holds the pre-mark logs, so the tick the
+  // user just earned would flash back off before the fetch corrects it.
+  const load = useCallback(async ({ fromCache = false } = {}) => {
     if (!ownerId) return
-    setLoading(true)
     setError('')
+    const cached = fromCache ? readTodayCache(ownerId, familyMemberId) : null
+    if (cached) setItems(cached)
+    setLoading(!cached)
     try {
       let q = supabase.from('user_practices')
         .select('*, practice:practices(*)')
@@ -34,6 +40,7 @@ export function useToday(ownerId, familyMemberId = null) {
         .map(u => ({ up: u, practice: u.practice, logs: logs.filter(l => l.user_practice_id === u.id) }))
         .sort((a, b) => (b.practice.is_sandhyavandhanam ? 1 : 0) - (a.practice.is_sandhyavandhanam ? 1 : 0))
       setItems(scheduled)
+      writeTodayCache(ownerId, familyMemberId, scheduled)
     } catch (err) {
       setError(friendlyError(err))
     } finally {
@@ -41,7 +48,7 @@ export function useToday(ownerId, familyMemberId = null) {
     }
   }, [ownerId, familyMemberId])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load({ fromCache: true }) }, [load])
 
   // The core write path. Returns the verified server response - the caller
   // shows celebration/ad ONLY from this result.

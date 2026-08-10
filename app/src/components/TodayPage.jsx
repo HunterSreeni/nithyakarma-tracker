@@ -288,10 +288,15 @@ function AddPracticeDropdown({ existing, onAdd }) {
   const dropdownRef = useRef(null)
   useFocusTrap(dropdownRef, open)
 
+  // On first open, not on mount: `catalog` is only ever read inside the
+  // `open &&` block below, so fetching the whole practices table on every
+  // Today render just put a full table read on the reopen critical path for a
+  // dropdown most users never touch.
   useEffect(() => {
+    if (!open || catalog.length) return
     supabase.from('practices').select('*').eq('active', true).order('id')
       .then(({ data }) => setCatalog(data ?? []))
-  }, [])
+  }, [open, catalog.length])
 
   useEffect(() => {
     if (!open) return
