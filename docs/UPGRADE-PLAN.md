@@ -467,6 +467,29 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
     shows the freeze message when `freeze_used`.
   - e2e + CI green; manual check of a simulated missed-day-with-credit.
 
+> **Correction, 2026-08-10.** "Auto-consumed on a single missed day" above was
+> read on 2026-08-09 as *spend the credit the moment a day is missed*, and
+> migration `20260809070000` made `decay_stale_streaks()` do exactly that. It
+> was the wrong reading. `streak_after_completion()` still decides purely from
+> `last_complete_date` and still needs a credit to bridge a 2-day gap, so the
+> pre-spent credit bought nothing: the stored `current_streak` stayed high
+> while the next mark silently reset it to 1
+> (`streak_after_completion(4, 4, '2026-08-07', '2026-08-10', 0) -> 1`,
+> reproduced against production). The `send-freeze-notifications` push meant to
+> explain the spend never fired either - `freeze_events` had no `service_role`
+> SELECT grant and the sender discarded the error, the same failure shape as
+> the 2026-07-11 send-reminders grant bug.
+>
+> Reverted in `20260810050000`. The credit is consumed **when the user comes
+> back and completes a day across the gap**, which is what `submit_practice_log`
+> always did. `freeze_events`, the dedicated cron and the
+> `send-freeze-notifications` function are all gone; the two moments worth
+> announcing now ride on `send-reminders`' existing 20:00 / 08:00 nudges, which
+> are per-user timezone aware (`_shared/freezeNudge.ts`). The decay cron also
+> moved from 20:30 UTC to 01:00 UTC, because 20:30 UTC is 02:00 IST *the next
+> day* and left Postgres' `current_date` a full calendar day behind the local
+> dates `last_complete_date` is written in.
+
 ### Intent 1.2 - Streak-miss reminder notification (hardcoded) - PARTIAL
 
 > **Downgraded from "done" on 2026-07-18.** A production bug means half of this

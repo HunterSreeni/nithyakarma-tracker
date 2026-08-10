@@ -3,11 +3,13 @@
 // Windows (user's local time): 6:00 calendar (tharpanam/observance, see
 // below), 9:00 morning, 12:30 afternoon, 18:30 evening (sandhya slots,
 // skipped if already logged), 8:00 and 20:00 streak nudges (any scheduled
-// practice still incomplete).
+// practice still incomplete). The two nudges switch to freeze-specific wording
+// when a freeze is what's holding the streak up - see _shared/freezeNudge.ts.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { loadConfig, sendFCM, sendWebPush } from "../_shared/push.ts";
 import { addDays, bestAdvanceMatch, bestMatch, type ObservanceRule } from "../_shared/observanceMatch.ts";
 import { dayComplete } from "../_shared/dayComplete.ts";
+import { freezeNudge } from "../_shared/freezeNudge.ts";
 
 const ADVANCE_DAYS = 3;
 
@@ -108,13 +110,15 @@ Deno.serve(async (req: Request) => {
     supabase.from("user_practices")
       .select("id, owner_id, family_member_id, practice:practices(cadence, weekday, is_sandhyavandhanam, affects_streak)")
       .in("owner_id", ids).is("family_member_id", null),
-    supabase.from("profiles").select("id, gender").in("id", ids),
+    supabase.from("profiles")
+      .select("id, gender, current_streak, last_complete_date, freeze_credits").in("id", ids),
     supabase.from("panchangam_days")
       .select("date, thithi, tamil_month, tamil_day, malayalam_month, malayalam_day, nakshatra")
       .in("date", panchangamDates),
     supabase.from("panchangam_observances").select("*"),
   ]);
   const genderById = new Map((profiles ?? []).map((p: any) => [p.id, p.gender]));
+  const streakById = new Map((profiles ?? []).map((p: any) => [p.id, p]));
   const panchangamByDate = new Map((panchangamRows ?? []).map((r: any) => [r.date, r]));
   const rules = (observanceRules ?? []) as ObservanceRule[];
   const upIds = (ups ?? []).map((u: any) => u.id);
@@ -199,6 +203,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const mine = (ups ?? []).filter((u: any) => u.owner_id === uid);
+    let title = TITLES[slot];
+    let body = BODIES[slot];
 
     if (slot === "nudge" || slot === "nudge_morning") {
       // Mirrors cadence.js's dayComplete / the SQL bool_or day-completion
@@ -208,6 +214,11 @@ Deno.serve(async (req: Request) => {
       if (!mine.length) continue;
       const items = mine.map((u: any) => ({ practice: u.practice, logs: logsByUp.get(u.id) ?? [] }));
       if (dayComplete(items, date)) continue;
+      // Say what is actually at stake when a freeze is in play, instead of the
+      // generic "your streak is waiting". Both windows are judged against the
+      // user's own local date, which is what makes this the right place for it.
+      const freezeMsg = freezeNudge(slot, streakById.get(uid), date);
+      if (freezeMsg) { title = freezeMsg.title; body = freezeMsg.body; }
     } else {
       // sandhya slot reminders only for male users tracking sandhyavandhanam
       if (genderById.get(uid) !== "male") continue;
@@ -217,7 +228,7 @@ Deno.serve(async (req: Request) => {
       if (dayLogs.some((l: any) => l.slot === slot)) continue; // already done
     }
 
-    sent += await deliver(uid, date, slot, TITLES[slot], BODIES[slot]);
+    sent += await deliver(uid, date, slot, title, body);
   }
   return json({ message: "done", sent });
 });

@@ -39,8 +39,11 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno test supabase/functions/_shared/observanceMatch.test.ts
-      - run: deno test supabase/functions/_shared/dayComplete.test.ts
+      # Whole directory rather than a file-per-line list, so a newly added
+      # _shared/*.test.ts runs in CI without anyone remembering to add it here
+      # (freezeNudge.test.ts was written before this line changed, and would
+      # silently not have run).
+      - run: deno test supabase/functions/_shared/
 
   e2e:
     runs-on: ubuntu-latest

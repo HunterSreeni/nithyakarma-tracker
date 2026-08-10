@@ -466,7 +466,7 @@ begin
   declare
     v_slot text;
   begin
-    foreach v_slot in array array['morning','afternoon','evening','nudge','nudge_morning','tharpanam','observance','freeze_applied']
+    foreach v_slot in array array['morning','afternoon','evening','nudge','nudge_morning','tharpanam','observance','observance_advance']
     loop
       v_failed := false;
       begin
@@ -479,15 +479,25 @@ begin
     end loop;
   end;
 
-  -- 19. decay_stale_streaks() proactively spends a freeze credit (and logs a
-  -- freeze_events row) for whoever it protects, instead of just leaving the
-  -- streak untouched with the credit unspent (2026-08-09 bug: "freeze not
-  -- utilised, notification never fires"). A gap-1 subject with no credit
-  -- still just decays, same as before, and gets no freeze_events row.
+  -- 19. decay_stale_streaks() protects a one-missed-day streak WITHOUT
+  -- spending the freeze credit, and the credit still buys the bridge when the
+  -- user actually comes back.
+  --
+  -- This composition is the regression. Migration 20260809070000 made decay
+  -- decrement freeze_credits for everyone it protected, but the write path
+  -- (streak_after_completion) still decides purely from last_complete_date and
+  -- still needs a credit to bridge a 2-day gap. So the credit was spent, the
+  -- bridge then failed for want of a credit, and the stored current_streak
+  -- stayed high while the very next mark silently reset it to 1. Reverted in
+  -- 20260810050000. Asserting decay and the write path together is what the
+  -- old version of this section missed: it only ever checked that the credit
+  -- had been decremented, never what a completion afterwards produced.
+  --
   -- decay_stale_streaks() is global (no owner scoping), but the whole script
   -- rolls back, so this is safe to run against production per the header.
   declare
     v_kid3 uuid; v_kid4 uuid;
+    v_after_streak int; v_after_freeze int; v_after_used boolean;
   begin
     insert into family_members (parent_id, name, gender, current_streak, last_complete_date, freeze_credits)
       values (v_uid, 'Freeze Protected Kid', 'female', 7, current_date - 2, 2) returning id into v_kid3;
@@ -499,18 +509,33 @@ begin
     if (select current_streak from family_members where id = v_kid3) <> 7 then
       raise exception 'FAIL: decay_stale_streaks should not reset a freeze-protected streak';
     end if;
-    if (select freeze_credits from family_members where id = v_kid3) <> 1 then
-      raise exception 'FAIL: decay_stale_streaks did not spend the freeze credit it protected with';
+    if (select freeze_credits from family_members where id = v_kid3) <> 2 then
+      raise exception 'FAIL: decay_stale_streaks spent a freeze credit; only a completion may spend one';
     end if;
-    if not exists (select 1 from freeze_events where family_member_id = v_kid3 and streak_preserved = 7) then
-      raise exception 'FAIL: decay_stale_streaks did not log a freeze_events row for the protected streak';
+
+    -- The protected subject, marking today: the credit it kept must now buy
+    -- the bridge, taking 7 to 8 and leaving exactly one credit behind.
+    -- aliased 'sac', not 'r': the outer block already declares `r jsonb`, and a
+    -- plpgsql variable of that name would shadow the alias in this query.
+    select sac.new_streak, sac.new_freeze, sac.freeze_used
+      into v_after_streak, v_after_freeze, v_after_used
+      from family_members fm,
+        lateral streak_after_completion(fm.current_streak, fm.best_streak,
+          fm.last_complete_date, current_date, fm.freeze_credits) sac
+      where fm.id = v_kid3;
+
+    if v_after_streak <> 8 then
+      raise exception 'FAIL: a protected streak restarted at % instead of continuing to 8 - the freeze bought nothing', v_after_streak;
+    end if;
+    if not v_after_used then
+      raise exception 'FAIL: completing across the protected gap did not report freeze_used';
+    end if;
+    if v_after_freeze <> 1 then
+      raise exception 'FAIL: the bridge spent % credits, expected exactly 1', 2 - v_after_freeze;
     end if;
 
     if (select current_streak from family_members where id = v_kid4) <> 0 then
       raise exception 'FAIL: decay_stale_streaks should still reset a streak with no freeze credit';
-    end if;
-    if exists (select 1 from freeze_events where family_member_id = v_kid4) then
-      raise exception 'FAIL: decay_stale_streaks logged a freeze_events row for a subject with no credit';
     end if;
   end;
 

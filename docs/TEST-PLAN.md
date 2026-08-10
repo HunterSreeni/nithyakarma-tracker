@@ -40,7 +40,7 @@ a different screen.
 | Account | Purpose | Seed | Fate |
 |---|---|---|---|
 | `e2e@nithyakarma.test` | Preserved manual UI account | - | Kept until Play Store prod release, never deleted |
-| `integtest@nithyakarma.test` | Profile-less, for rolled-back SQL assertions | - | Never mutated (transaction always rolls back) |
+| `integtest@nithyakarma.test` | Profile-less, for rolled-back SQL assertions | - | Never mutated (transaction always rolls back). Went missing from `auth.users` at some point before 2026-08-10 (the suite aborts on its own `TEST SETUP` guard when it is); recreated 2026-08-10 with a deliberately invalid password hash, since the suite only resolves its id and must never be signable-in |
 | `e2efull@nithyakarma.test` | Male full-journey destructive Playwright spec | `seed-e2efull.sql` | Deleted at end of `journey.spec.js`; reseed before each run |
 | `e2efemale@nithyakarma.test` | Female onboarding destructive Playwright spec | `seed-e2efemale.sql` | Deleted at end of `journey-female.spec.js`; reseed before each run |
 | `referral-throwaway@nithyakarma.test` | Referral-code-applied Playwright spec | `seed-referral-throwaway.sql` | Self-deletes at end; requires `E2E_REFERRAL_THROWAWAY_PASSWORD`/`E2E_REFERRER_CODE` env (unset in CI, so this spec never actually runs there) |
@@ -446,8 +446,9 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | `freeze_cap_for` tier boundaries | Integration(§14) + Unit(`logic-mirrors.test.js`) | ✅ |
 | Freeze state machine: gap-0 continues, gap-1-with-credit continues+consumes, gap-1-no-credit resets, gap-2 resets without consuming | Integration(§14) | ✅ |
 | Simultaneous tier-up freeze top-up + consume in one call, via a kid subject | Integration(§14) | ✅ |
-| `decay_stale_streaks()` proactively spends a freeze credit + logs `freeze_events` for a gap-1 subject it protects; gap-1-no-credit still just decays, no event logged | Integration(§19) | ✅ (2026-08-09) |
-| `send-freeze-notifications` turns today's `freeze_events` into a push, dedup'd via `notification_deliveries` | - | ⬜ manual only (no edge-function-level test, matching `send-reminders` convention) |
+| `decay_stale_streaks()` protects a gap-1 subject **without** spending its credit, and the kept credit then bridges the gap on the next completion (7 -> 8, `freeze_used`, exactly 1 credit spent); gap-1-no-credit still decays to 0 | Integration(§19) | ✅ (rewritten 2026-08-10) |
+| `streakState()` (UI) reports 0 in exactly the cases `submit_practice_log` would restart at 1 and `decay_stale_streaks` would zero, so the card can never show a streak the next mark won't honour | Unit(`streak.test.js`) | ✅ (2026-08-10) |
+| 08:00 / 20:00 nudges switch to freeze-specific wording only in their own window, and never promise a freeze that isn't there (no credit, no streak, gap 3+) | Unit(`freezeNudge.test.ts`, Deno) | ✅ (2026-08-10) |
 
 ### Error / offline / resilience (cross-cutting)
 | Case | Layer | Status |

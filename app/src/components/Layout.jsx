@@ -1,6 +1,7 @@
 import { NavLink, Link } from 'react-router-dom'
 import { Home, BookOpen, GraduationCap, Trophy, Gift, CircleUserRound, Flame } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { streakState } from '../utils/streak'
 
 const BASE_TABS = [
   { to: '/', label: 'Today', icon: Home },
@@ -33,7 +34,7 @@ export default function Layout({ children }) {
           ))}
         </nav>
         <div className="top-right">
-          <div className="streak-pill"><Flame size={14} strokeWidth={2.5} /> {profile?.current_streak ?? 0}</div>
+          <div className="streak-pill"><Flame size={14} strokeWidth={2.5} /> {streakState(profile).streak}</div>
           <Link to="/profile" className="top-avatar" style={{ textDecoration: 'none' }} aria-label="Profile">{initials}</Link>
           <button className="nav-logout" onClick={signOut}>Logout</button>
         </div>
