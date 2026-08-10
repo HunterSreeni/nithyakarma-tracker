@@ -6,6 +6,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
 import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, localDateString, SANDHYA_SLOTS } from '../utils/cadence'
 import { streakState } from '../utils/streak'
+import { tierFor, tierClass } from '../utils/tiers'
 import CelebrationModal from './CelebrationModal'
 import TierUpModal from './TierUpModal'
 import GayatriCountModal from './GayatriCountModal'
@@ -40,6 +41,8 @@ export default function TodayPage() {
   // which only gets rewritten by the nightly decay job - see utils/streak.js.
   const { streak: subjectStreak, frozen } = streakState(selectedMember ?? profile)
   const subjectFreezes = selectedMember?.freeze_credits ?? profile.freeze_credits ?? 0
+  const subjectPunya = selectedMember?.punya ?? profile.punya ?? 0
+  const subjectTier = tierFor(subjectPunya)
   // Day counter must mirror the server's day-completion rule, not "was it logged".
   // The per-practice tick below still uses isDoneToday.
   const doneCount = items.filter(i => countsTowardDayCompletion(i.practice, i.logs)).length
@@ -115,6 +118,10 @@ export default function TodayPage() {
           <div className="tc-hint">
             Best: {selectedMember?.best_streak ?? profile.best_streak} day{(selectedMember?.best_streak ?? profile.best_streak) === 1 ? '' : 's'}
             {' · '}<Snowflake size={12} strokeWidth={2.5} /> {subjectFreezes} freeze{subjectFreezes === 1 ? '' : 's'}
+          </div>
+          <div className="tc-hint">
+            <span>{subjectPunya} punya</span>{' · '}
+            <span className={`tier-badge ${tierClass(subjectTier)}`}>{subjectTier}</span>
           </div>
           {frozen && (
             <div className="tc-frozen" role="status">
@@ -392,12 +399,15 @@ function AddPracticeDropdown({ existing, onAdd }) {
   const upanayanamOk = selectedMember ? selectedMember.upanayanam_done : true
 
   const brahmachariOk = selectedMember ? selectedMember.upanayanam_done : !profile.is_married
+  // A child can never be married - Brahmayagnam is self-only.
+  const grihasthaOk = selectedMember ? false : !!profile.is_married
 
   const visible = useMemo(() => catalog.filter(p => {
     if (p.is_sandhyavandhanam && (subjectGender !== 'male' || !upanayanamOk)) return false
     if (p.requires_brahmachari && (subjectGender !== 'male' || !brahmachariOk)) return false
+    if (p.requires_grihastha && (subjectGender !== 'male' || !grihasthaOk)) return false
     return p.name.toLowerCase().includes(search.toLowerCase())
-  }), [catalog, search, subjectGender, upanayanamOk, brahmachariOk])
+  }), [catalog, search, subjectGender, upanayanamOk, brahmachariOk, grihasthaOk])
 
   const add = async (p) => {
     setError(null)

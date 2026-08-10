@@ -29,7 +29,7 @@ a different screen.
 
 ## Test layers
 - **Unit** (Vitest + Testing Library + jsdom) - pure logic (`utils/`), hooks, components. 61 test files.
-- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 21 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
+- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 22 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
 - **Deno** (`supabase/functions/_shared/observanceMatch.test.ts`) - the tharpanam/observance rule-matching engine. Runs in CI as of 2026-07-23 (`edge-functions` job) - the first Deno test ever wired into CI.
 - **E2E web** (Playwright, `app/e2e/*.spec.js`) - full flows against a real built app + live Supabase.
 - **E2E Android** (adb screenshot-tap shell scripts, `app/e2e/*.sh`) - build/install/launch + blind taps at hardcoded coordinates. **Assert only "no crash" via logcat + `pidof`** - no in-app text/state assertion is possible (WebView exposes no accessibility tree to `uiautomator`). Pass beyond that requires eyeballing saved screenshots and cross-checking DB state via Supabase MCP.
@@ -326,6 +326,8 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Samidhadhanam hidden for married men, women, and boys without upanayanam in dropdown | Unit (`TodayPage.test.jsx`) | ✅ |
 | Samidhadhanam shown for unmarried men and for family boy with upanayanam | Unit (`TodayPage.test.jsx`) | ✅ |
 | DB trigger blocks a direct insert of Samidhadhanam for a married self / allows unmarried self / gates family boy on upanayanam | Integration(§3b) | ✅ run against production via Supabase MCP 2026-07-26, rolled back |
+| **Brahmayagnam (2026-08-10, migration 20260810140000), the married-male mirror of Samidhadhanam: shown only for a married male self-profile, hidden for unmarried men, women (even married), and every family member (a child can never be married - self-only, no exception path)** | Unit (`TodayPage.test.jsx`) + Integration(§22) | ✅ |
+| **Purusha Suktam, seeded alongside Brahmayagnam: no gender/marital gate, trackable by anyone including an ungated family member** | Integration(§22) | ✅ |
 | Already-tracking dimmed & disabled | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Add error keeps dropdown open, shows inline error | - | ⬜ |
 | Escape closes dropdown, focus trap active | - | ⬜ (hook `useFocusTrap` itself untested directly; only exercised indirectly via CelebrationModal focus tests) |

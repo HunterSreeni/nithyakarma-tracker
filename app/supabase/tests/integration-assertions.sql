@@ -712,6 +712,48 @@ begin
     end if;
   end;
 
+  -- 22. Brahmayagnam (migration 20260810140000): the married-male mirror of
+  -- Samidhadhanam's brahmachari-only gate. A child can never be married, so
+  -- unlike the other two gates this one has no family-member exception path
+  -- at all - it's self-only, blocked outright for any family member.
+  -- Purusha Suktam is seeded alongside it with no gate whatsoever.
+  declare
+    v_brahmayagnam int; v_purusha int; v_kid uuid; v_up_grihastha uuid;
+  begin
+    select id into v_brahmayagnam from practices where slug = 'brahmayagnam';
+    select id into v_purusha from practices where slug = 'purusha-suktam';
+
+    -- integtest is currently male, unmarried (never toggled since section 2) - rejected
+    v_failed := false;
+    begin
+      insert into user_practices (owner_id, practice_id) values (v_uid, v_brahmayagnam);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: unmarried male got Brahmayagnam'; end if;
+
+    -- married male self: allowed
+    update profiles set is_married = true where id = v_uid;
+    insert into user_practices (owner_id, practice_id) values (v_uid, v_brahmayagnam) returning id into v_up_grihastha;
+    if v_up_grihastha is null then raise exception 'FAIL: married male self did not get Brahmayagnam'; end if;
+    update profiles set is_married = false where id = v_uid; -- restore for any later section
+
+    -- family member: blocked outright, even a male boy with upanayanam done
+    insert into family_members (parent_id, name, gender, upanayanam_done)
+      values (v_uid, 'Grihastha Test Kid', 'male', true) returning id into v_kid;
+    v_failed := false;
+    begin
+      insert into user_practices (owner_id, family_member_id, practice_id) values (v_uid, v_kid, v_brahmayagnam);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: a family member got Brahmayagnam - it must be self-only'; end if;
+
+    -- Purusha Suktam: no gate - the same family member can track it freely
+    insert into user_practices (owner_id, family_member_id, practice_id) values (v_uid, v_kid, v_purusha);
+    if not exists (select 1 from user_practices where owner_id = v_uid and family_member_id = v_kid and practice_id = v_purusha) then
+      raise exception 'FAIL: Purusha Suktam was rejected for an ungated family member';
+    end if;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;

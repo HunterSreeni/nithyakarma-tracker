@@ -67,6 +67,28 @@ beforeEach(() => {
   h.selectedMember = null
 })
 
+describe('TodayPage - punya and tier follow the selected subject', () => {
+  it("shows the parent's own punya and tier when no family member is selected", () => {
+    h.items = [sandhyaItem([])]
+    h.profile = { ...h.profile, punya: 150 }
+    h.selectedMember = null
+    render(<TodayPage />)
+    expect(screen.getByText('150 punya')).toBeInTheDocument()
+    expect(screen.getByText('Sadhaka')).toBeInTheDocument()
+  })
+
+  it("shows the selected family member's own punya and tier, not the parent's", () => {
+    h.items = [sandhyaItem([])]
+    h.profile = { ...h.profile, punya: 150 }
+    h.selectedMember = { id: 'fm1', gender: 'male', upanayanam_done: true, punya: 5, best_streak: 0, freeze_credits: 1 }
+    render(<TodayPage />)
+    expect(screen.getByText('5 punya')).toBeInTheDocument()
+    expect(screen.getByText('Shishya')).toBeInTheDocument()
+    expect(screen.queryByText('150 punya')).not.toBeInTheDocument()
+    expect(screen.queryByText('Sadhaka')).not.toBeInTheDocument()
+  })
+})
+
 describe('TodayPage - Sandhyavandhanam UX', () => {
   it('marking a single slot completes the day (2026-07-20: 1 of 3 is enough)', () => {
     h.items = [sandhyaItem(['morning'])]
@@ -325,6 +347,53 @@ describe('TodayPage - Samidhadhanam hidden from Add dropdown', () => {
     openDropdown()
     await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
     expect(screen.queryByText('Samidhadhanam')).not.toBeInTheDocument()
+  })
+})
+
+describe('TodayPage - Brahmayagnam hidden from Add dropdown', () => {
+  const brahmayagnamPractice = { id: 21, name: 'Brahmayagnam', icon: '📖', is_sandhyavandhanam: false, requires_grihastha: true, cadence: 'daily' }
+  const openDropdown = () => {
+    h.items = [{
+      up: { id: 'up-other', current_streak: 0, sequence_position: 0 },
+      practice: { id: 9, name: 'Vishnu Sahasranamam', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
+      logs: [],
+    }]
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Add an anushtanam to track...'))
+  }
+
+  it('shows Brahmayagnam for a married male self-profile', async () => {
+    h.catalog = [brahmayagnamPractice]
+    h.profile = { ...h.profile, gender: 'male', is_married: true }
+    h.selectedMember = null
+    openDropdown()
+    expect(await screen.findByText('Brahmayagnam')).toBeInTheDocument()
+  })
+
+  it('hides Brahmayagnam for an unmarried male self-profile', async () => {
+    h.catalog = [brahmayagnamPractice]
+    h.profile = { ...h.profile, gender: 'male', is_married: false }
+    h.selectedMember = null
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Brahmayagnam')).not.toBeInTheDocument()
+  })
+
+  it('hides Brahmayagnam for a female profile, even if married', async () => {
+    h.catalog = [brahmayagnamPractice]
+    h.profile = { ...h.profile, gender: 'female', is_married: true }
+    h.selectedMember = null
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Brahmayagnam')).not.toBeInTheDocument()
+  })
+
+  it('hides Brahmayagnam for any family member - a child can never be married', async () => {
+    h.catalog = [brahmayagnamPractice]
+    h.selectedMember = { id: 'fm1', gender: 'male', upanayanam_done: true }
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Brahmayagnam')).not.toBeInTheDocument()
   })
 })
 

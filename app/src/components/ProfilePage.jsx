@@ -128,6 +128,8 @@ export default function ProfilePage() {
                 {fm.gender === 'male' ? `Male · ${fm.upanayanam_done ? 'upanayanam done' : 'upanayanam pending'}` : 'Female'}
                 {fm.bala_sabha_opt_in ? ' · Bala Sabha' : ''}
                 {' · '}<Flame size={11} strokeWidth={2.5} style={{ verticalAlign: 'text-bottom' }} />{' '}{streakState(fm).streak}
+                {' · '}{fm.punya} punya{' · '}
+                <span className={`tier-badge ${tierClass(tierFor(fm.punya))}`}>{tierFor(fm.punya)}</span>
               </div>
             </div>
             <button className="fam-remove" onClick={() => {
