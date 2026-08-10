@@ -467,6 +467,51 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
     shows the freeze message when `freeze_used`.
   - e2e + CI green; manual check of a simulated missed-day-with-credit.
 
+> **Correction, 2026-08-10.** "Auto-consumed on a single missed day" above was
+> read on 2026-08-09 as *spend the credit the moment a day is missed*, and
+> migration `20260809070000` made `decay_stale_streaks()` do exactly that. It
+> was the wrong reading. `streak_after_completion()` still decides purely from
+> `last_complete_date` and still needs a credit to bridge a 2-day gap, so the
+> pre-spent credit bought nothing: the stored `current_streak` stayed high
+> while the next mark silently reset it to 1
+> (`streak_after_completion(4, 4, '2026-08-07', '2026-08-10', 0) -> 1`,
+> reproduced against production). The `send-freeze-notifications` push meant to
+> explain the spend never fired either - `freeze_events` had no `service_role`
+> SELECT grant and the sender discarded the error, the same failure shape as
+> the 2026-07-11 send-reminders grant bug.
+>
+> Reverted in `20260810050000`. The credit is consumed **when the user comes
+> back and completes a day across the gap**, which is what `submit_practice_log`
+> always did. `freeze_events`, the dedicated cron and the
+> `send-freeze-notifications` function are all gone; the two moments worth
+> announcing now ride on `send-reminders`' existing 20:00 / 08:00 nudges, which
+> are per-user timezone aware (`_shared/freezeNudge.ts`). The decay cron also
+> moved from 20:30 UTC to 01:00 UTC, because 20:30 UTC is 02:00 IST *the next
+> day* and left Postgres' `current_date` a full calendar day behind the local
+> dates `last_complete_date` is written in.
+>
+> **Resolved 2026-08-10** by migration `20260810120000`, which is what the
+> paragraph below asked for: `profiles.timezone` (written on every profile load
+> from the device's OS setting, not location), `local_today(tz)`, per-subject
+> decay with children inheriting their parent's zone, and an **hourly** cron
+> since local midnights land at different UTC hours. `send-reminders` reads the
+> same column, so reminder windows and streak boundaries cannot drift apart.
+> Covered by integration §20, which picks a zone provably skewed off the UTC
+> date at run time so it fails against the old global-`current_date` rule.
+> Original limitation, kept for the reasoning:
+>
+> **Known limitation, not solved:** `decay_stale_streaks()` compares a *local*
+> `last_complete_date` against Postgres' UTC `current_date`, so no single cron
+> hour is correct for every offset - it is a trade, not a fix. 01:00 UTC is
+> right for positive offsets (IST 06:30, Gulf 05:00, which is every user today:
+> `notification_preferences.timezone` currently holds only `Asia/Kolkata` and
+> `Asia/Dubai`). It is **wrong for negative offsets**: at 01:00 UTC a UTC-5
+> user is still on the previous local day, so a streak that is genuinely alive
+> reads as `current_date - 2` and gets zeroed - or burns a freeze credit - a
+> day early. The old 20:30 UTC slot had the mirror-image bug. Properly fixing
+> this means scoping decay per subject's stored timezone rather than picking an
+> hour; do that before onboarding users in the Americas.
+
 ### Intent 1.2 - Streak-miss reminder notification (hardcoded) - PARTIAL
 
 > **Downgraded from "done" on 2026-07-18.** A production bug means half of this

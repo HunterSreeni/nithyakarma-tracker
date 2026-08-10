@@ -14,6 +14,7 @@ this in sync whenever data collection changes.
 | Family member profiles (name, gender) | Parent tracks kids | Supabase | No | Optional |
 | Referral code / graph | Referral rewards | Supabase | No | Optional |
 | Push token (FCM / web push) | Reminder notifications | Supabase | Google FCM (delivery only) | Optional (notifications off by default) |
+| Timezone (IANA name, e.g. `Asia/Kolkata`) | Deciding when the user's day starts and ends - reminder windows and streak/day boundaries | Supabase (`profiles.timezone`, `notification_preferences.timezone`) | No | Core function |
 | **Analytics events** (event name + numeric/flag props, no PII) | Product analytics (funnel/retention) | **Supabase (first-party, our own DB)** | **No third-party analytics vendor** | On for signed-in users |
 | **Crash/error reports** | Stability | **Sentry** | Sentry (processor) | Only if a crash occurs |
 | **Advertising ID / device identifiers** (Android only) | Serve interstitial ads | Not stored by us - on-device only | **Google AdMob** | Skipped for ad-free users; gated by UMP consent |
@@ -28,6 +29,12 @@ this in sync whenever data collection changes.
 - **Account deletion is real** (`delete_account` removes the auth user; data
   cascades). Analytics rows are de-identified on deletion (`user_id -> null`).
 - Leaderboard visibility is user-controllable (opt-out).
+- **Timezone is not location.** It is read from the device's OS timezone setting
+  via `Intl.DateTimeFormat().resolvedOptions().timeZone` - no location
+  permission, no GPS, and no IP geolocation, so nothing here belongs in the
+  Play form's Location category. It is needed because a streak day and a
+  reminder window are both defined in the user's own local day, not UTC (see
+  `utils/timezone.js` and migration 20260810120000).
 - **Ads (Android only).** One interstitial per session, G-rated only. AdMob uses
   the device advertising ID; we don't collect or store it. A Google UMP consent
   form is shown where required (EEA/UK) before any ad request (`ads.js`), and no

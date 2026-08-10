@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import NotificationSettings from './NotificationSettings'
 import { tierProgress, tierClass, tierFor } from '../utils/tiers'
 import { shareUrl } from '../utils/share'
+import { streakState } from '../utils/streak'
 import { track } from '../utils/analytics'
 import { APP_VERSION } from '../version'
 
@@ -97,7 +98,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="stat-row">
-        <div className="stat-tile"><div className="stat-num"><Flame size={16} strokeWidth={2.5} /> {profile.current_streak}</div><div className="stat-lbl">Streak</div></div>
+        <div className="stat-tile"><div className="stat-num"><Flame size={16} strokeWidth={2.5} /> {streakState(profile).streak}</div><div className="stat-lbl">Streak</div></div>
         <div className="stat-tile"><div className="stat-num">{profile.best_streak}</div><div className="stat-lbl">Best</div></div>
         <div className="stat-tile"><div className="stat-num">{profile.punya}</div><div className="stat-lbl">Punya</div></div>
       </div>
@@ -126,7 +127,7 @@ export default function ProfilePage() {
               <div className="fam-meta">
                 {fm.gender === 'male' ? `Male · ${fm.upanayanam_done ? 'upanayanam done' : 'upanayanam pending'}` : 'Female'}
                 {fm.bala_sabha_opt_in ? ' · Bala Sabha' : ''}
-                {' · '}<Flame size={11} strokeWidth={2.5} style={{ verticalAlign: 'text-bottom' }} />{' '}{fm.current_streak}
+                {' · '}<Flame size={11} strokeWidth={2.5} style={{ verticalAlign: 'text-bottom' }} />{' '}{streakState(fm).streak}
               </div>
             </div>
             <button className="fam-remove" onClick={() => {

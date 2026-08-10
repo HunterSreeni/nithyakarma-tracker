@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabase'
 import { track } from '../utils/analytics'
+import { clearTodayCache } from '../utils/todayCache'
+import { deviceTimezone } from '../utils/timezone'
 
 const AuthContext = createContext(null)
 
@@ -74,10 +76,33 @@ export function AuthProvider({ children }) {
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
     ])
-    const profile = data ?? null
+    let profile = data ?? null
     const familyMembers = fam ?? []
+    // Keep profiles.timezone tracking the device. It drives decay_stale_streaks'
+    // idea of "today" for this account and its children (migration
+    // 20260810120000), so a stale value costs the user a streak at the wrong
+    // local midnight. Doing it here rather than only in the notification
+    // toggle matters: most accounts never reach that toggle, and this also
+    // follows the user when they move between India and the UAE. Optimistic
+    // locally, fire-and-forget remotely - a failed write just retries next load.
+    const tz = deviceTimezone()
+    if (profile && profile.timezone !== tz) {
+      profile = { ...profile, timezone: tz }
+      try {
+        supabase.from('profiles').update({ timezone: tz }).eq('id', uid).then(undefined, () => {})
+      } catch { /* a background write must never break the load path */ }
+    }
     setProfile(profile)
     setFamilyMembers(familyMembers)
+    // selectedMember is a row snapshot taken when the chip was tapped
+    // (ProfileSwitcher), so it goes stale the moment that child's streak /
+    // freeze_credits / last_complete_date change. Re-point it at the freshly
+    // loaded row. Without this, marking a practice for a child leaves the
+    // Today card reading the pre-mark values - which since utils/streak.js
+    // landed means the "you missed yesterday, mark today or it resets" banner
+    // stays up after the freeze has already been spent and the streak saved.
+    // Drops the selection if that child no longer exists.
+    setSelectedMember(prev => prev ? (familyMembers.find(f => f.id === prev.id) ?? null) : null)
     writeProfileCache(session, profile, familyMembers)
     return { profile, familyMembers }
   }, [])
@@ -89,13 +114,13 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       if (session) await loadProfile(session).catch(() => {})
-      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache() }
+      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache(); clearTodayCache() }
       setLoading(false)
     }).catch(() => setLoading(false))
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
       if (session) await loadProfile(session).catch(() => {})
-      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache() }
+      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache(); clearTodayCache() }
     })
 
     // Re-validate the session when the app returns to the foreground. A tab
@@ -151,7 +176,7 @@ export function AuthProvider({ children }) {
   // Clear our own cache eagerly rather than waiting on onAuthStateChange's
   // SIGNED_OUT branch - avoids a window where a fast subsequent reload (or a
   // different user signing in on a shared device) could still read stale data.
-  const signOut = () => { clearProfileCache(); return supabase.auth.signOut() }
+  const signOut = () => { clearProfileCache(); clearTodayCache(); return supabase.auth.signOut() }
 
   // Recovery: email a reset link that returns to /reset, then set the new password.
   const resetPassword = (email, captchaToken) =>

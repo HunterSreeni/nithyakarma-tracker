@@ -164,6 +164,8 @@ input, select { font-family: 'DM Sans', sans-serif; }
 .tc-label { font-family: 'Sora', sans-serif; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; }
 .tc-big { display: flex; align-items: center; gap: 5px; font-family: 'Sora', sans-serif; font-size: 1.35rem; font-weight: 700; margin-top: 3px; }
 .tc-hint { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; font-size: 0.72rem; opacity: 0.9; margin-top: 2px; font-weight: 300; }
+.tc-frozen { display: flex; align-items: flex-start; gap: 5px; font-size: 0.72rem; line-height: 1.35; margin-top: 8px; padding: 6px 8px; border-radius: 9px; background: rgba(255,255,255,0.18); font-weight: 400; }
+.tc-frozen svg { flex-shrink: 0; margin-top: 2px; }
 .pr-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .pr-core { width: 54px; height: 54px; border-radius: 50%; background: var(--action); border: 3px solid rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; }
 .pr-caption { font-family: 'Sora', sans-serif; font-size: 0.58rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.85; }

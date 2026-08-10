@@ -5,6 +5,7 @@ import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
 import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, SANDHYA_SLOTS } from '../utils/cadence'
+import { streakState } from '../utils/streak'
 import CelebrationModal from './CelebrationModal'
 import TierUpModal from './TierUpModal'
 import GayatriCountModal from './GayatriCountModal'
@@ -35,7 +36,9 @@ export default function TodayPage() {
   const pendingTierUpRef = useRef(null)
 
   const subjectName = selectedMember?.name ?? profile.display_name
-  const subjectStreak = selectedMember?.current_streak ?? profile.current_streak
+  // Read the alive/dead boundary live rather than trusting current_streak,
+  // which only gets rewritten by the nightly decay job - see utils/streak.js.
+  const { streak: subjectStreak, frozen } = streakState(selectedMember ?? profile)
   const subjectFreezes = selectedMember?.freeze_credits ?? profile.freeze_credits ?? 0
   // Day counter must mirror the server's day-completion rule, not "was it logged".
   // The per-practice tick below still uses isDoneToday.
@@ -113,6 +116,12 @@ export default function TodayPage() {
             Best: {selectedMember?.best_streak ?? profile.best_streak} day{(selectedMember?.best_streak ?? profile.best_streak) === 1 ? '' : 's'}
             {' · '}<Snowflake size={12} strokeWidth={2.5} /> {subjectFreezes} freeze{subjectFreezes === 1 ? '' : 's'}
           </div>
+          {frozen && (
+            <div className="tc-frozen" role="status">
+              <Snowflake size={12} strokeWidth={2.5} /> You missed yesterday. Mark one anushtanam
+              today to spend a freeze and keep this streak, or it resets to 0.
+            </div>
+          )}
         </div>
         <div className="pr-wrap">
           <div className="pr-core">{doneCount}</div>
@@ -274,15 +283,24 @@ function AddPracticeDropdown({ existing, onAdd }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [catalog, setCatalog] = useState([])
+  const [catalogLoaded, setCatalogLoaded] = useState(false)
   const [error, setError] = useState(null)
   const { profile, selectedMember } = useAuth()
   const dropdownRef = useRef(null)
   useFocusTrap(dropdownRef, open)
 
+  // On first open, not on mount: `catalog` is only ever read inside the
+  // `open &&` block below, so fetching the whole practices table on every
+  // Today render just put a full table read on the reopen critical path for a
+  // dropdown most users never touch. Tracked with a loaded flag rather than
+  // `catalog.length`, so the in-flight state is distinguishable from a genuine
+  // empty result - otherwise the first open renders "No matches" for the whole
+  // round trip, which reads as "there is nothing to add".
   useEffect(() => {
+    if (!open || catalogLoaded) return
     supabase.from('practices').select('*').eq('active', true).order('id')
-      .then(({ data }) => setCatalog(data ?? []))
-  }, [])
+      .then(({ data }) => { setCatalog(data ?? []); setCatalogLoaded(true) })
+  }, [open, catalogLoaded])
 
   useEffect(() => {
     if (!open) return
@@ -337,7 +355,9 @@ function AddPracticeDropdown({ existing, onAdd }) {
               </button>
             )
           })}
-          {visible.length === 0 && <div className="dd-item muted">No matches</div>}
+          {!catalogLoaded
+            ? <div className="dd-item muted">Loading...</div>
+            : visible.length === 0 && <div className="dd-item muted">No matches</div>}
         </div>
       )}
       {error && <div className="auth-error" role="alert">{error}</div>}
