@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.30.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.7...app-v0.30.0) (2026-08-10)
+
+
+### Features
+
+* let a Sandhya slot be backdated to yesterday, punya-only ([f5a395d](https://github.com/HunterSreeni/nithyakarma-tracker/commit/f5a395de6e3c77f9dbf1fd20a7dd9a21cb9eb967))
+* show each subject's own punya and tier; add Brahmayagnam + Purusha Suktam ([115bd80](https://github.com/HunterSreeni/nithyakarma-tracker/commit/115bd8008608196b24b2447a2ba46136e43ff0ce))
+* yesterday Sandhya catch-up, per-subject punya/tier UI, Brahmayagnam + Purusha Suktam ([fbd6546](https://github.com/HunterSreeni/nithyakarma-tracker/commit/fbd65461cd42e6a6e376033b654a4fdf994b5435))
+
 ## [0.29.7](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.6...app-v0.29.7) (2026-08-10)
 
 
