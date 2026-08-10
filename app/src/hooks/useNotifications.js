@@ -5,20 +5,15 @@ import { scheduleAllReminders, cancelAllReminders } from '../utils/notifications
 import { registerFCM, unregisterFCM, checkFCMPermission } from '../utils/pushAndroid'
 import { isPushSupported, setupWebPush, deleteWebPushSubscription, hasActiveSubscription } from '../utils/webPush'
 import { friendlyError } from '../utils/friendlyError'
+import { deviceTimezone } from '../utils/timezone'
 
 const WEB_BLOCKED_MESSAGE =
   'Notifications are blocked in this browser. Click the padlock icon next to the address bar, allow notifications, then try again.'
 const ANDROID_BLOCKED_MESSAGE =
   'Notifications are blocked for this app. Enable them in your device Settings > Apps > Nithyakarma > Notifications.'
 
-// Some JS engines (older Android WebView ICU data) still resolve to the
-// deprecated IANA alias instead of the canonical zone name - normalize the
-// ones relevant to this app's audience before storing.
-const TZ_ALIASES = { 'Asia/Calcutta': 'Asia/Kolkata' }
-
 async function savePref(userId, enabled) {
-  const rawTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  const timezone = TZ_ALIASES[rawTimezone] ?? rawTimezone
+  const timezone = deviceTimezone()
   const { error } = await supabase.from('notification_preferences')
     .upsert({ user_id: userId, enabled, timezone, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
   return error

@@ -76,11 +76,24 @@ Deno.serve(async (req: Request) => {
   const users = prefs ?? [];
   if (!users.length) return json({ message: "no users enabled" });
 
+  // profiles.timezone is the single source of truth for a user's local day
+  // (migration 20260810120000) - the same column decay_stale_streaks reads, so
+  // reminder windows and streak boundaries cannot disagree. It is written on
+  // every profile load, whereas notification_preferences.timezone is only
+  // written when the notification toggle is used; that one stays as a fallback
+  // for rows predating the column. Fetched before the slot loop because the
+  // timezone decides which users are in a window at all.
+  const prefUserIds = users.map((u: any) => u.user_id);
+  const { data: profiles } = await supabase.from("profiles")
+    .select("id, gender, timezone, current_streak, last_complete_date, freeze_credits")
+    .in("id", prefUserIds);
+  const profileById = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+
   const userSlot = new Map<string, string>();
   const userDate = new Map<string, string>();
   const userCalendarPrefs = new Map<string, { tharpanam: boolean; observances: boolean }>();
   for (const u of users) {
-    const lp = localParts(now, u.timezone || DEFAULT_TIMEZONE);
+    const lp = localParts(now, profileById.get(u.user_id)?.timezone || u.timezone || DEFAULT_TIMEZONE);
     if (!lp) continue;
     const slot = slotFor(lp.hour, lp.minute);
     if (slot) {
@@ -105,20 +118,16 @@ Deno.serve(async (req: Request) => {
     [...dates, ...advanceDates].flatMap((d) => [addDays(d, -1), d, addDays(d, 1)]),
   )];
 
-  const [{ data: subs }, { data: ups }, { data: profiles }, { data: panchangamRows }, { data: observanceRules }] = await Promise.all([
+  const [{ data: subs }, { data: ups }, { data: panchangamRows }, { data: observanceRules }] = await Promise.all([
     supabase.from("push_subscriptions").select("user_id, endpoint, p256dh, auth_key, platform").in("user_id", ids),
     supabase.from("user_practices")
       .select("id, owner_id, family_member_id, practice:practices(cadence, weekday, is_sandhyavandhanam, affects_streak)")
       .in("owner_id", ids).is("family_member_id", null),
-    supabase.from("profiles")
-      .select("id, gender, current_streak, last_complete_date, freeze_credits").in("id", ids),
     supabase.from("panchangam_days")
       .select("date, thithi, tamil_month, tamil_day, malayalam_month, malayalam_day, nakshatra")
       .in("date", panchangamDates),
     supabase.from("panchangam_observances").select("*"),
   ]);
-  const genderById = new Map((profiles ?? []).map((p: any) => [p.id, p.gender]));
-  const streakById = new Map((profiles ?? []).map((p: any) => [p.id, p]));
   const panchangamByDate = new Map((panchangamRows ?? []).map((r: any) => [r.date, r]));
   const rules = (observanceRules ?? []) as ObservanceRule[];
   const upIds = (ups ?? []).map((u: any) => u.id);
@@ -217,11 +226,11 @@ Deno.serve(async (req: Request) => {
       // Say what is actually at stake when a freeze is in play, instead of the
       // generic "your streak is waiting". Both windows are judged against the
       // user's own local date, which is what makes this the right place for it.
-      const freezeMsg = freezeNudge(slot, streakById.get(uid), date);
+      const freezeMsg = freezeNudge(slot, profileById.get(uid), date);
       if (freezeMsg) { title = freezeMsg.title; body = freezeMsg.body; }
     } else {
       // sandhya slot reminders only for male users tracking sandhyavandhanam
-      if (genderById.get(uid) !== "male") continue;
+      if (profileById.get(uid)?.gender !== "male") continue;
       const sandhya = mine.find((u: any) => u.practice.is_sandhyavandhanam);
       if (!sandhya) continue;
       const dayLogs = (logsByUp.get(sandhya.id) ?? []).filter((l: any) => l.log_date === date);

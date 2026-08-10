@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
 const mockNative = vi.fn().mockReturnValue(false)
@@ -97,7 +97,10 @@ describe('profile cache (cold-restart instant resume)', () => {
     getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
     supabase.from.mockImplementation((table) => {
       if (table === 'profiles') {
-        return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'u1', display_name: 'Fresh' } }) }) }) }
+        return {
+          select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'u1', display_name: 'Fresh' } }) }) }),
+          update: () => ({ eq: () => Promise.resolve({ error: null }) }),
+        }
       }
       return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }) }
     })
@@ -126,6 +129,61 @@ describe('profile cache (cold-restart instant resume)', () => {
     expect(localStorage.getItem(CACHE_KEY)).toBe(null)
     resolveSignOut({ error: null })
   })
+})
+
+// profiles.timezone drives decay_stale_streaks' idea of "today" for this
+// account and its children (migration 20260810120000), so it has to track the
+// device rather than only being written when someone opens the notification
+// toggle - most accounts never do.
+describe('timezone follows the device', () => {
+  // These stub Intl globally; clearAllMocks does not undo a spyOn, so restore
+  // explicitly or every later test in the file inherits the fake zone.
+  afterEach(() => { vi.restoreAllMocks() })
+
+  const profileWithTz = (timezone) => ({
+    select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'u1', display_name: 'X', timezone } }) }) }),
+    update: vi.fn(() => ({ eq: () => Promise.resolve({ error: null }) })),
+  })
+
+  it('persists the device zone when the stored one is out of date', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+    const profiles = profileWithTz('Asia/Kolkata')
+    vi.spyOn(Intl, 'DateTimeFormat').mockReturnValue({ resolvedOptions: () => ({ timeZone: 'Asia/Dubai' }) })
+    supabase.from.mockImplementation((t) => t === 'profiles' ? profiles
+      : { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }) })
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(profiles.update).toHaveBeenCalledWith({ timezone: 'Asia/Dubai' }))
+    // and surfaces optimistically, without waiting for the write to land
+    expect(result.current.profile.timezone).toBe('Asia/Dubai')
+  })
+
+  it('does not write when the stored zone already matches', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+    const profiles = profileWithTz('Asia/Dubai')
+    vi.spyOn(Intl, 'DateTimeFormat').mockReturnValue({ resolvedOptions: () => ({ timeZone: 'Asia/Dubai' }) })
+    supabase.from.mockImplementation((t) => t === 'profiles' ? profiles
+      : { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }) })
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(profiles.update).not.toHaveBeenCalled()
+  })
+
+  // The write is a background nicety; if it throws, the profile must still load.
+  it('still loads the profile when the timezone write blows up', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+    vi.spyOn(Intl, 'DateTimeFormat').mockReturnValue({ resolvedOptions: () => ({ timeZone: 'Asia/Dubai' }) })
+    supabase.from.mockImplementation((t) => t === 'profiles' ? {
+      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'u1', display_name: 'X', timezone: 'Asia/Kolkata' } }) }) }),
+      update: () => { throw new Error('builder exploded') },
+    } : { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }) })
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.profile.display_name).toBe('X')
+  })
+
 })
 
 describe('resume/foreground revalidation', () => {

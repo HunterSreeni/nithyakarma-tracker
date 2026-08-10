@@ -490,6 +490,16 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
 > day* and left Postgres' `current_date` a full calendar day behind the local
 > dates `last_complete_date` is written in.
 >
+> **Resolved 2026-08-10** by migration `20260810120000`, which is what the
+> paragraph below asked for: `profiles.timezone` (written on every profile load
+> from the device's OS setting, not location), `local_today(tz)`, per-subject
+> decay with children inheriting their parent's zone, and an **hourly** cron
+> since local midnights land at different UTC hours. `send-reminders` reads the
+> same column, so reminder windows and streak boundaries cannot drift apart.
+> Covered by integration §20, which picks a zone provably skewed off the UTC
+> date at run time so it fails against the old global-`current_date` rule.
+> Original limitation, kept for the reasoning:
+>
 > **Known limitation, not solved:** `decay_stale_streaks()` compares a *local*
 > `last_complete_date` against Postgres' UTC `current_date`, so no single cron
 > hour is correct for every offset - it is a trade, not a fix. 01:00 UTC is

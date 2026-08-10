@@ -539,6 +539,109 @@ begin
     end if;
   end;
 
+  -- 20. decay_stale_streaks() judges each subject against ITS OWN local day,
+  -- not one global UTC date (migration 20260810120000).
+  --
+  -- last_complete_date is written from the client's LOCAL date, so comparing it
+  -- to Postgres' UTC current_date compares two different calendars. The
+  -- America/New_York cases below are the regression: for the ~10 hours a day
+  -- when New York's local date is behind UTC's, a streak that is genuinely
+  -- alive there reads as current_date - 2 and the old code zeroed it (or burnt
+  -- a freeze credit) a day early. Seeding relative to local_today(tz) rather
+  -- than to a fixed offset keeps these deterministic at whatever hour the
+  -- suite happens to run.
+  declare
+    v_ny_alive uuid; v_ny_frozen uuid; v_ny_dead uuid; v_ist_dead uuid;
+    v_saved_tz text;
+  begin
+    if local_today('Not/AZone') <> local_today('Asia/Kolkata') then
+      raise exception 'FAIL: local_today did not fall back to the default for an invalid zone';
+    end if;
+    if local_today(null) <> local_today('Asia/Kolkata') or local_today('') <> local_today('Asia/Kolkata') then
+      raise exception 'FAIL: local_today did not fall back to the default for null/empty';
+    end if;
+
+    select timezone into v_saved_tz from profiles where id = v_uid;
+    update profiles set timezone = 'America/New_York', current_streak = 5,
+      last_complete_date = local_today('America/New_York') - 1, freeze_credits = 0
+      where id = v_uid;
+
+    -- children have no device of their own, so they inherit the parent's zone
+    insert into family_members (parent_id, name, gender, current_streak, last_complete_date, freeze_credits)
+      values (v_uid, 'NY Alive Kid', 'female', 5, local_today('America/New_York') - 1, 0) returning id into v_ny_alive;
+    insert into family_members (parent_id, name, gender, current_streak, last_complete_date, freeze_credits)
+      values (v_uid, 'NY Frozen Kid', 'female', 5, local_today('America/New_York') - 2, 1) returning id into v_ny_frozen;
+    insert into family_members (parent_id, name, gender, current_streak, last_complete_date, freeze_credits)
+      values (v_uid, 'NY Dead Kid', 'female', 5, local_today('America/New_York') - 2, 0) returning id into v_ny_dead;
+
+    perform decay_stale_streaks();
+
+    if (select current_streak from profiles where id = v_uid) <> 5 then
+      raise exception 'FAIL: a New York streak completed local-yesterday was decayed against UTC today';
+    end if;
+    if (select current_streak from family_members where id = v_ny_alive) <> 5 then
+      raise exception 'FAIL: a child did not inherit its parent timezone (alive streak decayed)';
+    end if;
+    if (select current_streak from family_members where id = v_ny_frozen) <> 5 then
+      raise exception 'FAIL: a freeze-protected New York streak was decayed';
+    end if;
+    if (select current_streak from family_members where id = v_ny_dead) <> 0 then
+      raise exception 'FAIL: a genuinely stale New York streak survived decay';
+    end if;
+
+    -- and the same subject, in IST, past its own local boundary
+    update profiles set timezone = 'Asia/Kolkata', current_streak = 5,
+      last_complete_date = local_today('Asia/Kolkata') - 2, freeze_credits = 0
+      where id = v_uid;
+    perform decay_stale_streaks();
+    if (select current_streak from profiles where id = v_uid) <> 0 then
+      raise exception 'FAIL: a genuinely stale IST streak survived decay';
+    end if;
+
+    -- The fixed-zone cases above assert the rule, but they only *discriminate*
+    -- against the old global-UTC code during the hours New York's date happens
+    -- to differ from UTC's. So additionally pick a zone that is provably skewed
+    -- from the UTC date right now, whichever direction is available at this
+    -- hour, and build the case the old code got wrong. At least one direction
+    -- always exists: a zone is behind UTC's date while UTC time < 12:00
+    -- (Etc/GMT+12), and ahead of it from 10:00 (Pacific/Kiritimati, +14).
+    declare
+      v_behind_tz text; v_ahead_tz text;
+    begin
+      select name into v_behind_tz from pg_timezone_names
+        where (now() at time zone name)::date = current_date - 1 order by name limit 1;
+      select name into v_ahead_tz from pg_timezone_names
+        where (now() at time zone name)::date = current_date + 1 order by name limit 1;
+      if v_behind_tz is null and v_ahead_tz is null then
+        raise exception 'TEST SETUP: expected at least one zone skewed off the UTC date';
+      end if;
+
+      if v_behind_tz is not null then
+        -- local yesterday reads as UTC current_date - 2, which the old rule
+        -- zeroed - yet the subject is genuinely alive in its own zone.
+        update profiles set timezone = v_behind_tz, current_streak = 9, freeze_credits = 0,
+          last_complete_date = local_today(v_behind_tz) - 1 where id = v_uid;
+        perform decay_stale_streaks();
+        if (select current_streak from profiles where id = v_uid) <> 9 then
+          raise exception 'FAIL: zone % is a day behind UTC and had a live streak decayed', v_behind_tz;
+        end if;
+      end if;
+
+      if v_ahead_tz is not null then
+        -- local two-days-ago reads as UTC current_date - 1, which the old rule
+        -- spared - yet the subject is genuinely stale in its own zone.
+        update profiles set timezone = v_ahead_tz, current_streak = 9, freeze_credits = 0,
+          last_complete_date = local_today(v_ahead_tz) - 2 where id = v_uid;
+        perform decay_stale_streaks();
+        if (select current_streak from profiles where id = v_uid) <> 0 then
+          raise exception 'FAIL: zone % is a day ahead of UTC and kept a stale streak alive', v_ahead_tz;
+        end if;
+      end if;
+    end;
+
+    update profiles set timezone = v_saved_tz where id = v_uid;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;

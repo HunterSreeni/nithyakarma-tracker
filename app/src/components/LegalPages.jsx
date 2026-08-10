@@ -101,7 +101,9 @@ export function PrivacyPage() {
         <li><b>Account:</b> your email and password (handled by our auth provider; the password is stored only as a secure hash).</li>
         <li><b>Profile:</b> display name and gender (used only to offer gender-appropriate practices such as Sandhyavandhanam), plus your streaks, punya points, tier and referral code.</li>
         <li><b>Family members you add:</b> name, gender, upanayanam status and opt-in flags.</li>
-        <li><b>Practice data:</b> which anushtanams you track, your daily logs, and your timezone (for reminders).</li>
+        <li><b>Practice data:</b> which anushtanams you track, your daily logs, and your timezone
+          (read from your device's clock setting, not your location) so reminders and your daily
+          streak follow your own day rather than a server's.</li>
         <li><b>Notifications:</b> your reminder preference and push tokens for web/Android.</li>
         <li><b>Advertising (Android only):</b> when ads are shown, Google AdMob uses your device's advertising ID and similar identifiers to serve ads. Ads are skipped entirely for ad-free users.</li>
       </ul>

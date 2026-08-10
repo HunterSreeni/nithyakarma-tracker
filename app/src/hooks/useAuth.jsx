@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabase'
 import { track } from '../utils/analytics'
 import { clearTodayCache } from '../utils/todayCache'
+import { deviceTimezone } from '../utils/timezone'
 
 const AuthContext = createContext(null)
 
@@ -75,8 +76,22 @@ export function AuthProvider({ children }) {
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
     ])
-    const profile = data ?? null
+    let profile = data ?? null
     const familyMembers = fam ?? []
+    // Keep profiles.timezone tracking the device. It drives decay_stale_streaks'
+    // idea of "today" for this account and its children (migration
+    // 20260810120000), so a stale value costs the user a streak at the wrong
+    // local midnight. Doing it here rather than only in the notification
+    // toggle matters: most accounts never reach that toggle, and this also
+    // follows the user when they move between India and the UAE. Optimistic
+    // locally, fire-and-forget remotely - a failed write just retries next load.
+    const tz = deviceTimezone()
+    if (profile && profile.timezone !== tz) {
+      profile = { ...profile, timezone: tz }
+      try {
+        supabase.from('profiles').update({ timezone: tz }).eq('id', uid).then(undefined, () => {})
+      } catch { /* a background write must never break the load path */ }
+    }
     setProfile(profile)
     setFamilyMembers(familyMembers)
     // selectedMember is a row snapshot taken when the chip was tapped

@@ -449,6 +449,9 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | `decay_stale_streaks()` protects a gap-1 subject **without** spending its credit, and the kept credit then bridges the gap on the next completion (7 -> 8, `freeze_used`, exactly 1 credit spent); gap-1-no-credit still decays to 0 | Integration(§19) | ✅ (rewritten 2026-08-10) |
 | `streakState()` (UI) reports 0 in exactly the cases `submit_practice_log` would restart at 1 and `decay_stale_streaks` would zero, so the card can never show a streak the next mark won't honour | Unit(`streak.test.js`) | ✅ (2026-08-10) |
 | 08:00 / 20:00 nudges switch to freeze-specific wording only in their own window, and never promise a freeze that isn't there (no credit, no streak, gap 3+) | Unit(`freezeNudge.test.ts`, Deno) | ✅ (2026-08-10) |
+| `decay_stale_streaks()` judges each subject against its **own** local day (children inherit the parent's zone); discriminating case picks a zone provably skewed off the UTC date at run time, so it fails against the old global-`current_date` rule | Integration(§20) | ✅ (2026-08-10) |
+| `local_today()` falls back to the default for an invalid / null / empty zone instead of raising - one bad row must not abort decay for every user | Integration(§20) | ✅ (2026-08-10) |
+| `profiles.timezone` follows the device: written when stale, skipped when matching, and a failed write never breaks profile loading | Unit(`useAuth.test.jsx`) | ✅ (2026-08-10) |
 
 ### Error / offline / resilience (cross-cutting)
 | Case | Layer | Status |
