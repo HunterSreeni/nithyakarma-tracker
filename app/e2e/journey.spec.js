@@ -193,6 +193,33 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await page.locator('.ps-chip', { hasText: 'Me' }).click()
   })
 
+  // Migration 20260810130000: a Sandhya slot can be backdated to yesterday,
+  // punya-only, and must never touch today's own card (streak/day-complete
+  // only ever advance from today's own mark). Arjun (added above, upanayanam
+  // done) is Sandhya-eligible but has no practices yet - add it here.
+  test('family member (Arjun): Sandhyavandhanam yesterday catch-up is punya-only', async () => {
+    await page.locator('.ps-chip', { hasText: 'Arjun' }).click()
+    await page.getByRole('button', { name: /Add an anushtanam/ }).click()
+    await page.getByRole('button', { name: /Sandhyavandhanam/ }).click()
+    await expect(page.locator('.practice-card', { hasText: 'Sandhyavandhanam' })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText('0 of 3 sandhyas done')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Missed a sandhya yesterday?' }).click()
+    await expect(page.getByText('Half punya, no streak effect - just credit for doing it.')).toBeVisible()
+    const yesterdayPanel = page.locator('.yesterday-panel')
+    await expect(yesterdayPanel.getByRole('button', { name: 'Morning' })).toBeVisible()
+
+    await yesterdayPanel.getByRole('button', { name: 'Morning' }).click()
+    await expect(page.getByText(/\+\d+ punya for yesterday's Morning/)).toBeVisible({ timeout: 15000 })
+    await expect(yesterdayPanel.getByRole('button', { name: 'Morning' })).toBeDisabled()
+
+    // The backdated mark must not touch today's own card - still 0 of 3.
+    await expect(page.getByText('0 of 3 sandhyas done')).toBeVisible()
+
+    // back to self for the remaining tests
+    await page.locator('.ps-chip', { hasText: 'Me' }).click()
+  })
+
   test('edit profile name', async () => {
     await page.getByRole('link', { name: /Profile/ }).first().click()
     await page.getByLabel('Display name').fill('E2E Sreeni Renamed')
