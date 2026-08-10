@@ -489,6 +489,18 @@ verified on the emulator; ships through CI (verify + e2e) and auto-tags.
 > moved from 20:30 UTC to 01:00 UTC, because 20:30 UTC is 02:00 IST *the next
 > day* and left Postgres' `current_date` a full calendar day behind the local
 > dates `last_complete_date` is written in.
+>
+> **Known limitation, not solved:** `decay_stale_streaks()` compares a *local*
+> `last_complete_date` against Postgres' UTC `current_date`, so no single cron
+> hour is correct for every offset - it is a trade, not a fix. 01:00 UTC is
+> right for positive offsets (IST 06:30, Gulf 05:00, which is every user today:
+> `notification_preferences.timezone` currently holds only `Asia/Kolkata` and
+> `Asia/Dubai`). It is **wrong for negative offsets**: at 01:00 UTC a UTC-5
+> user is still on the previous local day, so a streak that is genuinely alive
+> reads as `current_date - 2` and gets zeroed - or burns a freeze credit - a
+> day early. The old 20:30 UTC slot had the mirror-image bug. Properly fixing
+> this means scoping decay per subject's stored timezone rather than picking an
+> hour; do that before onboarding users in the Americas.
 
 ### Intent 1.2 - Streak-miss reminder notification (hardcoded) - PARTIAL
 

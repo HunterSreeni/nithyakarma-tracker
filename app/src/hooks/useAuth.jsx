@@ -79,6 +79,15 @@ export function AuthProvider({ children }) {
     const familyMembers = fam ?? []
     setProfile(profile)
     setFamilyMembers(familyMembers)
+    // selectedMember is a row snapshot taken when the chip was tapped
+    // (ProfileSwitcher), so it goes stale the moment that child's streak /
+    // freeze_credits / last_complete_date change. Re-point it at the freshly
+    // loaded row. Without this, marking a practice for a child leaves the
+    // Today card reading the pre-mark values - which since utils/streak.js
+    // landed means the "you missed yesterday, mark today or it resets" banner
+    // stays up after the freeze has already been spent and the streak saved.
+    // Drops the selection if that child no longer exists.
+    setSelectedMember(prev => prev ? (familyMembers.find(f => f.id === prev.id) ?? null) : null)
     writeProfileCache(session, profile, familyMembers)
     return { profile, familyMembers }
   }, [])

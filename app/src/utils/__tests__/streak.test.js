@@ -69,6 +69,10 @@ describe('streakState agrees with streak_after_completion', () => {
     ['two missed days, freeze available', { last_complete_date: '2026-08-07' }],
     ['two missed days, no freeze', { last_complete_date: '2026-08-07', freeze_credits: 0 }],
     ['a week away', { last_complete_date: '2026-08-03' }],
+    // Reachable from a device whose clock is ahead, or a second device a day
+    // behind the one that wrote the row. Both server functions treat a future
+    // date as dead, so the mirror must too.
+    ['completed "tomorrow" (clock skew)', { last_complete_date: '2026-08-11' }],
   ]
 
   it.each(cases)('%s: reports 0 exactly when a mark would restart at 1', (_label, o) => {

@@ -283,6 +283,7 @@ function AddPracticeDropdown({ existing, onAdd }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [catalog, setCatalog] = useState([])
+  const [catalogLoaded, setCatalogLoaded] = useState(false)
   const [error, setError] = useState(null)
   const { profile, selectedMember } = useAuth()
   const dropdownRef = useRef(null)
@@ -291,12 +292,15 @@ function AddPracticeDropdown({ existing, onAdd }) {
   // On first open, not on mount: `catalog` is only ever read inside the
   // `open &&` block below, so fetching the whole practices table on every
   // Today render just put a full table read on the reopen critical path for a
-  // dropdown most users never touch.
+  // dropdown most users never touch. Tracked with a loaded flag rather than
+  // `catalog.length`, so the in-flight state is distinguishable from a genuine
+  // empty result - otherwise the first open renders "No matches" for the whole
+  // round trip, which reads as "there is nothing to add".
   useEffect(() => {
-    if (!open || catalog.length) return
+    if (!open || catalogLoaded) return
     supabase.from('practices').select('*').eq('active', true).order('id')
-      .then(({ data }) => setCatalog(data ?? []))
-  }, [open, catalog.length])
+      .then(({ data }) => { setCatalog(data ?? []); setCatalogLoaded(true) })
+  }, [open, catalogLoaded])
 
   useEffect(() => {
     if (!open) return
@@ -351,7 +355,9 @@ function AddPracticeDropdown({ existing, onAdd }) {
               </button>
             )
           })}
-          {visible.length === 0 && <div className="dd-item muted">No matches</div>}
+          {!catalogLoaded
+            ? <div className="dd-item muted">Loading...</div>
+            : visible.length === 0 && <div className="dd-item muted">No matches</div>}
         </div>
       )}
       {error && <div className="auth-error" role="alert">{error}</div>}
