@@ -29,7 +29,7 @@ a different screen.
 
 ## Test layers
 - **Unit** (Vitest + Testing Library + jsdom) - pure logic (`utils/`), hooks, components. 61 test files.
-- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 19 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
+- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 21 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
 - **Deno** (`supabase/functions/_shared/observanceMatch.test.ts`) - the tharpanam/observance rule-matching engine. Runs in CI as of 2026-07-23 (`edge-functions` job) - the first Deno test ever wired into CI.
 - **E2E web** (Playwright, `app/e2e/*.spec.js`) - full flows against a real built app + live Supabase.
 - **E2E Android** (adb screenshot-tap shell scripts, `app/e2e/*.sh`) - build/install/launch + blind taps at hardcoded coordinates. **Assert only "no crash" via logcat + `pidof`** - no in-app text/state assertion is possible (WebView exposes no accessibility tree to `uiautomator`). Pass beyond that requires eyeballing saved screenshots and cross-checking DB state via Supabase MCP.
@@ -310,11 +310,13 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Ad capped at 1/session, skipped when ad-free, never on failed save | Unit (`ads.test.js`) | ✅ |
 | CelebrationModal share card's `data.tier` field | - | ✅ verified 2026-07-23 via the live `submit_practice_log` function definition (Supabase MCP) - it returns `tier`, and `TodayPage.mark()`'s spread carries it through. Not a bug. |
 | p_award_streak passthrough (learning-style marks don't advance streak) | Unit (`useToday.test.js`) + Integration(§17) | ✅ |
-| Client-supplied local date honored within ±1 day, falls back beyond that (anti streak-gaming) | Integration(§10b) | ✅ |
+| Client-supplied local date on a non-sandhya practice is always ignored, clamps to the owner's `local_today(profiles.timezone)` (2026-08-10: was ±1 day for every practice, now sandhya-only per below) | Integration(§10b) | ✅ |
 | Tapping any Sandhya slot (Morning/Noon/Evening) opens a Gayatri-count popup instead of marking immediately, pre-filled 108 but editable to any value | Unit (`TodayPage.test.jsx`) | ✅ |
 | Confirming the popup submits the entered number as the log's `count`; Cancel submits nothing | Unit (`TodayPage.test.jsx`) | ✅ |
 | Non-sandhya practices unaffected - still auto-submit their fixed `target_count` on "Mark Done" | Unit (`TodayPage.test.jsx`) | ✅ |
 | Gayatri count still clamped 1..10000 server-side (`validate_count`) regardless of client input | Integration(§10) | ✅ (pre-existing RPC validation, unchanged) |
+| **Yesterday sandhya catch-up (2026-08-10, migration 20260810130000): "Missed a sandhya yesterday?" toggle, punya-only (half value, floored), never moves streak/freeze/last_complete_date even if the caller asks for streak credit** | Unit (`TodayPage.test.jsx`) + Integration(§21) | ✅ |
+| A date more than 1 day back, or a non-sandhya practice, cannot be backdated - clamps to today server-side regardless of client payload | Integration(§10b, §21) | ✅ |
 
 ### Add practice / cadences
 | Case | Layer | Status |
