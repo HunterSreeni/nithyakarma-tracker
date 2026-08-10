@@ -9,12 +9,13 @@ const h = vi.hoisted(() => ({
     panchangam_tradition: 'tamil',
   },
   updateProfile: vi.fn(() => Promise.resolve()),
+  familyMembers: [],
 }))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
     session: { user: { email: 'ravi@example.com' } },
     profile: h.profile,
-    familyMembers: [],
+    familyMembers: h.familyMembers,
     updateProfile: h.updateProfile,
     addFamilyMember: vi.fn(),
     removeFamilyMember: vi.fn(),
@@ -30,6 +31,7 @@ import ProfilePage from '../ProfilePage'
 beforeEach(() => {
   h.updateProfile = vi.fn(() => Promise.resolve())
   h.profile.panchangam_tradition = 'tamil'
+  h.familyMembers = []
 })
 
 const renderPage = () => render(<MemoryRouter><ProfilePage /></MemoryRouter>)
@@ -54,5 +56,23 @@ describe('ProfilePage panchangam tradition preference', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Malayalam' }))
     expect(await screen.findByRole('button', { name: 'Tamil' })).toHaveClass('on')
     expect(screen.getByRole('button', { name: 'Malayalam' }).className).not.toContain('on')
+  })
+})
+
+describe('ProfilePage family member punya and tier', () => {
+  it("shows each child's own punya and tier, independent of the parent's", () => {
+    h.profile.punya = 500 // parent is Yogi tier - must not leak into the child's row
+    h.familyMembers = [
+      { id: 'fm1', name: 'Arjun', gender: 'male', upanayanam_done: true, punya: 5, current_streak: 0 },
+      { id: 'fm2', name: 'Devika', gender: 'female', punya: 120, current_streak: 0 },
+    ]
+    renderPage()
+    const arjunRow = screen.getByText('Arjun').closest('.fam-row')
+    expect(arjunRow).toHaveTextContent('5 punya')
+    expect(arjunRow).toHaveTextContent('Shishya')
+
+    const devikaRow = screen.getByText('Devika').closest('.fam-row')
+    expect(devikaRow).toHaveTextContent('120 punya')
+    expect(devikaRow).toHaveTextContent('Sadhaka')
   })
 })

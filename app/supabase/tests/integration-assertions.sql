@@ -252,22 +252,29 @@ begin
     raise exception 'FAIL: daily_count target not stored on log';
   end if;
 
-  -- 10b. submit_practice_log honors a client-supplied p_local_date within
-  -- +/-1 day of the server date (B1: fixes early-morning IST logs landing on
-  -- the wrong UTC date), but ignores a wildly-off date to prevent streak-gaming.
-  declare v_up_tz uuid;
+  -- 10b. submit_practice_log now honors a client-supplied p_local_date ONLY for
+  -- the Sandhyavandhanam yesterday-backdate feature (migration 20260810130000,
+  -- see section 21). A non-sandhya practice ignores p_local_date entirely and
+  -- always lands on the owner's own local today via local_today(profiles.timezone)
+  -- - never server current_date, and never backdated, regardless of what the
+  -- client sends. (Previously this tolerated any date within +/-1 day of
+  -- server current_date, for every practice - that early-morning-IST
+  -- allowance is now handled by local_today() itself, not by trusting the
+  -- client's date.)
+  declare v_up_tz uuid; v_local_today_10b date;
   begin
+    v_local_today_10b := local_today('Asia/Kolkata'); -- integtest profile defaults to this zone
     insert into user_practices (owner_id, practice_id) values (v_uid, 2) returning id into v_up_tz; -- vishnu
-    perform submit_practice_log(v_up_tz, null, null, current_date - 1);
-    if (select log_date from practice_logs where user_practice_id = v_up_tz) <> current_date - 1 then
-      raise exception 'FAIL: p_local_date within bound was not honored';
+    perform submit_practice_log(v_up_tz, null, null, v_local_today_10b - 1);
+    if (select log_date from practice_logs where user_practice_id = v_up_tz) <> v_local_today_10b then
+      raise exception 'FAIL: non-sandhya p_local_date was honored instead of clamping to local today';
     end if;
     delete from user_practices where id = v_up_tz;
 
     insert into user_practices (owner_id, practice_id) values (v_uid, 3) returning id into v_up_tz; -- lalitha
-    perform submit_practice_log(v_up_tz, null, null, current_date - 3);
-    if (select log_date from practice_logs where user_practice_id = v_up_tz) <> current_date then
-      raise exception 'FAIL: an out-of-bound p_local_date was honored instead of falling back to current_date';
+    perform submit_practice_log(v_up_tz, null, null, v_local_today_10b - 3);
+    if (select log_date from practice_logs where user_practice_id = v_up_tz) <> v_local_today_10b then
+      raise exception 'FAIL: a wildly-off p_local_date was honored instead of falling back to local today';
     end if;
     delete from user_practices where id = v_up_tz; -- section 12 re-uses practice_id 3 for v_uid
   end;
@@ -640,6 +647,111 @@ begin
     end;
 
     update profiles set timezone = v_saved_tz where id = v_uid;
+  end;
+
+  -- 21. Sandhyavandhanam yesterday backdate (migration 20260810130000):
+  -- punya-only catch-up. Streak / freeze / last_complete_date must never move
+  -- from a backdated slot, even when the caller asks for streak credit
+  -- (p_award_streak is forced off server-side for a backdated sandhya log);
+  -- punya is half the practice's punya_value, floored. Reuses the "Test Boy"
+  -- family member from section 3 (upanayanam done, sandhya already
+  -- associated, never marked) so this is isolated from the streak state the
+  -- earlier sections leave on v_uid itself.
+  declare
+    v_fm_boy uuid; v_sup_boy uuid; v_local_today date; r2 jsonb;
+    v_punya_before int; v_streak_before int; v_last_complete_before date; v_freeze_before int;
+    v_up_streak_before int;
+  begin
+    select id into v_fm_boy from family_members where parent_id = v_uid and name = 'Test Boy';
+    select id into v_sup_boy from user_practices
+      where owner_id = v_uid and family_member_id = v_fm_boy and practice_id = v_sandhya;
+    v_local_today := local_today('Asia/Kolkata');
+
+    select punya, current_streak, last_complete_date, freeze_credits
+      into v_punya_before, v_streak_before, v_last_complete_before, v_freeze_before
+      from family_members where id = v_fm_boy;
+    select current_streak into v_up_streak_before from user_practices where id = v_sup_boy;
+
+    -- p_award_streak: true is passed explicitly - must still be denied.
+    r2 := submit_practice_log(v_sup_boy, 'morning', null, v_local_today - 1, true);
+    if not (r2->>'backdated')::boolean then
+      raise exception 'FAIL: yesterday sandhya submission not reported as backdated';
+    end if;
+    if (r2->>'punya_awarded')::int <> 2 then
+      raise exception 'FAIL: backdated punya award not halved (expected 2, got %)', r2->>'punya_awarded';
+    end if;
+    if (r2->>'day_complete')::boolean then
+      raise exception 'FAIL: a backdated sandhya slot reported day_complete';
+    end if;
+    if (select punya from family_members where id = v_fm_boy) <> v_punya_before + 2 then
+      raise exception 'FAIL: family member punya did not increase by the halved amount';
+    end if;
+    if (select current_streak from family_members where id = v_fm_boy) <> v_streak_before then
+      raise exception 'FAIL: subject streak moved from a backdated sandhya mark';
+    end if;
+    if (select last_complete_date from family_members where id = v_fm_boy) is distinct from v_last_complete_before then
+      raise exception 'FAIL: last_complete_date moved from a backdated sandhya mark';
+    end if;
+    if (select freeze_credits from family_members where id = v_fm_boy) <> v_freeze_before then
+      raise exception 'FAIL: freeze_credits moved from a backdated sandhya mark';
+    end if;
+    if (select current_streak from user_practices where id = v_sup_boy) <> v_up_streak_before then
+      raise exception 'FAIL: per-practice streak moved from a backdated sandhya mark';
+    end if;
+    if (select log_date from practice_logs where user_practice_id = v_sup_boy and slot = 'morning') <> v_local_today - 1 then
+      raise exception 'FAIL: backdated log was not stored against yesterday''s date';
+    end if;
+
+    -- a date further back than yesterday must clamp to today, not be honored
+    r2 := submit_practice_log(v_sup_boy, 'afternoon', null, v_local_today - 2, false);
+    if (r2->>'backdated')::boolean then
+      raise exception 'FAIL: a 2-day-old date was accepted as a backdate';
+    end if;
+    if (select log_date from practice_logs where user_practice_id = v_sup_boy and slot = 'afternoon') <> v_local_today then
+      raise exception 'FAIL: an out-of-range backdate date was not clamped to today';
+    end if;
+  end;
+
+  -- 22. Brahmayagnam (migration 20260810140000): the married-male mirror of
+  -- Samidhadhanam's brahmachari-only gate. A child can never be married, so
+  -- unlike the other two gates this one has no family-member exception path
+  -- at all - it's self-only, blocked outright for any family member.
+  -- Purusha Suktam is seeded alongside it with no gate whatsoever.
+  declare
+    v_brahmayagnam int; v_purusha int; v_kid uuid; v_up_grihastha uuid;
+  begin
+    select id into v_brahmayagnam from practices where slug = 'brahmayagnam';
+    select id into v_purusha from practices where slug = 'purusha-suktam';
+
+    -- integtest is currently male, unmarried (never toggled since section 2) - rejected
+    v_failed := false;
+    begin
+      insert into user_practices (owner_id, practice_id) values (v_uid, v_brahmayagnam);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: unmarried male got Brahmayagnam'; end if;
+
+    -- married male self: allowed
+    update profiles set is_married = true where id = v_uid;
+    insert into user_practices (owner_id, practice_id) values (v_uid, v_brahmayagnam) returning id into v_up_grihastha;
+    if v_up_grihastha is null then raise exception 'FAIL: married male self did not get Brahmayagnam'; end if;
+    update profiles set is_married = false where id = v_uid; -- restore for any later section
+
+    -- family member: blocked outright, even a male boy with upanayanam done
+    insert into family_members (parent_id, name, gender, upanayanam_done)
+      values (v_uid, 'Grihastha Test Kid', 'male', true) returning id into v_kid;
+    v_failed := false;
+    begin
+      insert into user_practices (owner_id, family_member_id, practice_id) values (v_uid, v_kid, v_brahmayagnam);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: a family member got Brahmayagnam - it must be self-only'; end if;
+
+    -- Purusha Suktam: no gate - the same family member can track it freely
+    insert into user_practices (owner_id, family_member_id, practice_id) values (v_uid, v_kid, v_purusha);
+    if not exists (select 1 from user_practices where owner_id = v_uid and family_member_id = v_kid and practice_id = v_purusha) then
+      raise exception 'FAIL: Purusha Suktam was rejected for an ungated family member';
+    end if;
   end;
 
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';

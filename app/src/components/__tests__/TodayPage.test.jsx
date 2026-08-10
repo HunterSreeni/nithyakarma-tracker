@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { localDateString } from '../../utils/cadence'
 
 // Child components pull in ads/router/localStorage - not under test here.
 vi.mock('../ProfileSwitcher', () => ({ default: () => null }))
@@ -20,6 +21,7 @@ const h = vi.hoisted(() => ({
   submit: vi.fn(), showInterstitial: vi.fn().mockResolvedValue(false),
   profile: { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 },
   selectedMember: null,
+  refresh: vi.fn(), rpc: vi.fn(), yesterdayLogs: [],
 }))
 vi.mock('../../hooks/useToday', () => ({
   useToday: () => ({ items: h.items, loading: false, submit: h.submit, addPractice: h.addPractice }),
@@ -31,16 +33,22 @@ vi.mock('../../hooks/useAuth', () => ({
     session: { user: { id: 'u1' } },
     profile: h.profile,
     selectedMember: h.selectedMember,
-    refresh: vi.fn(),
+    refresh: h.refresh,
   }),
 }))
-// AddPracticeDropdown + SuggestedPractices fetch practices on mount.
+// AddPracticeDropdown + SuggestedPractices fetch practices on mount; the
+// yesterday-sandhya panel fetches practice_logs and then calls rpc() directly
+// (the chain is thenable so a query with no terminal .order() still resolves).
 vi.mock('../../lib/supabase', () => {
-  const chain = () => {
-    const c = { select: () => c, eq: () => c, in: () => c, order: () => Promise.resolve({ data: h.catalog }) }
+  const chain = (table) => {
+    const c = {
+      select: () => c, eq: () => c, in: () => c,
+      order: () => Promise.resolve({ data: h.catalog }),
+      then: (resolve) => resolve({ data: table === 'practice_logs' ? h.yesterdayLogs : h.catalog }),
+    }
     return c
   }
-  return { supabase: { from: () => chain() } }
+  return { supabase: { from: (table) => chain(table), rpc: (...a) => h.rpc(...a) } }
 })
 
 import TodayPage from '../TodayPage'
@@ -52,10 +60,33 @@ const sandhyaItem = (slots) => ({
 })
 
 beforeEach(() => {
-  h.items = []; h.catalog = []
+  h.items = []; h.catalog = []; h.yesterdayLogs = []
   h.addPractice.mockClear(); h.submit.mockReset(); h.showInterstitial.mockClear()
+  h.refresh.mockClear(); h.rpc.mockReset()
   h.profile = { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 }
   h.selectedMember = null
+})
+
+describe('TodayPage - punya and tier follow the selected subject', () => {
+  it("shows the parent's own punya and tier when no family member is selected", () => {
+    h.items = [sandhyaItem([])]
+    h.profile = { ...h.profile, punya: 150 }
+    h.selectedMember = null
+    render(<TodayPage />)
+    expect(screen.getByText('150 punya')).toBeInTheDocument()
+    expect(screen.getByText('Sadhaka')).toBeInTheDocument()
+  })
+
+  it("shows the selected family member's own punya and tier, not the parent's", () => {
+    h.items = [sandhyaItem([])]
+    h.profile = { ...h.profile, punya: 150 }
+    h.selectedMember = { id: 'fm1', gender: 'male', upanayanam_done: true, punya: 5, best_streak: 0, freeze_credits: 1 }
+    render(<TodayPage />)
+    expect(screen.getByText('5 punya')).toBeInTheDocument()
+    expect(screen.getByText('Shishya')).toBeInTheDocument()
+    expect(screen.queryByText('150 punya')).not.toBeInTheDocument()
+    expect(screen.queryByText('Sadhaka')).not.toBeInTheDocument()
+  })
 })
 
 describe('TodayPage - Sandhyavandhanam UX', () => {
@@ -319,6 +350,53 @@ describe('TodayPage - Samidhadhanam hidden from Add dropdown', () => {
   })
 })
 
+describe('TodayPage - Brahmayagnam hidden from Add dropdown', () => {
+  const brahmayagnamPractice = { id: 21, name: 'Brahmayagnam', icon: '📖', is_sandhyavandhanam: false, requires_grihastha: true, cadence: 'daily' }
+  const openDropdown = () => {
+    h.items = [{
+      up: { id: 'up-other', current_streak: 0, sequence_position: 0 },
+      practice: { id: 9, name: 'Vishnu Sahasranamam', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
+      logs: [],
+    }]
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Add an anushtanam to track...'))
+  }
+
+  it('shows Brahmayagnam for a married male self-profile', async () => {
+    h.catalog = [brahmayagnamPractice]
+    h.profile = { ...h.profile, gender: 'male', is_married: true }
+    h.selectedMember = null
+    openDropdown()
+    expect(await screen.findByText('Brahmayagnam')).toBeInTheDocument()
+  })
+
+  it('hides Brahmayagnam for an unmarried male self-profile', async () => {
+    h.catalog = [brahmayagnamPractice]
+    h.profile = { ...h.profile, gender: 'male', is_married: false }
+    h.selectedMember = null
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Brahmayagnam')).not.toBeInTheDocument()
+  })
+
+  it('hides Brahmayagnam for a female profile, even if married', async () => {
+    h.catalog = [brahmayagnamPractice]
+    h.profile = { ...h.profile, gender: 'female', is_married: true }
+    h.selectedMember = null
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Brahmayagnam')).not.toBeInTheDocument()
+  })
+
+  it('hides Brahmayagnam for any family member - a child can never be married', async () => {
+    h.catalog = [brahmayagnamPractice]
+    h.selectedMember = { id: 'fm1', gender: 'male', upanayanam_done: true }
+    openDropdown()
+    await waitFor(() => expect(screen.getByText('No matches')).toBeInTheDocument())
+    expect(screen.queryByText('Brahmayagnam')).not.toBeInTheDocument()
+  })
+})
+
 describe('TodayPage - Sandhyavandhanam hidden from Add dropdown', () => {
   const sandhyaPractice = { id: 1, name: 'Sandhyavandhanam', icon: '🕉', is_sandhyavandhanam: true, cadence: 'daily' }
   // A non-empty item list keeps the empty-day SuggestedPractices section (which
@@ -363,5 +441,61 @@ describe('TodayPage - Sandhyavandhanam hidden from Add dropdown', () => {
     h.selectedMember = { id: 'fm1', gender: 'male', upanayanam_done: true }
     openDropdown()
     expect(await screen.findByText('Sandhyavandhanam')).toBeInTheDocument()
+  })
+})
+
+describe('TodayPage - Yesterday sandhya catch-up', () => {
+  const yesterday = localDateString(new Date(Date.now() - 24 * 60 * 60 * 1000))
+
+  const openYesterdayPanel = async () => {
+    fireEvent.click(screen.getByText('Missed a sandhya yesterday?'))
+    await screen.findByText(/Half punya, no streak effect|already marked/)
+  }
+  const yesterdayPanel = () => screen.getByText('Missed a sandhya yesterday?').closest('.yesterday-sandhya')
+
+  it('opens to all 3 slots available when nothing was logged yesterday', async () => {
+    h.items = [sandhyaItem([])]
+    h.yesterdayLogs = []
+    render(<TodayPage />)
+    await openYesterdayPanel()
+    const panel = within(yesterdayPanel())
+    expect(panel.getByText('Morning')).toBeInTheDocument()
+    expect(panel.getByText('Noon')).toBeInTheDocument()
+    expect(panel.getByText('Evening')).toBeInTheDocument()
+  })
+
+  it('shows an already-marked message and no slots when all 3 were already backdated', async () => {
+    h.items = [sandhyaItem([])]
+    h.yesterdayLogs = [{ slot: 'morning' }, { slot: 'afternoon' }, { slot: 'evening' }]
+    render(<TodayPage />)
+    await openYesterdayPanel()
+    expect(screen.getByText("All 3 of yesterday's sandhyas are already marked.")).toBeInTheDocument()
+  })
+
+  it('marking a slot calls the RPC backdated and streak-exempt, shows the punya note, and refreshes the topbar', async () => {
+    h.items = [sandhyaItem([])]
+    h.yesterdayLogs = []
+    h.rpc.mockResolvedValue({ data: { saved: true, backdated: true, punya_awarded: 2 }, error: null })
+    render(<TodayPage />)
+    await openYesterdayPanel()
+    fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
+    await waitFor(() => expect(h.rpc).toHaveBeenCalledWith('submit_practice_log', {
+      p_user_practice_id: 'up-s', p_slot: 'morning', p_count: null,
+      p_local_date: yesterday, p_award_streak: false,
+    }))
+    await screen.findByText("+2 punya for yesterday's Morning")
+    expect(h.refresh).toHaveBeenCalled()
+  })
+
+  it('shows an inline error and leaves the slot markable when the RPC fails', async () => {
+    h.items = [sandhyaItem([])]
+    h.yesterdayLogs = []
+    h.rpc.mockResolvedValue({ data: null, error: { message: 'network down' } })
+    render(<TodayPage />)
+    await openYesterdayPanel()
+    fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
+    await screen.findByText('network down')
+    expect(h.refresh).not.toHaveBeenCalled()
+    expect(within(yesterdayPanel()).getByText('Morning').closest('button')).not.toBeDisabled()
   })
 })

@@ -255,6 +255,21 @@ a.verse-card { text-decoration: none; color: inherit; }
   text-transform: uppercase; color: var(--action); margin: 0.45rem 0 0.1rem;
 }
 
+.yesterday-sandhya { margin-top: 0.4rem; }
+.yesterday-toggle {
+  display: inline-flex; align-items: center; gap: 4px; background: none; border: none;
+  padding: 4px 0; min-height: 32px; font-size: 0.68rem; font-weight: 600; color: var(--text-2);
+  cursor: pointer;
+}
+.yesterday-toggle:hover { color: var(--action); }
+.yesterday-panel {
+  background: var(--cream); border-radius: 10px; padding: 0.55rem 0.7rem; margin-top: 0.3rem;
+}
+.yesterday-note { font-size: 0.7rem; color: var(--text-2); line-height: 1.4; }
+.yesterday-note.yesterday-success { color: var(--success); font-weight: 600; margin-top: 0.35rem; }
+.yesterday-note.yesterday-error { color: var(--danger); font-weight: 600; margin-top: 0.35rem; }
+.yesterday-panel .slot-row { margin-top: 0.4rem; }
+
 /* add-practice dropdown */
 .add-select { background: #fff; border: 1.5px dashed var(--warm); border-radius: 14px; padding: 0.8rem 1rem; display: flex; align-items: center; justify-content: space-between; color: var(--text-2); font-size: 0.8rem; width: 100%; margin-top: 0.3rem; }
 .add-select .plus { color: var(--action); font-weight: 700; }
