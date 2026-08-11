@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.31.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.1...app-v0.31.2) (2026-08-11)
+
+
+### Bug Fixes
+
+* bound Supabase fetches on older Android WebViews ([37097bb](https://github.com/HunterSreeni/nithyakarma-tracker/commit/37097bb3f8d07c0e4fcaed546a08cda3c3e91066))
+* prevent stuck loading after Android resume ([38bb9a3](https://github.com/HunterSreeni/nithyakarma-tracker/commit/38bb9a3397754221575c862bc7d54a5abab7fc56))
+
 ## [0.31.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.0...app-v0.31.1) (2026-08-11)
 
 
