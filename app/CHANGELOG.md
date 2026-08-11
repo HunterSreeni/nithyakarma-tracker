@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.31.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.30.0...app-v0.31.0) (2026-08-11)
+
+
+### Features
+
+* add Ekadashi/Dwadashi/Trayodashi/Purnima observance banners ([a881757](https://github.com/HunterSreeni/nithyakarma-tracker/commit/a8817572dd4488208e9079d55d8f80df3907e8f8))
+
+
+### Bug Fixes
+
+* give History and Referrals a cache fallback like Today's list ([72e1a94](https://github.com/HunterSreeni/nithyakarma-tracker/commit/72e1a9482093770c96796a8405e051497671f8b8))
+* History/Referrals stuck-loading + feat: tithi observance banners ([8edee43](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8edee436ead964ff5c65ca6b71c7aab9df6b9549))
+
 ## [0.30.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.7...app-v0.30.0) (2026-08-10)
 
 
