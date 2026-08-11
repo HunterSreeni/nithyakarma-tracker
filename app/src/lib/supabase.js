@@ -36,22 +36,53 @@ if (!url || !key) {
 // ~1x this for loadProfile after it resolves) rather than being set safely below it.
 const REQUEST_TIMEOUT_MS = 12000
 
-// AbortSignal.timeout/any are Chrome 116+; minSdkVersion is 24, so a device on an
-// old System WebView must not take a TypeError at module load - that would blank
-// the whole app, which is strictly worse than the hang being fixed here. Fall back
-// to the unbounded fetch there.
-const canTimeout = typeof AbortSignal !== 'undefined' &&
-  typeof AbortSignal.timeout === 'function' && typeof AbortSignal.any === 'function'
+// AbortSignal.timeout/any only reached Android System WebView in Chrome 116.
+// minSdkVersion is 24, so feature-gating on those helpers made the timeout a
+// no-op on older devices and restored the original permanent-resume hang. Build
+// the timeout from the much older AbortController primitive instead. The
+// Promise.race fallback still bounds the Supabase caller if an exceptionally old
+// WebView has fetch but no AbortController (the underlying socket cannot be
+// cancelled there, but it can no longer pin the UI's loading state).
+function timeoutError() {
+  const message = `Request timed out after ${REQUEST_TIMEOUT_MS}ms`
+  return typeof DOMException === 'function'
+    ? new DOMException(message, 'TimeoutError')
+    : Object.assign(new Error(message), { name: 'TimeoutError' })
+}
 
-const fetchWithTimeout = canTimeout
-  ? (input, init = {}) => {
-      // Respect a caller-supplied signal (realtime/storage pass their own) by
-      // aborting on whichever fires first.
-      const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-      const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout
-      return fetch(input, { ...init, signal })
-    }
-  : fetch
+const fetchWithTimeout = (input, init = {}) => {
+  const callerSignal = init.signal
+  const controller = typeof AbortController === 'function' ? new AbortController() : null
+  let forwardCallerAbort
+
+  if (controller && callerSignal) {
+    forwardCallerAbort = () => controller.abort(callerSignal.reason)
+    if (callerSignal.aborted) forwardCallerAbort()
+    else callerSignal.addEventListener('abort', forwardCallerAbort, { once: true })
+  }
+
+  const signal = controller?.signal ?? callerSignal
+  let timer
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      const error = timeoutError()
+      controller?.abort(error)
+      reject(error)
+    }, REQUEST_TIMEOUT_MS)
+  })
+
+  let request
+  try {
+    request = fetch(input, signal ? { ...init, signal } : init)
+  } catch (error) {
+    request = Promise.reject(error)
+  }
+
+  return Promise.race([request, timeout]).finally(() => {
+    clearTimeout(timer)
+    if (forwardCallerAbort) callerSignal.removeEventListener('abort', forwardCallerAbort)
+  })
+}
 
 export const supabase = createClient(url, key, {
   global: { fetch: fetchWithTimeout },
