@@ -31,11 +31,6 @@ describe('supabase client fetch timeout', () => {
     expect(typeof wrapped).toBe('function')
   })
 
-  // AbortSignal.timeout is driven by a platform timer, not setTimeout, so fake
-  // timers cannot advance it and asserting the real 12s elapse would mean a 12s
-  // test. Assert the wiring instead: an unsignalled call must still reach fetch
-  // carrying a live abort signal, which is precisely what auth-js never supplies
-  // on its own.
   it('attaches an abort signal even when the caller supplies none', async () => {
     let seen
     vi.stubGlobal('fetch', (_input, init) => { seen = init.signal; return Promise.resolve('ok') })
@@ -45,6 +40,27 @@ describe('supabase client fetch timeout', () => {
 
     expect(seen).toBeInstanceOf(AbortSignal)
     expect(seen.aborted).toBe(false)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('aborts a hung request after 12s without AbortSignal.timeout/any support', async () => {
+    // Old Android WebViews have AbortController but lack these newer static
+    // helpers. The previous implementation returned bare fetch in this case.
+    vi.stubGlobal('AbortSignal', undefined)
+    let seen
+    vi.stubGlobal('fetch', (_input, init) => new Promise((_resolve, reject) => {
+      seen = init.signal
+      init.signal.addEventListener('abort', () => reject(init.signal.reason))
+    }))
+
+    const wrapped = await loadWrappedFetch()
+    const settled = wrapped('https://example.supabase.co/rest/v1/profiles', {})
+      .then(() => 'resolved', (error) => error)
+    await vi.advanceTimersByTimeAsync(12000)
+
+    expect(seen.aborted).toBe(true)
+    await expect(settled).resolves.toEqual(expect.objectContaining({ name: 'TimeoutError' }))
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('leaves a settling request alone', async () => {
@@ -65,5 +81,19 @@ describe('supabase client fetch timeout', () => {
 
     controller.abort(new Error('caller aborted'))
     await expect(settled).resolves.toEqual(expect.objectContaining({ message: 'caller aborted' }))
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('still bounds the caller when AbortController is unavailable', async () => {
+    vi.stubGlobal('AbortController', undefined)
+    vi.stubGlobal('fetch', () => new Promise(() => {}))
+
+    const wrapped = await loadWrappedFetch()
+    const settled = wrapped('https://example.supabase.co/rest/v1/profiles', {})
+      .then(() => 'resolved', (error) => error)
+    await vi.advanceTimersByTimeAsync(12000)
+
+    await expect(settled).resolves.toEqual(expect.objectContaining({ name: 'TimeoutError' }))
+    expect(vi.getTimerCount()).toBe(0)
   })
 })
