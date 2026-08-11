@@ -331,11 +331,30 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Already-tracking dimmed & disabled | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Add error keeps dropdown open, shows inline error | - | ⬜ |
 | Escape closes dropdown, focus trap active | - | ⬜ (hook `useFocusTrap` itself untested directly; only exercised indirectly via CelebrationModal focus tests) |
-| Weekly practice scheduled only on its weekday | Unit(cadence) + Integration(§15) | ✅ |
+| Weekly practice scheduled only on its weekday - mechanism itself, for any future `cadence='weekly'` row | Unit(cadence) + Integration(§15) | ✅ |
 | Weekly continuity across exactly one week, reset after a missed week | Integration(§15) | ✅ |
 | RPC refuses to log a weekly practice on a non-matching weekday | Integration(§15) | ✅ |
+| **2026-08-11 (migration 20260811120446): all 5 previously-weekly practices (Aditya Hrudayam, Sri Rudram, Subrahmanya Bhujangam, Dakshinamurthy Stotram, Devi Mahatmyam) reclassified to `cadence='daily'`, scope confirmed with Sreeni - adding one on any day no longer silently vanishes from the Today list (bug report), and `submit_practice_log` no longer rejects a mark on a non-matching weekday. `weekday` stays on the row purely as data - `cadenceLabel()` shows it as a "traditionally {Day}s" hint, never a gate** | Unit(`cadence.test.js`) + Integration(§23) | ✅ |
 | `daily_count` target (108) stored verbatim | Integration(§10) | ✅ |
 | Sequence position increments and cycles at length | Integration(§11) | ✅ |
+
+### Sri Rudram 3-slot marking
+Same day, requested 2026-08-11 alongside the weekly-gate fix above: split into
+Namakam / Chamakam / Both, tracked as 3 independent slots - same any-1-of-3
+semantics as Sandhyavandhanam (new `is_sri_rudram` flag, `submit_practice_log`
+generalized from `is_sandhyavandhanam` to `is_sandhyavandhanam or
+is_sri_rudram`). Unlike Sandhya: no Gayatri-count prompt (slots mark
+directly) and no yesterday-backdate capability (neither requested, both stay
+Sandhya-exclusive in the RPC).
+| Case | Layer | Status |
+|---|---|---|
+| All 3 slot buttons shown, plus the informational weekday hint | Unit (`TodayPage.test.jsx`) | ✅ |
+| Clicking a slot marks directly - no count prompt, unlike Sandhya | Unit (`TodayPage.test.jsx`) | ✅ |
+| Any 1 of 3 slots completes the practice for the day, no "Mark Done" button shown | Unit (`TodayPage.test.jsx`) | ✅ |
+| An already-marked slot shown done and disabled | Unit (`TodayPage.test.jsx`) | ✅ |
+| Marking all 3 slots the same day: streak advances once, punya stacks per slot (12/24/36) | Integration(§23) | ✅ |
+| A log with no slot is rejected; re-marking an already-done slot is rejected (unique same-day slot) | Integration(§23) | ✅ |
+| History shows a Rudram-specific slot-count suffix, not the sandhya "(N/3 sandhyas)" one | Unit (`HistoryPage.test.jsx`) | ✅ |
 
 ### History
 | Case | Layer | Status |
