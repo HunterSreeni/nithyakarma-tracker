@@ -39,6 +39,7 @@ function renderHistoryPage() {
 
 beforeEach(() => {
   h.ups = []; h.logs = []; h.failNext = false
+  localStorage.clear() // isolate from the new history cache between tests
 })
 
 describe('HistoryPage', () => {

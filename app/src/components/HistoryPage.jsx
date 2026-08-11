@@ -5,6 +5,7 @@ import ProfileSwitcher from './ProfileSwitcher'
 import ErrorBanner from './ErrorBanner'
 import PracticeIcon from '../utils/practiceIcons'
 import { friendlyError } from '../utils/friendlyError'
+import { readHistoryCache, writeHistoryCache } from '../utils/historyCache'
 
 export default function HistoryPage() {
   const { session, selectedMember } = useAuth()
@@ -12,9 +13,13 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  // fromCache is passed only by the mount effect, so a manual retry always
+  // shows a real spinner rather than re-painting the same stale list.
+  const load = useCallback(async ({ fromCache = false } = {}) => {
     setError('')
+    const cached = fromCache ? readHistoryCache(session.user.id, selectedMember?.id) : null
+    if (cached) setDays(cached)
+    setLoading(!cached)
     try {
       let q = supabase.from('user_practices')
         .select('id, practice:practices(name, slug, is_sandhyavandhanam)')
@@ -23,7 +28,11 @@ export default function HistoryPage() {
       const { data: ups } = await q
       const byUp = Object.fromEntries((ups ?? []).map(u => [u.id, u.practice]))
       const ids = Object.keys(byUp)
-      if (!ids.length) { setDays([]); return }
+      if (!ids.length) {
+        setDays([])
+        writeHistoryCache(session.user.id, selectedMember?.id, [])
+        return
+      }
       const { data: logs } = await supabase.from('practice_logs')
         .select('user_practice_id, log_date, slot')
         .in('user_practice_id', ids)
@@ -34,7 +43,7 @@ export default function HistoryPage() {
         grouped[l.log_date] ??= []
         grouped[l.log_date].push(l)
       }
-      setDays(Object.entries(grouped).map(([date, ls]) => ({
+      const resolved = Object.entries(grouped).map(([date, ls]) => ({
         date,
         items: Object.values(ls.reduce((acc, l) => {
           const p = byUp[l.user_practice_id]
@@ -42,7 +51,9 @@ export default function HistoryPage() {
           acc[l.user_practice_id].slots += 1
           return acc
         }, {})),
-      })))
+      }))
+      setDays(resolved)
+      writeHistoryCache(session.user.id, selectedMember?.id, resolved)
     } catch (err) {
       setError(friendlyError(err))
     } finally {
@@ -50,7 +61,7 @@ export default function HistoryPage() {
     }
   }, [session.user.id, selectedMember])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load({ fromCache: true }) }, [load])
 
   return (
     <>

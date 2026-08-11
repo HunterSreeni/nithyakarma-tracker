@@ -6,13 +6,16 @@ vi.mock('../../lib/supabase', () => ({
   supabase: { rpc: () => Promise.resolve({ data: h.rows, error: h.rpcError }) },
 }))
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ profile: { referral_code: 'ref123' } }),
+  useAuth: () => ({ profile: { id: 'u1', referral_code: 'ref123' } }),
 }))
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
 
 import ReferralsPage from '../ReferralsPage'
 
-beforeEach(() => { h.rows = []; h.rpcError = null })
+beforeEach(() => {
+  h.rows = []; h.rpcError = null
+  localStorage.clear() // isolate from the new referrals cache between tests
+})
 
 describe('ReferralsPage', () => {
   it('shows an invite CTA when you have no referrals yet (not an empty list)', async () => {

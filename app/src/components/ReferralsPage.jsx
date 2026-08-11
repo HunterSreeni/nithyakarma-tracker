@@ -6,6 +6,7 @@ import { shareUrl } from '../utils/share'
 import { track } from '../utils/analytics'
 import ErrorBanner from './ErrorBanner'
 import { friendlyError } from '../utils/friendlyError'
+import { readReferralsCache, writeReferralsCache } from '../utils/referralsCache'
 
 // A plain outbound tracking list ("who joined with my link, and when") -
 // deliberately not a competitive leaderboard. apply_referral() grants both
@@ -17,21 +18,26 @@ export default function ReferralsPage() {
   const [error, setError] = useState('')
   const { profile } = useAuth()
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  // fromCache is passed only by the mount effect, so a manual retry always
+  // shows a real spinner rather than re-painting the same stale list.
+  const load = useCallback(async ({ fromCache = false } = {}) => {
     setError('')
+    const cached = fromCache ? readReferralsCache(profile.id) : null
+    if (cached) setRows(cached)
+    setLoading(!cached)
     try {
       const { data, error: rpcError } = await supabase.rpc('get_my_referrals')
       if (rpcError) throw rpcError
       setRows(data ?? [])
+      writeReferralsCache(profile.id, data ?? [])
     } catch (err) {
       setError(friendlyError(err))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [profile.id])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load({ fromCache: true }) }, [load])
 
   const initials = (n) => n.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
   const inviteWhatsApp = () => {

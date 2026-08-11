@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabase'
 import { track } from '../utils/analytics'
 import { clearTodayCache } from '../utils/todayCache'
+import { clearHistoryCache } from '../utils/historyCache'
+import { clearReferralsCache } from '../utils/referralsCache'
 import { deviceTimezone } from '../utils/timezone'
 
 const AuthContext = createContext(null)
@@ -114,13 +116,13 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       if (session) await loadProfile(session).catch(() => {})
-      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache(); clearTodayCache() }
+      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache() }
       setLoading(false)
     }).catch(() => setLoading(false))
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
       if (session) await loadProfile(session).catch(() => {})
-      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache(); clearTodayCache() }
+      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache() }
     })
 
     // Re-validate the session when the app returns to the foreground. A tab
@@ -176,7 +178,7 @@ export function AuthProvider({ children }) {
   // Clear our own cache eagerly rather than waiting on onAuthStateChange's
   // SIGNED_OUT branch - avoids a window where a fast subsequent reload (or a
   // different user signing in on a shared device) could still read stale data.
-  const signOut = () => { clearProfileCache(); clearTodayCache(); return supabase.auth.signOut() }
+  const signOut = () => { clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache(); return supabase.auth.signOut() }
 
   // Recovery: email a reset link that returns to /reset, then set the new password.
   const resetPassword = (email, captchaToken) =>
