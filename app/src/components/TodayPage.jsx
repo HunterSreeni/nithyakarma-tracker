@@ -13,6 +13,7 @@ import GayatriCountModal from './GayatriCountModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import PanchangamBox from './PanchangamBox'
 import MonthlySpecialBanner from './MonthlySpecialBanner'
+import TithiObservanceBanner from './TithiObservanceBanner'
 import ErrorBanner from './ErrorBanner'
 import PracticeIcon from '../utils/practiceIcons'
 import { track } from '../utils/analytics'
@@ -108,6 +109,7 @@ export default function TodayPage() {
       </div>
       <PanchangamBox />
       <MonthlySpecialBanner />
+      <TithiObservanceBanner />
 
       <ProfileSwitcher />
 

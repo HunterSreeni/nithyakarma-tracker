@@ -1,7 +1,4 @@
 // Run with: deno test supabase/functions/_shared/observanceMatch.test.ts
-// (no Deno runtime available in this dev environment - logic was sanity
-// checked against an equivalent plain-JS port before writing this file;
-// run this for real before the first production deploy of Phase 3).
 import { assertEquals } from "jsr:@std/assert@1"
 import { addDays, bestAdvanceMatch, bestMatch, type ObservanceRule, type PanchangamRow } from "./observanceMatch.ts"
 
@@ -41,6 +38,24 @@ const rules: ObservanceRule[] = [
     match_thithi: "Krishna Chaturdashi", match_tamil_month: "Aippasi", match_tamil_day: null,
     match_malayalam_month: null, match_malayalam_day: null, match_nakshatra: null,
     day_offset: -1, priority: 0, advance_notify: true,
+  },
+  {
+    key: "shukla_ekadashi", category: "observance", title: "t", message: "m",
+    match_thithi: "Shukla Ekadashi", match_tamil_month: null, match_tamil_day: null,
+    match_malayalam_month: null, match_malayalam_day: null, match_nakshatra: null,
+    day_offset: 0, priority: 0, advance_notify: false,
+  },
+  {
+    key: "avani_avittam", category: "observance", title: "t", message: "m",
+    match_thithi: "Purnima", match_tamil_month: null, match_tamil_day: null,
+    match_malayalam_month: null, match_malayalam_day: null, match_nakshatra: "Shravana",
+    day_offset: 0, priority: 0, advance_notify: true,
+  },
+  {
+    key: "monthly_purnima", category: "observance", title: "t", message: "m",
+    match_thithi: "Purnima", match_tamil_month: null, match_tamil_day: null,
+    match_malayalam_month: null, match_malayalam_day: null, match_nakshatra: null,
+    day_offset: 0, priority: -1, advance_notify: false,
   },
 ]
 
@@ -117,4 +132,19 @@ Deno.test("bestAdvanceMatch skips a rule with advance_notify = false, even if it
   const amavasyaRow = row({ thithi: "Amavasya", tamil_month: "Aippasi", malayalam_month: "Thulam" })
   assertEquals(bestMatch({ 0: amavasyaRow }, noAdvanceRules, "tharpanam")?.key, "monthly_amavasya")
   assertEquals(bestAdvanceMatch({ 0: amavasyaRow }, noAdvanceRules, "tharpanam"), null)
+})
+
+Deno.test("plain thithi match (Ekadashi) fires with no month/day/nakshatra constraints", () => {
+  const match = bestMatch({ 0: row({ thithi: "Shukla Ekadashi" }) }, rules, "observance")
+  assertEquals(match?.key, "shukla_ekadashi")
+})
+
+Deno.test("priority tiebreak: Avani Avittam (Purnima + Shravana) beats the generic Purnima banner on the same date", () => {
+  const match = bestMatch({ 0: row({ thithi: "Purnima", nakshatra: "Shravana" }) }, rules, "observance")
+  assertEquals(match?.key, "avani_avittam")
+})
+
+Deno.test("generic Purnima banner still fires on an ordinary Purnima with no Shravana nakshatra", () => {
+  const match = bestMatch({ 0: row({ thithi: "Purnima", nakshatra: "Ashwini" }) }, rules, "observance")
+  assertEquals(match?.key, "monthly_purnima")
 })

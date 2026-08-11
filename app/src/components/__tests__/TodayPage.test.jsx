@@ -15,6 +15,7 @@ vi.mock('../TierUpModal', () => ({
 vi.mock('../GuidedTour', () => ({ default: () => null }))
 vi.mock('../PanchangamBox', () => ({ default: () => null }))
 vi.mock('../MonthlySpecialBanner', () => ({ default: () => null }))
+vi.mock('../TithiObservanceBanner', () => ({ default: () => null }))
 
 const h = vi.hoisted(() => ({
   items: [], catalog: [], addPractice: vi.fn(),
