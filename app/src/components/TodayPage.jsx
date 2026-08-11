@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
-import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, localDateString, SANDHYA_SLOTS } from '../utils/cadence'
+import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, localDateString, SANDHYA_SLOTS, RUDRAM_SLOTS } from '../utils/cadence'
 import { streakState } from '../utils/streak'
 import { tierFor, tierClass } from '../utils/tiers'
 import CelebrationModal from './CelebrationModal'
@@ -60,7 +60,9 @@ export default function TodayPage() {
     const wasComplete = dayComplete(items)
     try {
       const result = await submit(item.up.id, {
-        slot, count: item.practice.is_sandhyavandhanam ? count : (item.practice.target_count ?? null),
+        slot, count: item.practice.is_sandhyavandhanam ? count
+          : item.practice.is_sri_rudram ? null
+          : (item.practice.target_count ?? null),
       })
       await refresh() // streaks in topbar / switcher
       const justCompleted = !!result.day_complete && !wasComplete
@@ -69,6 +71,7 @@ export default function TodayPage() {
         freeze_used: !!result.freeze_used,
         overall_streak: result.overall_streak ?? 0,
         is_sandhya: !!item.practice.is_sandhyavandhanam,
+        is_sri_rudram: !!item.practice.is_sri_rudram,
       })
       // Ad fires here - after the verified save, BEFORE the celebration reward
       // (Intent 0.2). At a streak milestone, ask for a review instead (Intent 1.4);
@@ -95,6 +98,8 @@ export default function TodayPage() {
   }
 
   const onSlotClick = (item, slot) => setGayatriPrompt({ item, slot })
+  // Sri Rudram slots mark directly, unlike Sandhya's - no Gayatri-count prompt applies.
+  const onRudramSlotClick = (item, slot) => mark(item, slot)
 
   return (
     <>
@@ -149,7 +154,8 @@ export default function TodayPage() {
         <div className="practice-list">
           {items.map(item => (
             <PracticeCard key={item.up.id} item={item}
-              busy={busyId === item.up.id} onMark={mark} onSlotClick={onSlotClick} />
+              busy={busyId === item.up.id} onMark={mark} onSlotClick={onSlotClick}
+              onRudramSlotClick={onRudramSlotClick} />
           ))}
         </div>
       )}
@@ -228,7 +234,7 @@ function SuggestedPractices({ onAdd }) {
   )
 }
 
-function PracticeCard({ item, busy, onMark, onSlotClick }) {
+function PracticeCard({ item, busy, onMark, onSlotClick, onRudramSlotClick }) {
   const { practice, up, logs } = item
   const done = isDoneToday(practice, logs)
   const slotsDone = new Set(logs.map(l => l.slot))
@@ -278,9 +284,20 @@ function PracticeCard({ item, busy, onMark, onSlotClick }) {
             <YesterdaySandhya item={item} />
           </>
         )}
+        {practice.is_sri_rudram && (
+          <div className="slot-row">
+            {RUDRAM_SLOTS.map(s => (
+              <button key={s.key} disabled={slotsDone.has(s.key) || busy}
+                className={`slot-btn ${slotsDone.has(s.key) ? 'done' : ''}`}
+                onClick={() => onRudramSlotClick(item, s.key)}>
+                {slotsDone.has(s.key) && <Check size={11} strokeWidth={3} />}{s.short}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       {done ? <div className="done-check"><Check size={16} strokeWidth={3} /></div>
-        : !practice.is_sandhyavandhanam && (
+        : !practice.is_sandhyavandhanam && !practice.is_sri_rudram && (
           <button className="btn-done" disabled={busy} onClick={() => onMark(item)}>
             {busy ? 'Saving...' : 'Mark Done'}
           </button>

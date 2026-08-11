@@ -60,6 +60,12 @@ const sandhyaItem = (slots) => ({
   logs: slots.map(s => ({ slot: s })),
 })
 
+const rudramItem = (slots) => ({
+  up: { id: 'up-r', current_streak: 0, sequence_position: 0 },
+  practice: { id: 9, name: 'Sri Rudram', icon: '🔱', is_sri_rudram: true, cadence: 'daily', weekday: 1, target_count: null },
+  logs: slots.map(s => ({ slot: s })),
+})
+
 beforeEach(() => {
   h.items = []; h.catalog = []; h.yesterdayLogs = []
   h.addPractice.mockClear(); h.submit.mockReset(); h.showInterstitial.mockClear()
@@ -294,6 +300,40 @@ describe('TodayPage - Gayatri count popup on Sandhyavandhanam slots', () => {
     fireEvent.click(screen.getByText('Cancel'))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(h.submit).not.toHaveBeenCalled()
+  })
+})
+
+describe('TodayPage - Sri Rudram 3-slot marking (2026-08-11)', () => {
+  it('shows all 3 slot options and the "traditionally Mondays" info hint, not a gate', () => {
+    h.items = [rudramItem([])]
+    render(<TodayPage />)
+    expect(screen.getByText('Namakam')).toBeInTheDocument()
+    expect(screen.getByText('Chamakam')).toBeInTheDocument()
+    expect(screen.getByText('Both')).toBeInTheDocument()
+    expect(screen.getByText(/traditionally Mondays/)).toBeInTheDocument()
+  })
+
+  it('clicking a slot marks it directly, with no count prompt (unlike Sandhya)', async () => {
+    h.items = [rudramItem([])]
+    h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 1, practice_name: 'Sri Rudram' })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Namakam'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(() => expect(h.submit).toHaveBeenCalledWith('up-r', { slot: 'namakam', count: null }))
+  })
+
+  it('any 1 of 3 slots marks the day complete, no "Mark Done" button shown', () => {
+    h.items = [rudramItem(['chamakam'])]
+    render(<TodayPage />)
+    expect(screen.getByText('1 anushtanam done today. Wonderful, all done!')).toBeInTheDocument()
+    expect(screen.queryByText('Mark Done')).not.toBeInTheDocument()
+  })
+
+  it('an already-marked slot is shown done and disabled', () => {
+    h.items = [rudramItem(['both'])]
+    render(<TodayPage />)
+    expect(screen.getByText('Both').closest('button')).toBeDisabled()
+    expect(screen.getByText('Namakam').closest('button')).not.toBeDisabled()
   })
 })
 

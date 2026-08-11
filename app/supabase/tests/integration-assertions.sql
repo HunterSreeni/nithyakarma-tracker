@@ -754,6 +754,61 @@ begin
     end if;
   end;
 
+  -- 23. Sri Rudram 3-slot flow (migration 20260811120446): any 1 of 3 slots
+  -- completes the practice for the day, same any-1-of-N semantics as
+  -- Sandhyavandhanam's slots (section 8), generalized via is_sri_rudram.
+  -- Also confirms the weekly-cadence gate removal: Aditya Hrudayam (seeded
+  -- weekday=0/Sunday) is now cadence='daily' and loggable regardless of
+  -- today's actual weekday.
+  declare
+    v_rudram int; v_aditya int; v_sup_rudram uuid; v_sup_aditya uuid;
+    v_punya_before int; v_punya_after int;
+  begin
+    select id into v_rudram from practices where slug = 'sri-rudram';
+    select id into v_aditya from practices where slug = 'aditya-hrudayam';
+    select punya into v_punya_before from profiles where id = v_uid;
+
+    insert into user_practices (owner_id, practice_id) values (v_uid, v_rudram) returning id into v_sup_rudram;
+
+    r := submit_practice_log(v_sup_rudram, 'namakam');
+    if not (r->>'practice_done_today')::boolean then raise exception 'FAIL: Rudram not done after 1 slot (namakam)'; end if;
+    if (r->>'practice_streak')::int <> 1 then raise exception 'FAIL: Rudram streak did not advance on slot 1'; end if;
+    if not (r->>'day_complete')::boolean then raise exception 'FAIL: day not complete after 1 Rudram slot'; end if;
+
+    r := submit_practice_log(v_sup_rudram, 'chamakam');
+    if (r->>'practice_streak')::int <> 1 then raise exception 'FAIL: Rudram streak double-advanced on slot 2'; end if;
+
+    r := submit_practice_log(v_sup_rudram, 'both');
+    select punya into v_punya_after from profiles where id = v_uid;
+    if v_punya_after - v_punya_before <> 36 then
+      raise exception 'FAIL: Rudram punya not +36 after 3 slots (12 each, got %)', v_punya_after - v_punya_before;
+    end if;
+
+    -- requires a slot
+    v_failed := false;
+    begin
+      perform submit_practice_log(v_sup_rudram, null);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: Sri Rudram accepted a log with no slot'; end if;
+
+    -- re-marking an already-done slot is rejected (unique same-day slot)
+    v_failed := false;
+    begin
+      perform submit_practice_log(v_sup_rudram, 'namakam');
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: duplicate Rudram slot accepted'; end if;
+
+    -- Weekly-gate removal: loggable regardless of today's actual weekday now
+    -- that it is cadence='daily' (section 15 already covers cadence='weekly'
+    -- still gating a hypothetical future practice - this only reclassifies
+    -- the 5 existing rows, the mechanism itself is untouched).
+    insert into user_practices (owner_id, practice_id) values (v_uid, v_aditya) returning id into v_sup_aditya;
+    r := submit_practice_log(v_sup_aditya);
+    if not (r->>'saved')::boolean then raise exception 'FAIL: Aditya Hrudayam (reclassified daily) could not be logged today'; end if;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;
