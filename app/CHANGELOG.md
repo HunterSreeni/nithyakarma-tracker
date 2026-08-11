@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.31.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.0...app-v0.31.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* stop weekly practices from being day-gated; split Sri Rudram into 3 slots ([c2bd3fd](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c2bd3fdef439bbc82de5fd63c49c48fa71de641a))
+* stop weekly practices from being day-gated; split Sri Rudram into 3 slots ([3fa4677](https://github.com/HunterSreeni/nithyakarma-tracker/commit/3fa4677df7a295cec2a3aceadba522614ebfefc9))
+
 ## [0.31.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.30.0...app-v0.31.0) (2026-08-11)
 
 

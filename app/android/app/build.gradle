@@ -16,7 +16,7 @@ android {
         applicationId "org.nithyakarma.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        def appVersionName = "0.31.0" // x-release-please-version
+        def appVersionName = "0.31.1" // x-release-please-version
         // versionCode = (major*10000 + minor*100 + patch) * 20000 + minutes-since-epoch.
         // Pure version-derived versionCode (major*10000+minor*100+patch) collided the
         // moment we rebuilt the *same* versionName to re-upload a closed-testing AAB
