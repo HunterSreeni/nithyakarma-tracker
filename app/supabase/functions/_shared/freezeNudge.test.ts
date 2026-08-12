@@ -26,10 +26,11 @@ Deno.test("20:00 nudge: warns when today would be the first missed day", () => {
   assertEquals(msg?.body.includes("4-day streak"), true)
 })
 
-Deno.test("08:00 nudge: warns when a freeze is the only thing holding the streak", () => {
+Deno.test("08:00 nudge: offers backfill before spending a freeze", () => {
   const msg = freezeNudge("nudge_morning", sub({ last_complete_date: "2026-08-08" }), TODAY)
-  assertEquals(msg?.title, "A freeze is holding your streak")
-  assertEquals(msg?.body.includes("resets to 0"), true)
+  assertEquals(msg?.title, "Yesterday can still be backfilled")
+  assertEquals(msg?.body.includes("Backfill one of yesterday's sandhyas"), true)
+  assertEquals(msg?.body.includes("use a freeze"), true)
 })
 
 // The two windows must not swap: a gap-1 morning is an ordinary "not marked
@@ -39,12 +40,11 @@ Deno.test("each message only fires in its own window", () => {
   assertEquals(freezeNudge("nudge", sub({ last_complete_date: "2026-08-08" }), TODAY), null)
 })
 
-Deno.test("no freeze credit means no freeze message", () => {
+Deno.test("no freeze credit still gets the time-limited backfill warning", () => {
   assertEquals(freezeNudge("nudge", sub({ freeze_credits: 0 }), TODAY), null)
-  assertEquals(
-    freezeNudge("nudge_morning", sub({ last_complete_date: "2026-08-08", freeze_credits: 0 }), TODAY),
-    null,
-  )
+  const msg = freezeNudge("nudge_morning", sub({ last_complete_date: "2026-08-08", freeze_credits: 0 }), TODAY)
+  assertEquals(msg?.title, "Yesterday can still be backfilled")
+  assertEquals(msg?.body.includes("no freeze available"), true)
 })
 
 Deno.test("no live streak means no freeze message", () => {

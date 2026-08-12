@@ -134,6 +134,24 @@ describe('TodayPage - Sandhyavandhanam UX', () => {
       (_, el) => el?.className === 'tc-hint' && el.textContent.includes('2 freezes'),
     )).toBeInTheDocument()
   })
+
+  it('offers backfill or freeze use throughout the catch-up day when a freeze is available', () => {
+    h.items = [sandhyaItem([])]
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+    h.profile = { ...h.profile, current_streak: 4, last_complete_date: localDateString(twoDaysAgo), freeze_credits: 1 }
+    render(<TodayPage />)
+    expect(screen.getByRole('status')).toHaveTextContent(/Backfill one of yesterday's sandhyas/)
+    expect(screen.getByRole('status')).toHaveTextContent(/mark one anushtanam today to use a freeze/)
+  })
+
+  it('still offers the full backfill window with no freeze and explains that today alone restarts', () => {
+    h.items = [sandhyaItem([])]
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+    h.profile = { ...h.profile, current_streak: 4, last_complete_date: localDateString(twoDaysAgo), freeze_credits: 0 }
+    render(<TodayPage />)
+    expect(screen.getByRole('status')).toHaveTextContent(/Backfill one of yesterday's sandhyas before today ends/)
+    expect(screen.getByRole('status')).toHaveTextContent(/Marking only today will restart it/)
+  })
 })
 
 describe('TodayPage - empty-day activation (female / non-sandhya)', () => {
@@ -490,7 +508,7 @@ describe('TodayPage - Yesterday sandhya catch-up', () => {
 
   const openYesterdayPanel = async () => {
     fireEvent.click(screen.getByText('Missed a sandhya yesterday?'))
-    await screen.findByText(/Half punya, no streak effect|already marked/)
+    await screen.findByText(/Full punya|already marked/)
   }
   const yesterdayPanel = () => screen.getByText('Missed a sandhya yesterday?').closest('.yesterday-sandhya')
 
@@ -513,19 +531,30 @@ describe('TodayPage - Yesterday sandhya catch-up', () => {
     expect(screen.getByText("All 3 of yesterday's sandhyas are already marked.")).toBeInTheDocument()
   })
 
-  it('marking a slot calls the RPC backdated and streak-exempt, shows the punya note, and refreshes the topbar', async () => {
+  it('marking a slot calls the RPC backdated and streak-counting, shows the full punya note, and refreshes the card', async () => {
     h.items = [sandhyaItem([])]
     h.yesterdayLogs = []
-    h.rpc.mockResolvedValue({ data: { saved: true, backdated: true, punya_awarded: 2 }, error: null })
+    h.rpc.mockResolvedValue({ data: { saved: true, backdated: true, punya_awarded: 5 }, error: null })
     render(<TodayPage />)
     await openYesterdayPanel()
     fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
     await waitFor(() => expect(h.rpc).toHaveBeenCalledWith('submit_practice_log', {
       p_user_practice_id: 'up-s', p_slot: 'morning', p_count: null,
-      p_local_date: yesterday, p_award_streak: false,
+      p_local_date: yesterday, p_award_streak: true,
     }))
-    await screen.findByText("+2 punya for yesterday's Morning")
+    await screen.findByText("+5 punya · yesterday's streak counted")
     expect(h.refresh).toHaveBeenCalled()
+  })
+
+  it('explains when a backfill refunds a freeze previously spent for yesterday', async () => {
+    h.items = [sandhyaItem([])]
+    h.rpc.mockResolvedValue({
+      data: { saved: true, backdated: true, punya_awarded: 5, freeze_refunded: true }, error: null,
+    })
+    render(<TodayPage />)
+    await openYesterdayPanel()
+    fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
+    await screen.findByText('+5 punya · yesterday\'s streak counted · freeze refunded')
   })
 
   it('shows an inline error and leaves the slot markable when the RPC fails', async () => {

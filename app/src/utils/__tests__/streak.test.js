@@ -11,15 +11,13 @@
 //     elsif p_last = p_today - 2 and p_freeze > 0      -> streak + 1, freeze - 1
 //     else                                            -> 1
 //
-//   decay_stale_streaks():
-//     current_streak = 0 where current_streak > 0
-//       and last_complete_date not in (current_date, current_date - 1)
-//       and not (last_complete_date = current_date - 2 and freeze_credits > 0)
+//   decay_stale_streaks(): the full following day is a catch-up grace window,
+//     so current_streak becomes 0 only at a gap of 3+.
 //
-// streakState must report streak 0 in exactly the cases where a completion
-// would restart at 1 - i.e. it must agree with BOTH of the above. The bug this
-// pins (2026-08-09) was a card reading "4 days" for a subject whose next mark
-// would have produced 1.
+// streakState reports a streak while either a normal completion continues it
+// OR yesterday's Sandhya backfill can still repair it. At gap 2 without a
+// freeze, marking today first restarts at 1, but backfilling yesterday later
+// reconstructs both days, so the original streak remains recoverable/displayable.
 
 import { describe, it, expect } from 'vitest'
 import { dayGap, streakState } from '../streak'
@@ -42,9 +40,9 @@ function sqlStreakAfterCompletion({ current_streak, last_complete_date, freeze_c
 
 // Literal transcription of decay_stale_streaks' WHERE clause. True when the
 // nightly job would zero this subject's streak.
-function sqlDecayResets({ current_streak, last_complete_date, freeze_credits }, today) {
+function sqlDecayResets({ current_streak, last_complete_date }, today) {
   const gap = dayGap(last_complete_date, today)
-  return current_streak > 0 && gap !== 0 && gap !== 1 && !(gap === 2 && freeze_credits > 0)
+  return current_streak > 0 && (gap >= 3 || gap < 0)
 }
 
 describe('dayGap', () => {
@@ -75,10 +73,11 @@ describe('streakState agrees with streak_after_completion', () => {
     ['completed "tomorrow" (clock skew)', { last_complete_date: '2026-08-11' }],
   ]
 
-  it.each(cases)('%s: reports 0 exactly when a mark would restart at 1', (_label, o) => {
+  it.each(cases)('%s: reports 0 exactly when neither today nor backfill can preserve it', (_label, o) => {
     const s = subject(o)
-    const wouldRestart = sqlStreakAfterCompletion(s, TODAY) === 1
-    expect(streakState(s, TODAY).streak === 0).toBe(wouldRestart)
+    const gap = dayGap(s.last_complete_date, TODAY)
+    const recoverable = sqlStreakAfterCompletion(s, TODAY) !== 1 || gap === 2
+    expect(streakState(s, TODAY).streak > 0).toBe(recoverable)
   })
 
   it.each(cases)('%s: reports 0 exactly when decay would zero it', (_label, o) => {
@@ -97,9 +96,9 @@ describe('streakState frozen flag', () => {
     expect(streakState(subject({ last_complete_date: TODAY }), TODAY).frozen).toBe(false)
   })
 
-  it('is not set when there is no credit left to spend', () => {
+  it('keeps the streak recoverable during the catch-up day even without a freeze', () => {
     const s = subject({ last_complete_date: '2026-08-08', freeze_credits: 0 })
-    expect(streakState(s, TODAY)).toEqual({ streak: 0, frozen: false })
+    expect(streakState(s, TODAY)).toEqual({ streak: 4, frozen: false })
   })
 
   it('is not set once the gap is past what one freeze bridges', () => {

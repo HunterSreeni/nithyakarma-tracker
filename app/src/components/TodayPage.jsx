@@ -5,7 +5,7 @@ import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
 import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, localDateString, SANDHYA_SLOTS, RUDRAM_SLOTS } from '../utils/cadence'
-import { streakState } from '../utils/streak'
+import { dayGap, streakState } from '../utils/streak'
 import { tierFor, tierClass } from '../utils/tiers'
 import CelebrationModal from './CelebrationModal'
 import TierUpModal from './TierUpModal'
@@ -40,7 +40,9 @@ export default function TodayPage() {
   const subjectName = selectedMember?.name ?? profile.display_name
   // Read the alive/dead boundary live rather than trusting current_streak,
   // which only gets rewritten by the nightly decay job - see utils/streak.js.
-  const { streak: subjectStreak, frozen } = streakState(selectedMember ?? profile)
+  const subject = selectedMember ?? profile
+  const { streak: subjectStreak, frozen } = streakState(subject)
+  const catchupAvailable = subjectStreak > 0 && dayGap(subject.last_complete_date, localDateString()) === 2
   const subjectFreezes = selectedMember?.freeze_credits ?? profile.freeze_credits ?? 0
   const subjectPunya = selectedMember?.punya ?? profile.punya ?? 0
   const subjectTier = tierFor(subjectPunya)
@@ -130,10 +132,13 @@ export default function TodayPage() {
             <span>{subjectPunya} punya</span>{' · '}
             <span className={`tier-badge ${tierClass(subjectTier)}`}>{subjectTier}</span>
           </div>
-          {frozen && (
+          {catchupAvailable && (
             <div className="tc-frozen" role="status">
-              <Snowflake size={12} strokeWidth={2.5} /> You missed yesterday. Mark one anushtanam
-              today to spend a freeze and keep this streak, or it resets to 0.
+              <Snowflake size={12} strokeWidth={2.5} /> {frozen
+                ? <>You missed yesterday. Backfill one of yesterday's sandhyas to keep this streak
+                  without spending a freeze, or mark one anushtanam today to use a freeze.</>
+                : <>You missed yesterday. Backfill one of yesterday's sandhyas before today ends to
+                  keep this streak. Marking only today will restart it.</>}
             </div>
           )}
         </div>
@@ -306,9 +311,9 @@ function PracticeCard({ item, busy, onMark, onSlotClick, onRudramSlotClick }) {
   )
 }
 
-// Catch-up for a Sandhya slot missed last night. Punya-only (half value) -
-// never touches the streak, freeze, or last_complete_date; the server enforces
-// that regardless of what this sends. Scoped to Sandhyavandhanam only.
+// Catch-up for a Sandhya slot missed yesterday. It earns normal punya and the
+// first backfilled slot repairs that day's streak; the server owns the actual
+// accounting/refund policy. Scoped to Sandhyavandhanam only.
 function YesterdaySandhya({ item }) {
   const { refresh } = useAuth()
   const [open, setOpen] = useState(false)
@@ -336,13 +341,14 @@ function YesterdaySandhya({ item }) {
     try {
       const { data, error: err } = await supabase.rpc('submit_practice_log', {
         p_user_practice_id: item.up.id, p_slot: slot, p_count: null,
-        p_local_date: yesterday, p_award_streak: false,
+        p_local_date: yesterday, p_award_streak: true,
       })
       if (err) throw err
       if (!data?.saved) throw new Error('Save could not be verified')
       setSlotsDone(prev => new Set(prev).add(slot))
-      setNote(`+${data.punya_awarded} punya for yesterday's ${SANDHYA_SLOTS.find(s => s.key === slot)?.short}`)
-      await refresh() // punya in the topbar
+      const refund = data.freeze_refunded ? ' · freeze refunded' : ''
+      setNote(`+${data.punya_awarded} punya · yesterday's streak counted${refund}`)
+      await refresh() // punya/streak/freeze in the topbar and card
     } catch (err) {
       setError(err.message)
     } finally {
@@ -364,7 +370,7 @@ function YesterdaySandhya({ item }) {
           )}
           {loaded && slotsDone.size < 3 && (
             <>
-              <div className="yesterday-note">Half punya, no streak effect - just credit for doing it.</div>
+              <div className="yesterday-note">Full punya. Your first marked sandhya also counts yesterday toward your streak.</div>
               <div className="slot-row">
                 {SANDHYA_SLOTS.map(s => (
                   <button key={s.key} disabled={slotsDone.has(s.key) || !!busySlot}
