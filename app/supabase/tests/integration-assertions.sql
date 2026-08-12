@@ -473,7 +473,7 @@ begin
   declare
     v_slot text;
   begin
-    foreach v_slot in array array['morning','afternoon','evening','nudge','nudge_morning','tharpanam','observance','observance_advance']
+    foreach v_slot in array array['morning','afternoon','evening','nudge','nudge_morning','tharpanam','observance','observance_advance','freeze_used','streak_reset']
     loop
       v_failed := false;
       begin
@@ -541,8 +541,20 @@ begin
       raise exception 'FAIL: the bridge spent % credits, expected exactly 1', 2 - v_after_freeze;
     end if;
 
+    if (select current_streak from family_members where id = v_kid4) <> 3 then
+      raise exception 'FAIL: decay_stale_streaks removed the full next-day backfill grace when no freeze remained';
+    end if;
+    update family_members set last_complete_date = current_date - 3 where id = v_kid4;
+    perform decay_stale_streaks();
     if (select current_streak from family_members where id = v_kid4) <> 0 then
-      raise exception 'FAIL: decay_stale_streaks should still reset a streak with no freeze credit';
+      raise exception 'FAIL: decay_stale_streaks did not reset a streak after the backfill window closed';
+    end if;
+    if not exists (
+      select 1 from streak_events
+      where family_member_id = v_kid4 and event_type = 'streak_reset'
+        and streak_before = 3 and streak_after = 0
+    ) then
+      raise exception 'FAIL: stale streak reset did not enqueue a streak_reset event';
     end if;
   end;
 
@@ -579,7 +591,7 @@ begin
     insert into family_members (parent_id, name, gender, current_streak, last_complete_date, freeze_credits)
       values (v_uid, 'NY Frozen Kid', 'female', 5, local_today('America/New_York') - 2, 1) returning id into v_ny_frozen;
     insert into family_members (parent_id, name, gender, current_streak, last_complete_date, freeze_credits)
-      values (v_uid, 'NY Dead Kid', 'female', 5, local_today('America/New_York') - 2, 0) returning id into v_ny_dead;
+      values (v_uid, 'NY Dead Kid', 'female', 5, local_today('America/New_York') - 3, 0) returning id into v_ny_dead;
 
     perform decay_stale_streaks();
 
@@ -598,47 +610,25 @@ begin
 
     -- and the same subject, in IST, past its own local boundary
     update profiles set timezone = 'Asia/Kolkata', current_streak = 5,
-      last_complete_date = local_today('Asia/Kolkata') - 2, freeze_credits = 0
+      last_complete_date = local_today('Asia/Kolkata') - 3, freeze_credits = 0
       where id = v_uid;
     perform decay_stale_streaks();
     if (select current_streak from profiles where id = v_uid) <> 0 then
       raise exception 'FAIL: a genuinely stale IST streak survived decay';
     end if;
 
-    -- The fixed-zone cases above assert the rule, but they only *discriminate*
-    -- against the old global-UTC code during the hours New York's date happens
-    -- to differ from UTC's. So additionally pick a zone that is provably skewed
-    -- from the UTC date right now, whichever direction is available at this
-    -- hour, and build the case the old code got wrong. At least one direction
-    -- always exists: a zone is behind UTC's date while UTC time < 12:00
-    -- (Etc/GMT+12), and ahead of it from 10:00 (Pacific/Kiritimati, +14).
+    -- When a zone is already a day ahead of UTC, local three-days-ago reads as
+    -- UTC current_date - 2. A global-UTC comparison would incorrectly preserve
+    -- it even though its local backfill window has closed.
     declare
-      v_behind_tz text; v_ahead_tz text;
+      v_ahead_tz text;
     begin
-      select name into v_behind_tz from pg_timezone_names
-        where (now() at time zone name)::date = current_date - 1 order by name limit 1;
       select name into v_ahead_tz from pg_timezone_names
         where (now() at time zone name)::date = current_date + 1 order by name limit 1;
-      if v_behind_tz is null and v_ahead_tz is null then
-        raise exception 'TEST SETUP: expected at least one zone skewed off the UTC date';
-      end if;
-
-      if v_behind_tz is not null then
-        -- local yesterday reads as UTC current_date - 2, which the old rule
-        -- zeroed - yet the subject is genuinely alive in its own zone.
-        update profiles set timezone = v_behind_tz, current_streak = 9, freeze_credits = 0,
-          last_complete_date = local_today(v_behind_tz) - 1 where id = v_uid;
-        perform decay_stale_streaks();
-        if (select current_streak from profiles where id = v_uid) <> 9 then
-          raise exception 'FAIL: zone % is a day behind UTC and had a live streak decayed', v_behind_tz;
-        end if;
-      end if;
 
       if v_ahead_tz is not null then
-        -- local two-days-ago reads as UTC current_date - 1, which the old rule
-        -- spared - yet the subject is genuinely stale in its own zone.
         update profiles set timezone = v_ahead_tz, current_streak = 9, freeze_credits = 0,
-          last_complete_date = local_today(v_ahead_tz) - 2 where id = v_uid;
+          last_complete_date = local_today(v_ahead_tz) - 3 where id = v_uid;
         perform decay_stale_streaks();
         if (select current_streak from profiles where id = v_uid) <> 0 then
           raise exception 'FAIL: zone % is a day ahead of UTC and kept a stale streak alive', v_ahead_tz;
@@ -649,18 +639,18 @@ begin
     update profiles set timezone = v_saved_tz where id = v_uid;
   end;
 
-  -- 21. Sandhyavandhanam yesterday backdate (migration 20260810130000):
-  -- punya-only catch-up. Streak / freeze / last_complete_date must never move
-  -- from a backdated slot, even when the caller asks for streak credit
-  -- (p_award_streak is forced off server-side for a backdated sandhya log);
-  -- punya is half the practice's punya_value, floored. Reuses the "Test Boy"
+  -- 21. Sandhyavandhanam yesterday backdate (migration 20260812090000):
+  -- full-punya catch-up that counts yesterday, repairs an already-marked today,
+  -- and refunds a freeze that today's mark spent for the now-filled gap.
+  -- Reuses the "Test Boy"
   -- family member from section 3 (upanayanam done, sandhya already
   -- associated, never marked) so this is isolated from the streak state the
   -- earlier sections leave on v_uid itself.
   declare
     v_fm_boy uuid; v_sup_boy uuid; v_local_today date; r2 jsonb;
     v_punya_before int; v_streak_before int; v_last_complete_before date; v_freeze_before int;
-    v_up_streak_before int;
+    v_up_streak_before int; v_full_punya int;
+    v_repair_kid uuid; v_repair_up uuid; v_no_freeze_kid uuid; v_no_freeze_up uuid;
   begin
     select id into v_fm_boy from family_members where parent_id = v_uid and name = 'Test Boy';
     select id into v_sup_boy from user_practices
@@ -671,35 +661,73 @@ begin
       into v_punya_before, v_streak_before, v_last_complete_before, v_freeze_before
       from family_members where id = v_fm_boy;
     select current_streak into v_up_streak_before from user_practices where id = v_sup_boy;
+    select punya_value into v_full_punya from practices where id = v_sandhya;
 
-    -- p_award_streak: true is passed explicitly - must still be denied.
-    r2 := submit_practice_log(v_sup_boy, 'morning', null, v_local_today - 1, true);
+    -- Even a false caller hint is overridden: a valid backfill always counts.
+    r2 := submit_practice_log(v_sup_boy, 'morning', null, v_local_today - 1, false);
     if not (r2->>'backdated')::boolean then
       raise exception 'FAIL: yesterday sandhya submission not reported as backdated';
     end if;
-    if (r2->>'punya_awarded')::int <> 2 then
-      raise exception 'FAIL: backdated punya award not halved (expected 2, got %)', r2->>'punya_awarded';
+    if (r2->>'punya_awarded')::int <> v_full_punya then
+      raise exception 'FAIL: backdated punya not full value (expected %, got %)', v_full_punya, r2->>'punya_awarded';
     end if;
-    if (r2->>'day_complete')::boolean then
-      raise exception 'FAIL: a backdated sandhya slot reported day_complete';
+    if not (r2->>'day_complete')::boolean then
+      raise exception 'FAIL: a backdated sandhya slot did not complete yesterday';
     end if;
-    if (select punya from family_members where id = v_fm_boy) <> v_punya_before + 2 then
-      raise exception 'FAIL: family member punya did not increase by the halved amount';
+    if (select punya from family_members where id = v_fm_boy) <> v_punya_before + v_full_punya then
+      raise exception 'FAIL: family member punya did not increase by the full amount';
     end if;
-    if (select current_streak from family_members where id = v_fm_boy) <> v_streak_before then
-      raise exception 'FAIL: subject streak moved from a backdated sandhya mark';
+    if (select current_streak from family_members where id = v_fm_boy) <> v_streak_before + 1 then
+      raise exception 'FAIL: subject streak did not advance from a backdated sandhya mark';
     end if;
-    if (select last_complete_date from family_members where id = v_fm_boy) is distinct from v_last_complete_before then
-      raise exception 'FAIL: last_complete_date moved from a backdated sandhya mark';
+    if (select last_complete_date from family_members where id = v_fm_boy) is distinct from v_local_today - 1 then
+      raise exception 'FAIL: last_complete_date was not set to yesterday';
     end if;
     if (select freeze_credits from family_members where id = v_fm_boy) <> v_freeze_before then
       raise exception 'FAIL: freeze_credits moved from a backdated sandhya mark';
     end if;
-    if (select current_streak from user_practices where id = v_sup_boy) <> v_up_streak_before then
-      raise exception 'FAIL: per-practice streak moved from a backdated sandhya mark';
+    if (select current_streak from user_practices where id = v_sup_boy) <> v_up_streak_before + 1 then
+      raise exception 'FAIL: per-practice streak did not include the backdated day';
     end if;
     if (select log_date from practice_logs where user_practice_id = v_sup_boy and slot = 'morning') <> v_local_today - 1 then
       raise exception 'FAIL: backdated log was not stored against yesterday''s date';
+    end if;
+
+    -- Today first with a freeze: consumes exactly one and records the event.
+    -- Backfilling yesterday afterwards repairs both days and refunds that one.
+    insert into family_members(parent_id, name, gender, upanayanam_done, punya,
+      current_streak, best_streak, last_complete_date, freeze_credits)
+      values(v_uid, 'Backfill Freeze Kid', 'male', true, 0, 4, 4, v_local_today - 2, 1)
+      returning id into v_repair_kid;
+    insert into user_practices(owner_id, family_member_id, practice_id)
+      values(v_uid, v_repair_kid, v_sandhya) returning id into v_repair_up;
+    r2 := submit_practice_log(v_repair_up, 'morning', null, v_local_today, true);
+    if not (r2->>'freeze_used')::boolean or (r2->>'freeze_credits')::int <> 0 then
+      raise exception 'FAIL: today-first completion did not consume exactly one freeze';
+    end if;
+    r2 := submit_practice_log(v_repair_up, 'afternoon', null, v_local_today - 1, true);
+    if (r2->>'overall_streak')::int <> 6 or not (r2->>'freeze_refunded')::boolean
+       or (r2->>'freeze_credits')::int <> 1 then
+      raise exception 'FAIL: backfill did not repair both days and refund freeze: %', r2;
+    end if;
+    if not exists (select 1 from streak_events where family_member_id = v_repair_kid
+        and event_type = 'freeze_used' and repaired_at is not null) then
+      raise exception 'FAIL: repaired freeze-use event was not retained/audited';
+    end if;
+
+    -- The same chronological repair works without a freeze: today's mark first
+    -- restarts at 1, then yesterday's backfill reconstructs the 4 -> 5 -> 6 chain.
+    insert into family_members(parent_id, name, gender, upanayanam_done, punya,
+      current_streak, best_streak, last_complete_date, freeze_credits)
+      values(v_uid, 'Backfill No Freeze Kid', 'male', true, 0, 4, 4, v_local_today - 2, 0)
+      returning id into v_no_freeze_kid;
+    insert into user_practices(owner_id, family_member_id, practice_id)
+      values(v_uid, v_no_freeze_kid, v_sandhya) returning id into v_no_freeze_up;
+    r2 := submit_practice_log(v_no_freeze_up, 'morning', null, v_local_today, true);
+    if (r2->>'overall_streak')::int <> 1 then raise exception 'FAIL: no-freeze today-first mark did not restart at 1'; end if;
+    r2 := submit_practice_log(v_no_freeze_up, 'afternoon', null, v_local_today - 1, true);
+    if (r2->>'overall_streak')::int <> 6 or (r2->>'freeze_refunded')::boolean then
+      raise exception 'FAIL: no-freeze backfill did not repair without inventing a refund: %', r2;
     end if;
 
     -- a date further back than yesterday must clamp to today, not be honored

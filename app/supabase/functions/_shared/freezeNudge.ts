@@ -45,14 +45,12 @@ export function freezeNudge(
   const streak = subject.current_streak ?? 0;
   const credits = subject.freeze_credits ?? 0;
   const last = subject.last_complete_date;
-  // No live streak, no freeze to spend, or nothing completed yet: there is no
-  // freeze story to tell, so the generic nudge stands.
-  if (streak <= 0 || credits <= 0 || !last) return null;
+  if (streak <= 0 || !last) return null;
 
   const gap = dayGap(last, localDate);
   if (!Number.isFinite(gap)) return null;
 
-  if (slot === "nudge" && gap === 1) {
+  if (slot === "nudge" && gap === 1 && credits > 0) {
     return {
       title: "Mark today to keep your streak",
       body:
@@ -62,12 +60,14 @@ export function freezeNudge(
   }
 
   if (slot === "nudge_morning" && gap === 2) {
+    const alternative = credits > 0
+      ? " You can instead mark one anushtanam today to use a freeze."
+      : " You have no freeze available, so complete the backfill before today ends."
     return {
-      title: "A freeze is holding your streak",
+      title: "Yesterday can still be backfilled",
       body:
-        `Namaskaram! You missed yesterday, so a freeze is standing by for your ` +
-        `${streak}-day streak. Mark one anushtanam today to spend it and keep going. ` +
-        `Skip today and the streak resets to 0.`,
+        `Namaskaram! You missed yesterday. Backfill one of yesterday's sandhyas to ` +
+        `keep your ${streak}-day streak without spending a freeze.${alternative}`,
     };
   }
 

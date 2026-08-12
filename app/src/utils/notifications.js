@@ -10,7 +10,7 @@ const SLOT_CONFIG = {
 }
 
 const NUDGE = { id: 400, hour: 20, minute: 0, title: 'Your streak is waiting', body: 'Namaskaram! Today\'s anushtanams are not all marked yet. 2 minutes is all it takes.' }
-const LAST_CALL = { id: 500, hour: 21, minute: 30, title: 'Last call before midnight', body: 'Your streak ends at midnight. Mark today\'s anushtanam to keep it alive.' }
+const LAST_CALL = { id: 500, hour: 21, minute: 30, title: 'Last call before midnight', body: 'Mark today\'s anushtanam to keep your streak moving. Missed yesterday\'s Sandhya? You can still backfill it today.' }
 
 function dailyAt(hour, minute) {
   const at = new Date()

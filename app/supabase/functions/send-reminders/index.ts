@@ -10,6 +10,7 @@ import { loadConfig, sendFCM, sendWebPush } from "../_shared/push.ts";
 import { addDays, bestAdvanceMatch, bestMatch, type ObservanceRule } from "../_shared/observanceMatch.ts";
 import { dayComplete } from "../_shared/dayComplete.ts";
 import { freezeNudge } from "../_shared/freezeNudge.ts";
+import { streakEventMessage } from "../_shared/streakEventMessage.ts";
 
 const ADVANCE_DAYS = 3;
 
@@ -72,9 +73,58 @@ Deno.serve(async (req: Request) => {
   const now = new Date();
   const { data: prefs } = await supabase
     .from("notification_preferences")
-    .select("user_id, timezone, tharpanam_enabled, observances_enabled").eq("enabled", true);
-  const users = prefs ?? [];
-  if (!users.length) return json({ message: "no users enabled" });
+    .select("user_id, enabled, timezone, tharpanam_enabled, observances_enabled");
+  const users = (prefs ?? []).filter((p: any) => p.enabled);
+
+  // These are post-event notifications, not reminders inferred from current
+  // state. The durable row is written atomically by submit_practice_log or
+  // decay_stale_streaks, then this existing 15-minute sender delivers it once.
+  // Process them before reminder-window gating so a real transition is not
+  // delayed until 08:00/20:00.
+  const { data: streakEvents } = await supabase.from("streak_events")
+    .select("id, owner_id, family_member_id, event_type, event_date, streak_before, streak_after, freeze_before, freeze_after")
+    .in("event_type", ["freeze_used", "streak_reset"])
+    .is("processed_at", null).is("repaired_at", null)
+    .order("created_at").limit(100);
+  let eventSent = 0;
+  if (streakEvents?.length) {
+    const eventOwnerIds = [...new Set(streakEvents.map((e: any) => e.owner_id))];
+    const familyIds = streakEvents.map((e: any) => e.family_member_id).filter(Boolean);
+    const [{ data: eventSubs }, { data: eventFamilies }] = await Promise.all([
+      supabase.from("push_subscriptions")
+        .select("user_id, endpoint, p256dh, auth_key, platform").in("user_id", eventOwnerIds),
+      familyIds.length
+        ? supabase.from("family_members").select("id, name").in("id", familyIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+    const familyName = new Map((eventFamilies ?? []).map((f: any) => [f.id, f.name]));
+    const enabledOwners = new Set(users.map((u: any) => u.user_id));
+    for (const event of streakEvents) {
+      if (enabledOwners.has(event.owner_id)) {
+        const message = streakEventMessage(event, familyName.get(event.family_member_id));
+        for (const sub of (eventSubs ?? []).filter((s: any) => s.user_id === event.owner_id)) {
+          const { error: insErr } = await supabase.from("notification_deliveries").insert({
+            user_id: event.owner_id, reminder_date: event.event_date,
+            slot: event.event_type, endpoint: sub.endpoint.slice(0, 500), event_id: event.id,
+          });
+          if (insErr) {
+            if (insErr.code === "23505") continue;
+            console.error("event delivery insert failed", { event: event.id, code: insErr.code, message: insErr.message });
+            continue;
+          }
+          const ok = sub.platform === "android"
+            ? await sendFCM(supabase, config, sub.endpoint, message.title, message.body, event.event_type)
+            : await sendWebPush(supabase, config, sub, message.title, message.body);
+          if (ok) eventSent++;
+        }
+      }
+      // Disabled notifications/no registered endpoint means intentionally no
+      // push, not an event to surprise the user with days later after opt-in.
+      await supabase.from("streak_events").update({ processed_at: new Date().toISOString() }).eq("id", event.id);
+    }
+  }
+
+  if (!users.length) return json({ message: "no users enabled", sent: eventSent });
 
   // profiles.timezone is the single source of truth for a user's local day
   // (migration 20260810120000) - the same column decay_stale_streaks reads, so
@@ -166,7 +216,7 @@ Deno.serve(async (req: Request) => {
     return count;
   }
 
-  let sent = 0;
+  let sent = eventSent;
   for (const uid of ids) {
     const slot = userSlot.get(uid)!;
     const date = userDate.get(uid)!;
