@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.2...app-v0.31.3) (2026-08-12)
+
+
+### Bug Fixes
+
+* count Sandhya backfills toward streaks ([0357463](https://github.com/HunterSreeni/nithyakarma-tracker/commit/035746364b3b7bb088cc1a180e8786df56defa8a))
+
 ## [0.31.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.1...app-v0.31.2) (2026-08-11)
 
 
