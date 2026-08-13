@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.5](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.4...app-v0.31.5) (2026-08-13)
+
+
+### Bug Fixes
+
+* resolve npm audit vulnerabilities within existing semver ranges ([7f1e27a](https://github.com/HunterSreeni/nithyakarma-tracker/commit/7f1e27a5fede4044a22588516ca0505b7b18b2c9))
+
 ## [0.31.4](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.3...app-v0.31.4) (2026-08-13)
 
 
