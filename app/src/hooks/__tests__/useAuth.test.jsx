@@ -6,9 +6,8 @@ vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => mockNative() },
 }))
 
-let resumeCb, urlOpenCb
+let authCb, urlOpenCb
 const mockAddListener = vi.fn((event, cb) => {
-  if (event === 'resume') resumeCb = cb
   if (event === 'appUrlOpen') urlOpenCb = cb
   return Promise.resolve({ remove: vi.fn() })
 })
@@ -25,7 +24,12 @@ vi.mock('../../lib/supabase', () => ({
       setSession: (...a) => setSession(...a),
       signInWithOAuth: (...a) => signInWithOAuth(...a),
       signOut: (...a) => signOut(...a),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      startAutoRefresh: vi.fn(),
+      stopAutoRefresh: vi.fn(),
+      onAuthStateChange: (cb) => {
+        authCb = cb
+        return { data: { subscription: { unsubscribe: vi.fn() } } }
+      },
     },
     from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }), order: () => Promise.resolve({ data: [] }) }) }) })),
   },
@@ -34,15 +38,17 @@ vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
 
 import { AuthProvider, useAuth } from '../useAuth'
 import { supabase } from '../../lib/supabase'
+import { queryClient } from '../../lib/queryClient'
 
 function wrapper({ children }) {
   return <AuthProvider>{children}</AuthProvider>
 }
 
 beforeEach(() => {
+  queryClient.clear()
   vi.clearAllMocks()
   mockNative.mockReturnValue(false)
-  resumeCb = undefined
+  authCb = undefined
   urlOpenCb = undefined
   localStorage.clear() // the profile cache is real localStorage, not mocked - don't leak between tests
 })
@@ -186,26 +192,13 @@ describe('timezone follows the device', () => {
 
 })
 
-describe('resume/foreground revalidation', () => {
-  it('re-validates the session when a native app resumes from the background', async () => {
-    mockNative.mockReturnValue(true)
+describe('auth-state lock safety', () => {
+  it('returns synchronously from TOKEN_REFRESHED instead of awaiting a database query', async () => {
     getSession.mockResolvedValue({ data: { session: null } })
     renderHook(() => useAuth(), { wrapper })
-    await waitFor(() => expect(mockAddListener).toHaveBeenCalledWith('resume', expect.any(Function)))
-    getSession.mockClear()
-    resumeCb()
-    await waitFor(() => expect(getSession).toHaveBeenCalled())
-  })
-
-  it('re-validates the session when the web tab becomes visible again', async () => {
-    mockNative.mockReturnValue(false)
-    getSession.mockResolvedValue({ data: { session: null } })
-    renderHook(() => useAuth(), { wrapper })
-    await waitFor(() => expect(getSession).toHaveBeenCalledTimes(1))
-    getSession.mockClear()
-    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
-    document.dispatchEvent(new Event('visibilitychange'))
-    await waitFor(() => expect(getSession).toHaveBeenCalled())
+    await waitFor(() => expect(authCb).toBeTypeOf('function'))
+    const returned = authCb('TOKEN_REFRESHED', { user: { id: 'u1', email: 'a@b.com' } })
+    expect(returned).toBeUndefined()
   })
 })
 

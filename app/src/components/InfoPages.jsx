@@ -80,7 +80,9 @@ export function KarmaPage() {
       <p>
         Sandhyavandhanam only needs one sandhya marked to count the day complete - Prathakala,
         Madhyanika or Saayamkala, whichever fits your day. Each sandhya still earns its own punya, so
-        marking more than one adds up if you have the time.
+        marking more than one adds up if you have the time. A sandhya missed yesterday can be marked
+        during the whole of today; it earns the normal <b>+5 punya</b> and the first such mark counts
+        yesterday toward your streak.
       </p>
 
       <h3>Tiers</h3>
@@ -95,9 +97,10 @@ export function KarmaPage() {
       <p>
         Your overall streak grows by one for every day you complete <i>at least one</i> of your
         scheduled practices - mark more of them if you have time, for the extra punya, but one is
-        enough to keep the streak alive. Miss a day entirely and the streak normally resets - unless
-        you have a streak freeze available, in which case one freeze is spent automatically to cover
-        a single missed day and your streak keeps climbing.
+        enough to keep the streak alive. If yesterday was missed, you have until the end of today to
+        backfill one of yesterday's sandhyas. If you complete today first, an available freeze is
+        spent automatically; backfilling yesterday later repairs both days and refunds that freeze.
+        Once this catch-up window closes, an unprotected streak resets to zero.
       </p>
 
       <h3>Streak freezes</h3>
@@ -114,14 +117,15 @@ export function KarmaPage() {
       </ul>
       <p>
         A successful referral also grants +1 freeze credit (capped the same way) to both you and the
-        person you referred, plus 30 days ad-free each.
+        person you referred, plus 30 days ad-free each. When a freeze is actually used, the app sends
+        a notification showing the exact remaining balance. It also notifies you when an expired
+        streak is reset to zero, provided notifications are enabled.
       </p>
 
-      <h3>Learning verses</h3>
+      <h3>Learning content</h3>
       <p>
-        Marking a verse learned on the Learning page earns punya the same way, but doesn't drive your
-        streak on its own - genuinely completing the practice from the Today page is what keeps your
-        streak alive.
+        The Learning page is a read-along guide and does not award points by itself. Mark the completed
+        practice from the Today page to receive its configured punya and count the day toward your streak.
       </p>
     </InfoShell>
   )

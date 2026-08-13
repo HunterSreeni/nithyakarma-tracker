@@ -32,8 +32,10 @@ vi.mock('../../utils/notifications', () => ({
 
 import { useToday } from '../useToday'
 import { supabase } from '../../lib/supabase'
+import { queryClient } from '../../lib/queryClient'
 
 beforeEach(() => {
+  queryClient.clear()
   h.ups = []; h.logs = []; h.failNext = false; h.rpcResult = null
   suppressTodayNudgesIfScheduled.mockClear()
 })

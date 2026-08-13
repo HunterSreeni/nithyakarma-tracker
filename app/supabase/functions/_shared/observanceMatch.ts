@@ -28,7 +28,7 @@ export interface PanchangamRow {
   nakshatra: string
 }
 
-function ruleMatches(rule: ObservanceRule, row: PanchangamRow | undefined): boolean {
+export function ruleMatches(rule: ObservanceRule, row: PanchangamRow | undefined): boolean {
   if (!row) return false
   if (rule.match_thithi != null && rule.match_thithi !== row.thithi) return false
   if (rule.match_tamil_month != null && rule.match_tamil_month !== row.tamil_month) return false
@@ -37,6 +37,28 @@ function ruleMatches(rule: ObservanceRule, row: PanchangamRow | undefined): bool
   if (rule.match_malayalam_day != null && rule.match_malayalam_day !== row.malayalam_day) return false
   if (rule.match_nakshatra != null && rule.match_nakshatra !== row.nakshatra) return false
   return true
+}
+
+function specificity(rule: ObservanceRule): number {
+  return [
+    rule.match_thithi, rule.match_tamil_month, rule.match_tamil_day,
+    rule.match_malayalam_month, rule.match_malayalam_day, rule.match_nakshatra,
+  ].filter((value) => value != null).length
+}
+
+// All rules matching a candidate date, ordered once for every consumer:
+// priority first, then the most specific rule, then a stable key tiebreak.
+// The sender filters this list by category; the app banner uses it across both
+// categories so Amavasya/Tharpanam days are visible too.
+export function matchingRules(
+  rowsByOffset: Record<number, PanchangamRow | undefined>,
+  rules: ObservanceRule[],
+): ObservanceRule[] {
+  return rules
+    .filter((rule) => ruleMatches(rule, rowsByOffset[rule.day_offset]))
+    .sort((a, b) =>
+      b.priority - a.priority || specificity(b) - specificity(a) || a.key.localeCompare(b.key)
+    )
 }
 
 // rowsByOffset maps a rule's day_offset to the panchangam_days row that many
@@ -59,13 +81,7 @@ export function bestMatch(
   rules: ObservanceRule[],
   category: "tharpanam" | "observance",
 ): ObservanceRule | null {
-  let best: ObservanceRule | null = null
-  for (const rule of rules) {
-    if (rule.category !== category) continue
-    if (!ruleMatches(rule, rowsByOffset[rule.day_offset])) continue
-    if (!best || rule.priority > best.priority) best = rule
-  }
-  return best
+  return matchingRules(rowsByOffset, rules).find((rule) => rule.category === category) ?? null
 }
 
 // Same as bestMatch, restricted to rules worth an advance ("in N days") push -

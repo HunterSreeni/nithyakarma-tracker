@@ -32,13 +32,16 @@ vi.mock('../../hooks/useAuth', () => ({
 }))
 
 import HistoryPage from '../HistoryPage'
+import { queryClient } from '../../lib/queryClient'
 
 function renderHistoryPage() {
   return render(<MemoryRouter><HistoryPage /></MemoryRouter>)
 }
 
 beforeEach(() => {
+  queryClient.clear()
   h.ups = []; h.logs = []; h.failNext = false
+  localStorage.clear() // isolate from the new history cache between tests
 })
 
 describe('HistoryPage', () => {
@@ -52,6 +55,16 @@ describe('HistoryPage', () => {
     h.logs = [{ user_practice_id: 'up1', log_date: '2026-07-10', slot: null }]
     renderHistoryPage()
     expect(await screen.findByText(/Vishnu Sahasranamam/)).toBeInTheDocument()
+  })
+
+  it('shows a Sri Rudram entry with its own slot-count suffix, not the sandhya one', async () => {
+    h.ups = [{ id: 'up1', practice: { name: 'Sri Rudram', icon: '🔱', is_sandhyavandhanam: false, is_sri_rudram: true } }]
+    h.logs = [
+      { user_practice_id: 'up1', log_date: '2026-07-10', slot: 'namakam' },
+      { user_practice_id: 'up1', log_date: '2026-07-10', slot: 'chamakam' },
+    ]
+    renderHistoryPage()
+    expect(await screen.findByText('Sri Rudram (2 rudram marks)')).toBeInTheDocument()
   })
 
   it('shows an error with Retry instead of a silent stuck spinner when the fetch fails, and recovers on retry', async () => {

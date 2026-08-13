@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.31.4](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.3...app-v0.31.4) (2026-08-13)
+
+
+### Bug Fixes
+
+* rewrite mobile resume data lifecycle ([465551b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/465551b56034d4fdb838ec15f8b2da61717cf671))
+* rewrite mobile resume data lifecycle ([8f95eeb](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8f95eebe4482c4d638e48f18a6faf40706e6f90a))
+
+## [0.31.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.2...app-v0.31.3) (2026-08-12)
+
+
+### Bug Fixes
+
+* count Sandhya backfills toward streaks ([0357463](https://github.com/HunterSreeni/nithyakarma-tracker/commit/035746364b3b7bb088cc1a180e8786df56defa8a))
+
+## [0.31.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.1...app-v0.31.2) (2026-08-11)
+
+
+### Bug Fixes
+
+* bound Supabase fetches on older Android WebViews ([37097bb](https://github.com/HunterSreeni/nithyakarma-tracker/commit/37097bb3f8d07c0e4fcaed546a08cda3c3e91066))
+* prevent stuck loading after Android resume ([38bb9a3](https://github.com/HunterSreeni/nithyakarma-tracker/commit/38bb9a3397754221575c862bc7d54a5abab7fc56))
+
+## [0.31.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.0...app-v0.31.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* stop weekly practices from being day-gated; split Sri Rudram into 3 slots ([c2bd3fd](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c2bd3fdef439bbc82de5fd63c49c48fa71de641a))
+* stop weekly practices from being day-gated; split Sri Rudram into 3 slots ([3fa4677](https://github.com/HunterSreeni/nithyakarma-tracker/commit/3fa4677df7a295cec2a3aceadba522614ebfefc9))
+
+## [0.31.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.30.0...app-v0.31.0) (2026-08-11)
+
+
+### Features
+
+* add Ekadashi/Dwadashi/Trayodashi/Purnima observance banners ([a881757](https://github.com/HunterSreeni/nithyakarma-tracker/commit/a8817572dd4488208e9079d55d8f80df3907e8f8))
+
+
+### Bug Fixes
+
+* give History and Referrals a cache fallback like Today's list ([72e1a94](https://github.com/HunterSreeni/nithyakarma-tracker/commit/72e1a9482093770c96796a8405e051497671f8b8))
+* History/Referrals stuck-loading + feat: tithi observance banners ([8edee43](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8edee436ead964ff5c65ca6b71c7aab9df6b9549))
+
 ## [0.30.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.29.7...app-v0.30.0) (2026-08-10)
 
 

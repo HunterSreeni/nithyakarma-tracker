@@ -331,11 +331,30 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Already-tracking dimmed & disabled | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Add error keeps dropdown open, shows inline error | - | ⬜ |
 | Escape closes dropdown, focus trap active | - | ⬜ (hook `useFocusTrap` itself untested directly; only exercised indirectly via CelebrationModal focus tests) |
-| Weekly practice scheduled only on its weekday | Unit(cadence) + Integration(§15) | ✅ |
+| Weekly practice scheduled only on its weekday - mechanism itself, for any future `cadence='weekly'` row | Unit(cadence) + Integration(§15) | ✅ |
 | Weekly continuity across exactly one week, reset after a missed week | Integration(§15) | ✅ |
 | RPC refuses to log a weekly practice on a non-matching weekday | Integration(§15) | ✅ |
+| **2026-08-11 (migration 20260811120446): all 5 previously-weekly practices (Aditya Hrudayam, Sri Rudram, Subrahmanya Bhujangam, Dakshinamurthy Stotram, Devi Mahatmyam) reclassified to `cadence='daily'`, scope confirmed with Sreeni - adding one on any day no longer silently vanishes from the Today list (bug report), and `submit_practice_log` no longer rejects a mark on a non-matching weekday. `weekday` stays on the row purely as data - `cadenceLabel()` shows it as a "traditionally {Day}s" hint, never a gate** | Unit(`cadence.test.js`) + Integration(§23) | ✅ |
 | `daily_count` target (108) stored verbatim | Integration(§10) | ✅ |
 | Sequence position increments and cycles at length | Integration(§11) | ✅ |
+
+### Sri Rudram 3-slot marking
+Same day, requested 2026-08-11 alongside the weekly-gate fix above: split into
+Namakam / Chamakam / Both, tracked as 3 independent slots - same any-1-of-3
+semantics as Sandhyavandhanam (new `is_sri_rudram` flag, `submit_practice_log`
+generalized from `is_sandhyavandhanam` to `is_sandhyavandhanam or
+is_sri_rudram`). Unlike Sandhya: no Gayatri-count prompt (slots mark
+directly) and no yesterday-backdate capability (neither requested, both stay
+Sandhya-exclusive in the RPC).
+| Case | Layer | Status |
+|---|---|---|
+| All 3 slot buttons shown, plus the informational weekday hint | Unit (`TodayPage.test.jsx`) | ✅ |
+| Clicking a slot marks directly - no count prompt, unlike Sandhya | Unit (`TodayPage.test.jsx`) | ✅ |
+| Any 1 of 3 slots completes the practice for the day, no "Mark Done" button shown | Unit (`TodayPage.test.jsx`) | ✅ |
+| An already-marked slot shown done and disabled | Unit (`TodayPage.test.jsx`) | ✅ |
+| Marking all 3 slots the same day: streak advances once, punya stacks per slot (12/24/36) | Integration(§23) | ✅ |
+| A log with no slot is rejected; re-marking an already-done slot is rejected (unique same-day slot) | Integration(§23) | ✅ |
+| History shows a Rudram-specific slot-count suffix, not the sandhya "(N/3 sandhyas)" one | Unit (`HistoryPage.test.jsx`) | ✅ |
 
 ### History
 | Case | Layer | Status |
@@ -345,6 +364,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Error + Retry instead of silent stuck spinner | Unit | ✅ |
 | 300-log hard cap with no pagination, high-volume account | - | ⬜ |
 | Sandhya shown as x/3 per day | E2E(W, `journey.spec.js` implied via card text) | ⚠️ manual-gate only, no direct unit assertion on History's x/3 rendering found |
+| Paints from a localStorage cache (keyed by owner+family member) on reopen instead of a spinner, revalidates in the background; manual Retry always bypasses the cache | Unit(`historyCache.test.js`) | ✅ (2026-08-11) |
 
 ### Notifications
 | Case | Layer | Status |
@@ -382,6 +402,23 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Dismiss persists per-month via localStorage, resets on month change | Unit | ✅ |
 | Dismiss button doesn't trigger the Link navigation | - | ⬜ |
 | Behavior when `special.route` is malformed/nonexistent | - | ⬜ |
+
+### Tithi Observance Banner
+Same-day banner for Ekadashi/Dwadashi/Trayodashi/Purnima (added 2026-08-11) -
+these 4 tithis previously triggered nothing (no banner, no push), unlike
+Amavasya. Wording is identical for both traditions (no Tamil/Malayalam
+branch, unlike `PanchangamBox`). 7 new `panchangam_observances` rows
+(`advance_notify = false`, matching the `monthly_amavasya` precedent); no
+generic Amavasya row added since it already has dedicated tharpanam
+messaging.
+| Case | Layer | Status |
+|---|---|---|
+| Renders nothing with no panchangam day, or when today's thithi has no matching observance | Unit (`TithiObservanceBanner.test.jsx`) | ✅ |
+| Shows the banner when today's thithi matches an observance row | Unit | ✅ |
+| Query is scoped to "pure tithi" rows only (all match_* columns null except match_thithi, day_offset=0) so a named-festival row sharing a thithi (Avani Avittam, Pongal, ...) is never picked up here | Unit + Deno(`observanceMatch.test.ts`) | ✅ |
+| `monthly_purnima`'s lower priority (-1) loses to `avani_avittam`'s (0) on the one day/year they coincide (Purnima + Shravana nakshatra); generic Purnima still fires on an ordinary Purnima | Deno (`observanceMatch.test.ts`) | ✅ |
+| Dismiss persists per-day via localStorage, resets the next day (or once the tithi changes) | Unit | ✅ |
+| Also drives `send-reminders` push automatically (same table, `bestMatch()` already generic) - no edge function change needed | Deno (`observanceMatch.test.ts`) | ✅ |
 
 ### Panchangam
 | Case | Layer | Status |
@@ -442,6 +479,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | `delete_account` RPC removes auth user (not just profile), `anon` cannot execute it | Integration(§7) | ✅ |
 | Delete flow: type-email-to-confirm gate, returns to auth | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Referral reward copy is static, doesn't reflect the server-side 5/24h cap | - | ⬜ |
+| Referrals list paints from a localStorage cache (keyed by owner) on reopen instead of a spinner, revalidates in the background; manual Retry always bypasses the cache | Unit(`referralsCache.test.js`) | ✅ (2026-08-11) |
 
 ### Streaks & freezes
 | Case | Layer | Status |
@@ -468,6 +506,7 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | `useAuth.loadProfile()` runs its two queries in parallel, not sequentially (stacked sequential timeouts blew past App.jsx's 15s stuck watchdog on a slow reconnect) | Unit(`useAuth.test.jsx`) | ✅ (2026-08-09) |
 | Gate() stuck watchdog (55s) doesn't fire while auth-js is still legitimately retrying a token refresh internally (~30s budget) on a stale-session resume - root cause of the Reload wall reappearing in prod after the 2026-08-09 loadProfile fix, which only addressed a later, smaller stage | Unit(`App.test.jsx`) | ✅ (2026-08-10) |
 | `useAuth` renders session/profile from a localStorage cache instantly on cold restart (no wait on getSession()+loadProfile()), writes it on every fresh `loadProfile()`, and clears it on sign-out/no-session so a cold restart doesn't just sit on a blank spinner while auth-js's refresh retry runs in the background | Unit(`useAuth.test.jsx`) | ✅ (2026-08-10) |
+| History and Referrals had no cache/watchdog of their own (only the app-level session bootstrap and the Today list got one on 2026-08-09/10) - a hung auth-js refresh retry left both pages on "Loading..." indefinitely, with no timeout to fall back on. Fixed by giving both the same localStorage-cache-then-revalidate pattern as `todayCache.js`; cleared on sign-out/no-session alongside the others | Unit(`historyCache.test.js`, `referralsCache.test.js`) | ✅ (2026-08-11) |
 
 ### Accessibility (WCAG 2.1 AA)
 | Check | Where | Status |

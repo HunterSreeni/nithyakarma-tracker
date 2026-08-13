@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import { Flame, Snowflake, Check, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
-import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, localDateString, SANDHYA_SLOTS } from '../utils/cadence'
-import { streakState } from '../utils/streak'
+import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, localDateString, SANDHYA_SLOTS, RUDRAM_SLOTS } from '../utils/cadence'
+import { dayGap, streakState } from '../utils/streak'
 import { tierFor, tierClass } from '../utils/tiers'
 import CelebrationModal from './CelebrationModal'
 import TierUpModal from './TierUpModal'
@@ -13,19 +14,21 @@ import GayatriCountModal from './GayatriCountModal'
 import ProfileSwitcher from './ProfileSwitcher'
 import PanchangamBox from './PanchangamBox'
 import MonthlySpecialBanner from './MonthlySpecialBanner'
+import ObservanceBanner from './ObservanceBanner'
 import ErrorBanner from './ErrorBanner'
 import PracticeIcon from '../utils/practiceIcons'
 import { track } from '../utils/analytics'
 import { showInterstitial } from '../utils/ads'
 import { isMilestone, maybeRequestReview } from '../utils/review'
 import { lazyWithRetry } from '../utils/lazyWithRetry'
+import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
 
 // Deferred - pulls in driver.js, which only the first-run tour ever needs.
 const GuidedTour = lazyWithRetry(() => import('./GuidedTour'))
 
 export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
-  const { items, loading, error: loadError, submit, addPractice, reload } =
+  const { items, loading, refreshing, error: loadError, submit, addPractice, reload } =
     useToday(session.user.id, selectedMember?.id ?? null)
   const [celebration, setCelebration] = useState(null)
   const [tierUp, setTierUp] = useState(null)
@@ -39,7 +42,9 @@ export default function TodayPage() {
   const subjectName = selectedMember?.name ?? profile.display_name
   // Read the alive/dead boundary live rather than trusting current_streak,
   // which only gets rewritten by the nightly decay job - see utils/streak.js.
-  const { streak: subjectStreak, frozen } = streakState(selectedMember ?? profile)
+  const subject = selectedMember ?? profile
+  const { streak: subjectStreak, frozen } = streakState(subject)
+  const catchupAvailable = subjectStreak > 0 && dayGap(subject.last_complete_date, localDateString()) === 2
   const subjectFreezes = selectedMember?.freeze_credits ?? profile.freeze_credits ?? 0
   const subjectPunya = selectedMember?.punya ?? profile.punya ?? 0
   const subjectTier = tierFor(subjectPunya)
@@ -59,7 +64,9 @@ export default function TodayPage() {
     const wasComplete = dayComplete(items)
     try {
       const result = await submit(item.up.id, {
-        slot, count: item.practice.is_sandhyavandhanam ? count : (item.practice.target_count ?? null),
+        slot, count: item.practice.is_sandhyavandhanam ? count
+          : item.practice.is_sri_rudram ? null
+          : (item.practice.target_count ?? null),
       })
       await refresh() // streaks in topbar / switcher
       const justCompleted = !!result.day_complete && !wasComplete
@@ -68,6 +75,7 @@ export default function TodayPage() {
         freeze_used: !!result.freeze_used,
         overall_streak: result.overall_streak ?? 0,
         is_sandhya: !!item.practice.is_sandhyavandhanam,
+        is_sri_rudram: !!item.practice.is_sri_rudram,
       })
       // Ad fires here - after the verified save, BEFORE the celebration reward
       // (Intent 0.2). At a streak milestone, ask for a review instead (Intent 1.4);
@@ -94,6 +102,8 @@ export default function TodayPage() {
   }
 
   const onSlotClick = (item, slot) => setGayatriPrompt({ item, slot })
+  // Sri Rudram slots mark directly, unlike Sandhya's - no Gayatri-count prompt applies.
+  const onRudramSlotClick = (item, slot) => mark(item, slot)
 
   return (
     <>
@@ -108,6 +118,7 @@ export default function TodayPage() {
       </div>
       <PanchangamBox />
       <MonthlySpecialBanner />
+      <ObservanceBanner />
 
       <ProfileSwitcher />
 
@@ -123,10 +134,13 @@ export default function TodayPage() {
             <span>{subjectPunya} punya</span>{' · '}
             <span className={`tier-badge ${tierClass(subjectTier)}`}>{subjectTier}</span>
           </div>
-          {frozen && (
+          {catchupAvailable && (
             <div className="tc-frozen" role="status">
-              <Snowflake size={12} strokeWidth={2.5} /> You missed yesterday. Mark one anushtanam
-              today to spend a freeze and keep this streak, or it resets to 0.
+              <Snowflake size={12} strokeWidth={2.5} /> {frozen
+                ? <>You missed yesterday. Backfill one of yesterday's sandhyas to keep this streak
+                  without spending a freeze, or mark one anushtanam today to use a freeze.</>
+                : <>You missed yesterday. Backfill one of yesterday's sandhyas before today ends to
+                  keep this streak. Marking only today will restart it.</>}
             </div>
           )}
         </div>
@@ -139,7 +153,8 @@ export default function TodayPage() {
       {error && <div className="auth-error" role="alert">{error}</div>}
 
       <h2 className="section-h">Today's Anushtanams</h2>
-      {loading ? <div className="spinner-wrap">Loading...</div> : loadError ? (
+      {refreshing && <div className="greet-sub" role="status">Refreshing...</div>}
+      {loading ? <div className="spinner-wrap">Loading...</div> : loadError && !items.length ? (
         <ErrorBanner message={loadError} onRetry={reload} />
       ) : items.length === 0 ? (
         <SuggestedPractices onAdd={addPractice} />
@@ -147,10 +162,12 @@ export default function TodayPage() {
         <div className="practice-list">
           {items.map(item => (
             <PracticeCard key={item.up.id} item={item}
-              busy={busyId === item.up.id} onMark={mark} onSlotClick={onSlotClick} />
+              busy={busyId === item.up.id} onMark={mark} onSlotClick={onSlotClick}
+              onRudramSlotClick={onRudramSlotClick} />
           ))}
         </div>
       )}
+      {loadError && items.length > 0 && <ErrorBanner message={loadError} onRetry={reload} />}
 
       <AddPracticeDropdown existing={items.map(i => i.practice.id)} onAdd={addPractice} />
 
@@ -226,7 +243,7 @@ function SuggestedPractices({ onAdd }) {
   )
 }
 
-function PracticeCard({ item, busy, onMark, onSlotClick }) {
+function PracticeCard({ item, busy, onMark, onSlotClick, onRudramSlotClick }) {
   const { practice, up, logs } = item
   const done = isDoneToday(practice, logs)
   const slotsDone = new Set(logs.map(l => l.slot))
@@ -276,9 +293,20 @@ function PracticeCard({ item, busy, onMark, onSlotClick }) {
             <YesterdaySandhya item={item} />
           </>
         )}
+        {practice.is_sri_rudram && (
+          <div className="slot-row">
+            {RUDRAM_SLOTS.map(s => (
+              <button key={s.key} disabled={slotsDone.has(s.key) || busy}
+                className={`slot-btn ${slotsDone.has(s.key) ? 'done' : ''}`}
+                onClick={() => onRudramSlotClick(item, s.key)}>
+                {slotsDone.has(s.key) && <Check size={11} strokeWidth={3} />}{s.short}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       {done ? <div className="done-check"><Check size={16} strokeWidth={3} /></div>
-        : !practice.is_sandhyavandhanam && (
+        : !practice.is_sandhyavandhanam && !practice.is_sri_rudram && (
           <button className="btn-done" disabled={busy} onClick={() => onMark(item)}>
             {busy ? 'Saving...' : 'Mark Done'}
           </button>
@@ -287,45 +315,43 @@ function PracticeCard({ item, busy, onMark, onSlotClick }) {
   )
 }
 
-// Catch-up for a Sandhya slot missed last night. Punya-only (half value) -
-// never touches the streak, freeze, or last_complete_date; the server enforces
-// that regardless of what this sends. Scoped to Sandhyavandhanam only.
+// Catch-up for a Sandhya slot missed yesterday. It earns normal punya and the
+// first backfilled slot repairs that day's streak; the server owns the actual
+// accounting/refund policy. Scoped to Sandhyavandhanam only.
 function YesterdaySandhya({ item }) {
   const { refresh } = useAuth()
   const [open, setOpen] = useState(false)
-  const [loaded, setLoaded] = useState(false)
-  const [slotsDone, setSlotsDone] = useState(new Set())
   const [busySlot, setBusySlot] = useState(null)
   const [note, setNote] = useState(null)
-  const [error, setError] = useState(null)
+  const [saveError, setSaveError] = useState(null)
   const yesterday = localDateString(new Date(Date.now() - 24 * 60 * 60 * 1000))
 
-  const load = async () => {
-    const { data } = await supabase.from('practice_logs')
-      .select('slot').eq('user_practice_id', item.up.id).eq('log_date', yesterday)
-    setSlotsDone(new Set((data ?? []).map(l => l.slot)))
-    setLoaded(true)
-  }
-
-  const toggleOpen = async () => {
-    if (!open && !loaded) await load()
-    setOpen(v => !v)
-  }
+  const yesterdayQuery = useQuery({
+    queryKey: ['yesterday-sandhya', item.up.id, yesterday],
+    enabled: open,
+    queryFn: async () => unwrap(await withDeadline(
+      supabase.from('practice_logs').select('slot')
+        .eq('user_practice_id', item.up.id).eq('log_date', yesterday),
+      'Yesterday sandhya',
+    )) ?? [],
+    staleTime: 60_000,
+  }, queryClient)
+  const slotsDone = new Set((yesterdayQuery.data ?? []).map(log => log.slot))
 
   const markYesterday = async (slot) => {
-    setBusySlot(slot); setError(null); setNote(null)
+    setBusySlot(slot); setSaveError(null); setNote(null)
     try {
-      const { data, error: err } = await supabase.rpc('submit_practice_log', {
+      const data = unwrap(await withDeadline(supabase.rpc('submit_practice_log', {
         p_user_practice_id: item.up.id, p_slot: slot, p_count: null,
-        p_local_date: yesterday, p_award_streak: false,
-      })
-      if (err) throw err
+        p_local_date: yesterday, p_award_streak: true,
+      }), 'Save yesterday sandhya'))
       if (!data?.saved) throw new Error('Save could not be verified')
-      setSlotsDone(prev => new Set(prev).add(slot))
-      setNote(`+${data.punya_awarded} punya for yesterday's ${SANDHYA_SLOTS.find(s => s.key === slot)?.short}`)
-      await refresh() // punya in the topbar
+      await yesterdayQuery.refetch()
+      const refund = data.freeze_refunded ? ' · freeze refunded' : ''
+      setNote(`+${data.punya_awarded} punya · yesterday's streak counted${refund}`)
+      await refresh() // punya/streak/freeze in the topbar and card
     } catch (err) {
-      setError(err.message)
+      setSaveError(err.message)
     } finally {
       setBusySlot(null)
     }
@@ -333,19 +359,22 @@ function YesterdaySandhya({ item }) {
 
   return (
     <div className="yesterday-sandhya">
-      <button type="button" className="yesterday-toggle" onClick={toggleOpen}>
+      <button type="button" className="yesterday-toggle" onClick={() => setOpen(value => !value)}>
         {open ? <ChevronUp size={12} strokeWidth={2.5} /> : <ChevronDown size={12} strokeWidth={2.5} />}
         Missed a sandhya yesterday?
       </button>
       {open && (
         <div className="yesterday-panel">
-          {!loaded && <div className="yesterday-note">Checking yesterday...</div>}
-          {loaded && slotsDone.size >= 3 && (
+          {yesterdayQuery.isPending && <div className="yesterday-note">Checking yesterday...</div>}
+          {yesterdayQuery.error && (
+            <ErrorBanner message={yesterdayQuery.error.message} onRetry={() => yesterdayQuery.refetch()} />
+          )}
+          {yesterdayQuery.isSuccess && slotsDone.size >= 3 && (
             <div className="yesterday-note">All 3 of yesterday's sandhyas are already marked.</div>
           )}
-          {loaded && slotsDone.size < 3 && (
+          {yesterdayQuery.isSuccess && slotsDone.size < 3 && (
             <>
-              <div className="yesterday-note">Half punya, no streak effect - just credit for doing it.</div>
+              <div className="yesterday-note">Full punya. Your first marked sandhya also counts yesterday toward your streak.</div>
               <div className="slot-row">
                 {SANDHYA_SLOTS.map(s => (
                   <button key={s.key} disabled={slotsDone.has(s.key) || !!busySlot}
@@ -358,7 +387,7 @@ function YesterdaySandhya({ item }) {
             </>
           )}
           {note && <div className="yesterday-note yesterday-success">{note}</div>}
-          {error && <div className="yesterday-note yesterday-error">{error}</div>}
+          {saveError && <div className="yesterday-note yesterday-error">{saveError}</div>}
         </div>
       )}
     </div>

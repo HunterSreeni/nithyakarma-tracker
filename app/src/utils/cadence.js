@@ -10,12 +10,20 @@ export function isScheduled(practice, date = new Date()) {
 }
 
 export function cadenceLabel(practice) {
+  // weekday is informational only once cadence isn't 'weekly' (2026-08-11:
+  // Sri Rudram and 4 others were reclassified from weekly to daily so adding/
+  // marking them is never day-gated - the day is still shown as a hint, not
+  // a restriction).
+  const dayHint = practice.cadence !== 'weekly' && practice.weekday != null
+    ? ` · traditionally ${WEEKDAYS[practice.weekday]}s` : ''
   switch (practice.cadence) {
     case 'weekly': return `${WEEKDAYS[practice.weekday]}s`
     case 'daily_count': return `daily ${practice.target_count}`
     case 'sequence':
       return practice.sequence_length ? `1 of ${practice.sequence_length} / day` : 'daily reading'
-    default: return practice.is_sandhyavandhanam ? '1 sandhya today' : 'daily'
+    default:
+      return (practice.is_sandhyavandhanam ? '1 sandhya today'
+        : practice.is_sri_rudram ? 'any 1 today' : 'daily') + dayHint
   }
 }
 
@@ -23,6 +31,14 @@ export const SANDHYA_SLOTS = [
   { key: 'morning', label: 'Prathakala', short: 'Morning' },
   { key: 'afternoon', label: 'Madhyanika', short: 'Noon' },
   { key: 'evening', label: 'Saayamkala', short: 'Evening' },
+]
+
+// Sri Rudram: 3 independent options, any 1 completes the practice for the day
+// (same any-1-of-3 semantics as Sandhya's slots) - not 3 required parts.
+export const RUDRAM_SLOTS = [
+  { key: 'namakam', label: 'Namakam', short: 'Namakam' },
+  { key: 'chamakam', label: 'Chamakam', short: 'Chamakam' },
+  { key: 'both', label: 'Both (Namakam + Chamakam)', short: 'Both' },
 ]
 
 // Done-state for a practice given today's logs for it. "Has this been logged

@@ -46,9 +46,11 @@ export function streakState(subject, today = localDateString()) {
   // decay_stale_streaks resets it and streak_after_completion restarts at 1 -
   // so treating it as alive would be the very lie this module exists to stop.
   if (gap === 0 || gap === 1) return { streak, frozen: false }
-  // gap 2 is the single missed day a freeze covers, and only while a credit
-  // is left to spend (streak_after_completion consumes it on the next mark).
-  if (gap === 2 && credits > 0) return { streak, frozen: true }
+  // gap 2 is still inside the full following-day Sandhya catch-up window.
+  // Keep showing the real streak even with zero freezes: yesterday can still
+  // be repaired until this local day ends. A completion today may use a freeze;
+  // a later yesterday backfill refunds it and repairs the chain.
+  if (gap === 2) return { streak, frozen: credits > 0 }
   // Anything further is beyond what one freeze bridges; the next mark starts
   // over at 1 and decay_stale_streaks will zero the stored column.
   return { streak: 0, frozen: false }
