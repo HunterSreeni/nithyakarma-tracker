@@ -1,6 +1,6 @@
 // Run with: deno test supabase/functions/_shared/observanceMatch.test.ts
 import { assertEquals } from "jsr:@std/assert@1"
-import { addDays, bestAdvanceMatch, bestMatch, type ObservanceRule, type PanchangamRow } from "./observanceMatch.ts"
+import { addDays, bestAdvanceMatch, bestMatch, matchingRules, type ObservanceRule, type PanchangamRow } from "./observanceMatch.ts"
 
 const rules: ObservanceRule[] = [
   {
@@ -147,4 +147,21 @@ Deno.test("priority tiebreak: Avani Avittam (Purnima + Shravana) beats the gener
 Deno.test("generic Purnima banner still fires on an ordinary Purnima with no Shravana nakshatra", () => {
   const match = bestMatch({ 0: row({ thithi: "Purnima", nakshatra: "Ashwini" }) }, rules, "observance")
   assertEquals(match?.key, "monthly_purnima")
+})
+
+Deno.test("all-category matching ranks named Amavasya above its generic rule", () => {
+  const matches = matchingRules(
+    { 0: row({ thithi: "Amavasya", malayalam_month: "Karkidakam" }) }, rules,
+  )
+  assertEquals(matches.map((match) => match.key), ["karkidaka_vaavu", "monthly_amavasya"])
+})
+
+Deno.test("equal-priority matching prefers a more specific rule deterministically", () => {
+  const samePriority = rules.map((rule) =>
+    rule.key === "monthly_purnima" ? { ...rule, priority: 0 } : rule
+  )
+  const matches = matchingRules(
+    { 0: row({ thithi: "Purnima", nakshatra: "Shravana" }) }, samePriority,
+  )
+  assertEquals(matches.slice(0, 2).map((match) => match.key), ["avani_avittam", "monthly_purnima"])
 })

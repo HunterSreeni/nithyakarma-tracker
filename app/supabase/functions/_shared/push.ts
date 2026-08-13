@@ -7,7 +7,8 @@ import webpush from "npm:web-push";
 export const APP_URL = "https://app.nithyakarma.org";
 
 export async function loadConfig(admin: any): Promise<Record<string, string>> {
-  const { data } = await admin.from("app_config").select("key, value");
+  const { data, error } = await admin.from("app_config").select("key, value");
+  if (error) throw new Error(`Could not load push configuration: ${error.message}`);
   return Object.fromEntries((data ?? []).map((r: any) => [r.key, r.value]));
 }
 
@@ -36,8 +37,9 @@ async function getFCMAccessToken(config: Record<string, string>): Promise<string
     .replace("-----BEGIN PRIVATE KEY-----", "")
     .replace("-----END PRIVATE KEY-----", "")
     .replace(/\s/g, "");
+  const keyBytes = base64ToBytes(pemBody);
   const key = await crypto.subtle.importKey(
-    "pkcs8", base64ToBytes(pemBody),
+    "pkcs8", keyBytes.buffer as ArrayBuffer,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"],
   );
   const header = { alg: "RS256", typ: "JWT" };
@@ -84,8 +86,12 @@ export async function sendFCM(
     if (res.ok) return true;
     const err = await res.json();
     const errorCode = (err as any)?.error?.details?.[0]?.errorCode || "";
+    console.error("[push] FCM rejected notification", {
+      status: res.status, errorCode, message: (err as any)?.error?.message,
+    });
     if (errorCode === "UNREGISTERED" || errorCode === "SENDER_ID_MISMATCH") {
-      await admin.from("push_subscriptions").delete().eq("endpoint", token);
+      const { error: deleteError } = await admin.from("push_subscriptions").delete().eq("endpoint", token);
+      if (deleteError) console.error("[push] failed to remove invalid FCM token", deleteError);
     }
     return false;
   } catch (err) {
@@ -107,7 +113,8 @@ export async function sendWebPush(
     return true;
   } catch (err: any) {
     if (err?.statusCode === 410 || err?.statusCode === 404) {
-      await admin.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+      const { error: deleteError } = await admin.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+      if (deleteError) console.error("[push] failed to remove invalid web subscription", deleteError);
     } else {
       console.error("[push] sendWebPush failed", err);
     }
