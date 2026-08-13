@@ -208,6 +208,16 @@ describe('useNotifications (native) - self-heal on mount', () => {
     const { result } = renderHook(() => useNotifications(user))
     await waitFor(() => expect(result.current.error).toMatch(/blocked/))
   })
+
+  it('shows unchecked instead of a false-positive checked box when enabled=true came from another platform and this device never asked for permission', async () => {
+    mockNative.mockReturnValue(true)
+    h.prefEnabled = true
+    checkFCMPermission.mockResolvedValue('prompt')
+    const { registerFCM } = await import('../../utils/pushAndroid')
+    const { result } = renderHook(() => useNotifications(user))
+    await waitFor(() => expect(result.current.enabled).toBe(false))
+    expect(registerFCM).not.toHaveBeenCalled() // still no surprise permission dialog
+  })
 })
 
 describe('tharpanam and observance sub-toggles', () => {

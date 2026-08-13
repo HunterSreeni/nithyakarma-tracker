@@ -59,6 +59,17 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
       checkFCMPermission().then((status) => {
         if (status === 'denied') setError(ANDROID_BLOCKED_MESSAGE)
         else if (status === 'granted') registerFCM(user.id).catch(() => {})
+        else {
+          // Permission was never asked on THIS device - `enabled` is a single
+          // flag shared across every platform, so it's true here because it
+          // was turned on elsewhere (e.g. the web app), not because this
+          // Android device ever registered. Show it as off rather than a
+          // false-positive checked box with nothing behind it; tapping it
+          // triggers the real, user-initiated permission prompt + FCM
+          // registration below. Doesn't touch the DB, so web/other devices
+          // are unaffected.
+          setEnabled(false)
+        }
       })
       return
     }
