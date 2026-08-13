@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Award, Flame } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -6,6 +7,7 @@ import { useAuth } from '../hooks/useAuth'
 import { tierClass } from '../utils/tiers'
 import ErrorBanner from './ErrorBanner'
 import { friendlyError } from '../utils/friendlyError'
+import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
 
 const SCOPES = [
   { key: 'week', label: 'Week', scope: 'global', period: 'week' },
@@ -15,28 +17,17 @@ const SCOPES = [
 
 export default function SabhaPage() {
   const [tab, setTab] = useState(SCOPES[0])
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const { profile } = useAuth()
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const { data, error: rpcError } = await supabase.rpc('get_leaderboard', { p_period: tab.period, p_scope: tab.scope })
-      if (rpcError) throw rpcError
-      setRows(data ?? [])
-    } catch (err) {
-      // A real failure used to be disguised as an empty leaderboard - now it
-      // surfaces as an error with a retry instead of a misleading empty state.
-      setError(friendlyError(err))
-    } finally {
-      setLoading(false)
-    }
-  }, [tab])
-
-  useEffect(() => { if (profile.community_enabled) load() }, [load, profile.community_enabled])
+  const query = useQuery({
+    queryKey: ['leaderboard', tab.period, tab.scope],
+    enabled: !!profile.community_enabled,
+    queryFn: async () => unwrap(await withDeadline(
+      supabase.rpc('get_leaderboard', { p_period: tab.period, p_scope: tab.scope }),
+      'Sabha leaderboard',
+    )) ?? [],
+  }, queryClient)
+  const rows = query.data ?? []
+  const error = query.error ? friendlyError(query.error) : ''
 
   // Community is opt-in (default hidden) - the nav tab is already gone when
   // disabled (Layout.jsx), but the route is still reachable directly, so
@@ -73,12 +64,12 @@ export default function SabhaPage() {
       <div className="seg-toggle">
         {SCOPES.map(s => (
           <button key={s.key} className={`seg ${tab.key === s.key ? 'on' : ''}`}
-            onClick={() => { setRows([]); setTab(s) }}>{s.label}</button>
+            onClick={() => setTab(s)}>{s.label}</button>
         ))}
       </div>
 
-      {loading ? <div className="spinner-wrap">Loading...</div> : error ? (
-        <ErrorBanner message={error} onRetry={load} />
+      {query.isPending ? <div className="spinner-wrap">Loading...</div> : error && !rows.length ? (
+        <ErrorBanner message={error} onRetry={() => query.refetch()} />
       ) : rows.length === 0 ? (
         <div className="empty-note">
           {tab.key === 'kids'
@@ -101,6 +92,8 @@ export default function SabhaPage() {
           )}
           {rows.map((r, i) => <Row key={r.subject_id} r={r} rank={i + 1} initials={initials} />)}
           {myRow && myRank > rows.length && <Row r={myRow} rank={myRank} initials={initials} />}
+          {query.isFetching && <div className="greet-sub" role="status">Refreshing...</div>}
+          {error && <ErrorBanner message={error} onRetry={() => query.refetch()} />}
         </>
       )}
     </>

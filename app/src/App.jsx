@@ -30,7 +30,7 @@ const KandamPage = lazyWithRetry(() => import('./components/KandamPage'))
 const DeviMahatmyamPage = lazyWithRetry(() => import('./components/DeviMahatmyamPage'))
 
 function Gate() {
-  const { session, profile, loading, justOnboarded, clearJustOnboarded } = useAuth()
+  const { session, profile, loading, dataStatus, justOnboarded, clearJustOnboarded } = useAuth()
   const { pathname } = useLocation()
   // Cheap watchdog for the one loading state that fully blanks the app: if
   // something upstream still manages to hang despite the guards in useAuth,
@@ -80,6 +80,13 @@ function Gate() {
       )
     }
     return <div className="spinner-wrap">Loading...</div>
+  }
+  if (!session && dataStatus === 'offline') {
+    return (
+      <div className="spinner-wrap stuck">
+        <div>You're offline. Reconnect to continue.</div>
+      </div>
+    )
   }
   // Legal and info pages are reachable standalone whether signed in or not
   // (Play Store requirement for /terms and /privacy; /about and /karma follow

@@ -6,6 +6,8 @@ import { clearTodayCache } from '../utils/todayCache'
 import { clearHistoryCache } from '../utils/historyCache'
 import { clearReferralsCache } from '../utils/referralsCache'
 import { deviceTimezone } from '../utils/timezone'
+import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
+import { useDataLifecycle } from './useDataLifecycle'
 
 const AuthContext = createContext(null)
 
@@ -56,6 +58,8 @@ export function AuthProvider({ children }) {
   // null = self, otherwise a family_members row (parent tracks the child)
   const [selectedMember, setSelectedMember] = useState(null)
   const [loading, setLoading] = useState(!cached)
+  const [sessionValidated, setSessionValidated] = useState(false)
+  const dataLifecycle = useDataLifecycle()
   // Set only by createProfile() completing - the one true "onboarding just
   // finished" signal. Session-appears-before-profile-loads is NOT a reliable
   // proxy for this: it also happens on every live sign-in of an *existing*
@@ -74,12 +78,22 @@ export function AuthProvider({ children }) {
   // session.user.email too - see writeProfileCache above.
   const loadProfile = useCallback(async (session) => {
     const uid = session.user.id
-    const [{ data }, { data: fam }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
-      supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
-    ])
-    let profile = data ?? null
-    const familyMembers = fam ?? []
+    const result = await queryClient.fetchQuery({
+      queryKey: ['profile', uid],
+      staleTime: 0,
+      queryFn: async () => {
+        const [profileResult, familyResult] = await withDeadline(Promise.all([
+          supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
+          supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
+        ]), 'Profile refresh')
+        return {
+          profile: unwrap(profileResult) ?? null,
+          familyMembers: unwrap(familyResult) ?? [],
+        }
+      },
+    })
+    let profile = result.profile
+    const familyMembers = result.familyMembers
     // Keep profiles.timezone tracking the device. It drives decay_stale_streaks'
     // idea of "today" for this account and its children (migration
     // 20260810120000), so a stale value costs the user a streak at the wrong
@@ -110,27 +124,38 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    // A rejected getSession()/loadProfile() (expired refresh token, network
-    // not ready right after a long-backgrounded resume) must never leave
-    // loading stuck true - it gates the entire app (see App.jsx's Gate()).
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session)
-      if (session) await loadProfile(session).catch(() => {})
-      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache() }
-      setLoading(false)
-    }).catch(() => setLoading(false))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      if (session) await loadProfile(session).catch(() => {})
-      else { setProfile(null); setFamilyMembers([]); setSelectedMember(null); clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache() }
+    let mounted = true
+    // IMPORTANT: this callback must remain synchronous. auth-js may hold its
+    // session lock until the callback returns. Awaiting any Supabase query here
+    // makes that query wait for the same lock and deadlocks the entire client.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!mounted) return
+      setSession(nextSession)
+      setSessionValidated(true)
+      if (!nextSession) {
+        setProfile(null); setFamilyMembers([]); setSelectedMember(null)
+        clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache()
+        setLoading(false)
+      }
     })
 
-    // Re-validate the session when the app returns to the foreground. A tab
-    // or native webview backgrounded for 24h+ can resume with a session that
-    // silently expired; nothing else re-checks it, so the UI would otherwise
-    // keep showing whatever stale state it had before backgrounding. Feeding
-    // getSession() re-triggers the onAuthStateChange handler above either way.
-    const revalidate = () => { supabase.auth.getSession().catch(() => {}) }
+    // The profile effect below performs database work only after auth-js has
+    // returned from any auth-state callback. Foreground recovery is separately
+    // single-flighted by dataLifecycle; startup has exactly this one caller.
+    withDeadline(supabase.auth.getSession(), 'Initial session').then(({ data }) => {
+      if (!mounted) return
+      setSession(data.session)
+      setSessionValidated(true)
+      if (!data.session) {
+        setProfile(null); setFamilyMembers([]); setSelectedMember(null)
+        clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache()
+      }
+    }).catch(() => {
+      if (!mounted) return
+      setSessionValidated(true)
+      setLoading(false)
+    })
+
     // Google OAuth on native returns via NATIVE_OAUTH_REDIRECT instead of a
     // web page load - Capacitor delivers that as an appUrlOpen event carrying
     // the full redirect URL (implicit flow: tokens are in the URL fragment,
@@ -144,26 +169,32 @@ export function AuthProvider({ children }) {
         supabase.auth.setSession({ access_token, refresh_token }).catch(() => {})
       }
     }
-    let removeResumeListener, removeUrlListener
+    let removeUrlListener
     if (Capacitor.isNativePlatform()) {
       import('@capacitor/app').then(({ App }) => {
-        App.addListener('resume', revalidate).then((handle) => { removeResumeListener = handle.remove })
         App.addListener('appUrlOpen', handleOAuthRedirect).then((handle) => { removeUrlListener = handle.remove })
       })
-    } else {
-      document.addEventListener('visibilitychange', onVisibilityChange)
-    }
-    function onVisibilityChange() {
-      if (document.visibilityState === 'visible') revalidate()
     }
 
     return () => {
+      mounted = false
       subscription.unsubscribe()
-      removeResumeListener?.()
       removeUrlListener?.()
-      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
-  }, [loadProfile])
+  }, [])
+
+  useEffect(() => {
+    if (!sessionValidated || dataLifecycle.status !== 'ready') return
+    if (!session) {
+      setLoading(false)
+      return
+    }
+    let ignore = false
+    loadProfile(session).catch(() => {}).finally(() => {
+      if (!ignore) setLoading(false)
+    })
+    return () => { ignore = true }
+  }, [sessionValidated, session, dataLifecycle.status, dataLifecycle.generation, loadProfile])
 
   const signInGoogle = () =>
     supabase.auth.signInWithOAuth({
@@ -271,7 +302,7 @@ export function AuthProvider({ children }) {
     signInGoogle, signInEmail, signUpEmail, signOut, resetPassword, updatePassword,
     createProfile, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount,
     refresh: () => session && loadProfile(session),
-    justOnboarded, clearJustOnboarded,
+    justOnboarded, clearJustOnboarded, dataStatus: dataLifecycle.status,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

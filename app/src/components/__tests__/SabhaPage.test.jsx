@@ -12,10 +12,11 @@ vi.mock('../../hooks/useAuth', () => ({
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
 
 import SabhaPage from '../SabhaPage'
+import { queryClient } from '../../lib/queryClient'
 
 const renderPage = () => render(<MemoryRouter><SabhaPage /></MemoryRouter>)
 
-beforeEach(() => { h.rows = []; h.rpcError = null; h.communityEnabled = true })
+beforeEach(() => { queryClient.clear(); h.rows = []; h.rpcError = null; h.communityEnabled = true })
 
 describe('SabhaPage - community opt-in gate', () => {
   it('shows an enable-community prompt instead of the leaderboard when community_enabled is false', async () => {

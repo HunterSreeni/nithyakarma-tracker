@@ -32,12 +32,14 @@ vi.mock('../../hooks/useAuth', () => ({
 }))
 
 import HistoryPage from '../HistoryPage'
+import { queryClient } from '../../lib/queryClient'
 
 function renderHistoryPage() {
   return render(<MemoryRouter><HistoryPage /></MemoryRouter>)
 }
 
 beforeEach(() => {
+  queryClient.clear()
   h.ups = []; h.logs = []; h.failNext = false
   localStorage.clear() // isolate from the new history cache between tests
 })
