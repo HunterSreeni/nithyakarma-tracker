@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.31.4](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.3...app-v0.31.4) (2026-08-13)
+
+
+### Bug Fixes
+
+* rewrite mobile resume data lifecycle ([465551b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/465551b56034d4fdb838ec15f8b2da61717cf671))
+* rewrite mobile resume data lifecycle ([8f95eeb](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8f95eebe4482c4d638e48f18a6faf40706e6f90a))
+
 ## [0.31.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.2...app-v0.31.3) (2026-08-12)
 
 
