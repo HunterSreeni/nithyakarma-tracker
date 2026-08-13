@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import { Flame, Snowflake, Check, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -20,13 +21,14 @@ import { track } from '../utils/analytics'
 import { showInterstitial } from '../utils/ads'
 import { isMilestone, maybeRequestReview } from '../utils/review'
 import { lazyWithRetry } from '../utils/lazyWithRetry'
+import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
 
 // Deferred - pulls in driver.js, which only the first-run tour ever needs.
 const GuidedTour = lazyWithRetry(() => import('./GuidedTour'))
 
 export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
-  const { items, loading, error: loadError, submit, addPractice, reload } =
+  const { items, loading, refreshing, error: loadError, submit, addPractice, reload } =
     useToday(session.user.id, selectedMember?.id ?? null)
   const [celebration, setCelebration] = useState(null)
   const [tierUp, setTierUp] = useState(null)
@@ -151,7 +153,8 @@ export default function TodayPage() {
       {error && <div className="auth-error" role="alert">{error}</div>}
 
       <h2 className="section-h">Today's Anushtanams</h2>
-      {loading ? <div className="spinner-wrap">Loading...</div> : loadError ? (
+      {refreshing && <div className="greet-sub" role="status">Refreshing...</div>}
+      {loading ? <div className="spinner-wrap">Loading...</div> : loadError && !items.length ? (
         <ErrorBanner message={loadError} onRetry={reload} />
       ) : items.length === 0 ? (
         <SuggestedPractices onAdd={addPractice} />
@@ -164,6 +167,7 @@ export default function TodayPage() {
           ))}
         </div>
       )}
+      {loadError && items.length > 0 && <ErrorBanner message={loadError} onRetry={reload} />}
 
       <AddPracticeDropdown existing={items.map(i => i.practice.id)} onAdd={addPractice} />
 
@@ -317,40 +321,37 @@ function PracticeCard({ item, busy, onMark, onSlotClick, onRudramSlotClick }) {
 function YesterdaySandhya({ item }) {
   const { refresh } = useAuth()
   const [open, setOpen] = useState(false)
-  const [loaded, setLoaded] = useState(false)
-  const [slotsDone, setSlotsDone] = useState(new Set())
   const [busySlot, setBusySlot] = useState(null)
   const [note, setNote] = useState(null)
-  const [error, setError] = useState(null)
+  const [saveError, setSaveError] = useState(null)
   const yesterday = localDateString(new Date(Date.now() - 24 * 60 * 60 * 1000))
 
-  const load = async () => {
-    const { data } = await supabase.from('practice_logs')
-      .select('slot').eq('user_practice_id', item.up.id).eq('log_date', yesterday)
-    setSlotsDone(new Set((data ?? []).map(l => l.slot)))
-    setLoaded(true)
-  }
-
-  const toggleOpen = async () => {
-    if (!open && !loaded) await load()
-    setOpen(v => !v)
-  }
+  const yesterdayQuery = useQuery({
+    queryKey: ['yesterday-sandhya', item.up.id, yesterday],
+    enabled: open,
+    queryFn: async () => unwrap(await withDeadline(
+      supabase.from('practice_logs').select('slot')
+        .eq('user_practice_id', item.up.id).eq('log_date', yesterday),
+      'Yesterday sandhya',
+    )) ?? [],
+    staleTime: 60_000,
+  }, queryClient)
+  const slotsDone = new Set((yesterdayQuery.data ?? []).map(log => log.slot))
 
   const markYesterday = async (slot) => {
-    setBusySlot(slot); setError(null); setNote(null)
+    setBusySlot(slot); setSaveError(null); setNote(null)
     try {
-      const { data, error: err } = await supabase.rpc('submit_practice_log', {
+      const data = unwrap(await withDeadline(supabase.rpc('submit_practice_log', {
         p_user_practice_id: item.up.id, p_slot: slot, p_count: null,
         p_local_date: yesterday, p_award_streak: true,
-      })
-      if (err) throw err
+      }), 'Save yesterday sandhya'))
       if (!data?.saved) throw new Error('Save could not be verified')
-      setSlotsDone(prev => new Set(prev).add(slot))
+      await yesterdayQuery.refetch()
       const refund = data.freeze_refunded ? ' · freeze refunded' : ''
       setNote(`+${data.punya_awarded} punya · yesterday's streak counted${refund}`)
       await refresh() // punya/streak/freeze in the topbar and card
     } catch (err) {
-      setError(err.message)
+      setSaveError(err.message)
     } finally {
       setBusySlot(null)
     }
@@ -358,17 +359,20 @@ function YesterdaySandhya({ item }) {
 
   return (
     <div className="yesterday-sandhya">
-      <button type="button" className="yesterday-toggle" onClick={toggleOpen}>
+      <button type="button" className="yesterday-toggle" onClick={() => setOpen(value => !value)}>
         {open ? <ChevronUp size={12} strokeWidth={2.5} /> : <ChevronDown size={12} strokeWidth={2.5} />}
         Missed a sandhya yesterday?
       </button>
       {open && (
         <div className="yesterday-panel">
-          {!loaded && <div className="yesterday-note">Checking yesterday...</div>}
-          {loaded && slotsDone.size >= 3 && (
+          {yesterdayQuery.isPending && <div className="yesterday-note">Checking yesterday...</div>}
+          {yesterdayQuery.error && (
+            <ErrorBanner message={yesterdayQuery.error.message} onRetry={() => yesterdayQuery.refetch()} />
+          )}
+          {yesterdayQuery.isSuccess && slotsDone.size >= 3 && (
             <div className="yesterday-note">All 3 of yesterday's sandhyas are already marked.</div>
           )}
-          {loaded && slotsDone.size < 3 && (
+          {yesterdayQuery.isSuccess && slotsDone.size < 3 && (
             <>
               <div className="yesterday-note">Full punya. Your first marked sandhya also counts yesterday toward your streak.</div>
               <div className="slot-row">
@@ -383,7 +387,7 @@ function YesterdaySandhya({ item }) {
             </>
           )}
           {note && <div className="yesterday-note yesterday-success">{note}</div>}
-          {error && <div className="yesterday-note yesterday-error">{error}</div>}
+          {saveError && <div className="yesterday-note yesterday-error">{saveError}</div>}
         </div>
       )}
     </div>

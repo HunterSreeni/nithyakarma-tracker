@@ -53,6 +53,7 @@ vi.mock('../../lib/supabase', () => {
 })
 
 import TodayPage from '../TodayPage'
+import { queryClient } from '../../lib/queryClient'
 
 const sandhyaItem = (slots) => ({
   up: { id: 'up-s', current_streak: 0, sequence_position: 0 },
@@ -67,6 +68,7 @@ const rudramItem = (slots) => ({
 })
 
 beforeEach(() => {
+  queryClient.clear()
   h.items = []; h.catalog = []; h.yesterdayLogs = []
   h.addPractice.mockClear(); h.submit.mockReset(); h.showInterstitial.mockClear()
   h.refresh.mockClear(); h.rpc.mockReset()
