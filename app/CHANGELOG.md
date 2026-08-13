@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.31.6](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.5...app-v0.31.6) (2026-08-13)
+
+
+### Bug Fixes
+
+* stop Android push toggle showing enabled on unregistered devices ([234eefa](https://github.com/HunterSreeni/nithyakarma-tracker/commit/234eefabf6d1b561ad9fca2e314f2e3c910fb44c))
+* stop Android push toggle showing enabled on unregistered devices ([e3ddcfc](https://github.com/HunterSreeni/nithyakarma-tracker/commit/e3ddcfce9b3e530e8b23bb7feca146f2cbdd4452))
+
 ## [0.31.5](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.4...app-v0.31.5) (2026-08-13)
 
 
