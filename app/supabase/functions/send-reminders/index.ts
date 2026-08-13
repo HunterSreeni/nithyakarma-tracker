@@ -1,6 +1,6 @@
 // Cron-invoked reminder sender. Ported from the Sandhyavandhanam app's
 // send-reminders edge function, adapted to the nithyakarma schema.
-// Windows (user's local time): 6:00 calendar (tharpanam/observance, see
+// Windows (user's local time): 6:00-7:59 calendar (tharpanam/observance, see
 // below), 9:00 morning, 12:30 afternoon, 18:30 evening (sandhya slots,
 // skipped if already logged), 8:00 and 20:00 streak nudges (any scheduled
 // practice still incomplete). The two nudges switch to freeze-specific wording
@@ -11,6 +11,7 @@ import { addDays, bestAdvanceMatch, bestMatch, type ObservanceRule } from "../_s
 import { dayComplete } from "../_shared/dayComplete.ts";
 import { freezeNudge } from "../_shared/freezeNudge.ts";
 import { streakEventMessage } from "../_shared/streakEventMessage.ts";
+import { slotFor } from "../_shared/reminderWindow.ts";
 
 const ADVANCE_DAYS = 3;
 
@@ -49,18 +50,9 @@ function localParts(now: Date, tz: string) {
   } catch { return null; }
 }
 
-// 'calendar' is an internal marker, not a final notification_deliveries slot -
-// it can fan out to zero, one, or two deliveries per user (tharpanam and
-// observance are independent, each gated by its own preference toggle), which
-// doesn't fit the one-slot-per-user shape the other windows use.
-function slotFor(hour: number, minute: number): string | null {
-  if (hour === 6) return "calendar";
-  if (hour === 8) return "nudge_morning";
-  if (hour === 9) return "morning";
-  if (hour === 12 && minute >= 30) return "afternoon";
-  if (hour === 18 && minute >= 30) return "evening";
-  if (hour === 20) return "nudge";
-  return null;
+function databaseFault(context: string, error: any) {
+  console.error("[reminders] database fault", { context, code: error?.code, message: error?.message });
+  return json({ message: "database fault", context }, 500);
 }
 
 Deno.serve(async (req: Request) => {
@@ -71,9 +63,10 @@ Deno.serve(async (req: Request) => {
   }
 
   const now = new Date();
-  const { data: prefs } = await supabase
+  const { data: prefs, error: prefsError } = await supabase
     .from("notification_preferences")
     .select("user_id, enabled, timezone, tharpanam_enabled, observances_enabled");
+  if (prefsError) return databaseFault("notification_preferences", prefsError);
   const users = (prefs ?? []).filter((p: any) => p.enabled);
 
   // These are post-event notifications, not reminders inferred from current
@@ -81,46 +74,47 @@ Deno.serve(async (req: Request) => {
   // decay_stale_streaks, then this existing 15-minute sender delivers it once.
   // Process them before reminder-window gating so a real transition is not
   // delayed until 08:00/20:00.
-  const { data: streakEvents } = await supabase.from("streak_events")
+  const { data: streakEvents, error: streakEventsError } = await supabase.from("streak_events")
     .select("id, owner_id, family_member_id, event_type, event_date, streak_before, streak_after, freeze_before, freeze_after")
     .in("event_type", ["freeze_used", "streak_reset"])
     .is("processed_at", null).is("repaired_at", null)
     .order("created_at").limit(100);
+  if (streakEventsError) return databaseFault("streak_events", streakEventsError);
   let eventSent = 0;
   if (streakEvents?.length) {
     const eventOwnerIds = [...new Set(streakEvents.map((e: any) => e.owner_id))];
     const familyIds = streakEvents.map((e: any) => e.family_member_id).filter(Boolean);
-    const [{ data: eventSubs }, { data: eventFamilies }] = await Promise.all([
+    const [eventSubsResult, eventFamiliesResult] = await Promise.all([
       supabase.from("push_subscriptions")
         .select("user_id, endpoint, p256dh, auth_key, platform").in("user_id", eventOwnerIds),
       familyIds.length
         ? supabase.from("family_members").select("id, name").in("id", familyIds)
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
     ]);
+    if (eventSubsResult.error) return databaseFault("event push_subscriptions", eventSubsResult.error);
+    if (eventFamiliesResult.error) return databaseFault("event family_members", eventFamiliesResult.error);
+    const eventSubs = eventSubsResult.data;
+    const eventFamilies = eventFamiliesResult.data;
     const familyName = new Map((eventFamilies ?? []).map((f: any) => [f.id, f.name]));
     const enabledOwners = new Set(users.map((u: any) => u.user_id));
     for (const event of streakEvents) {
+      let eventFailed = false;
       if (enabledOwners.has(event.owner_id)) {
         const message = streakEventMessage(event, familyName.get(event.family_member_id));
         for (const sub of (eventSubs ?? []).filter((s: any) => s.user_id === event.owner_id)) {
-          const { error: insErr } = await supabase.from("notification_deliveries").insert({
-            user_id: event.owner_id, reminder_date: event.event_date,
-            slot: event.event_type, endpoint: sub.endpoint.slice(0, 500), event_id: event.id,
-          });
-          if (insErr) {
-            if (insErr.code === "23505") continue;
-            console.error("event delivery insert failed", { event: event.id, code: insErr.code, message: insErr.message });
-            continue;
-          }
-          const ok = sub.platform === "android"
-            ? await sendFCM(supabase, config, sub.endpoint, message.title, message.body, event.event_type)
-            : await sendWebPush(supabase, config, sub, message.title, message.body);
-          if (ok) eventSent++;
+          const result = await sendClaimed(sub, event.owner_id, event.event_date, event.event_type,
+            message.title, message.body, event.id);
+          if (result === "sent") eventSent++;
+          if (result === "failed") eventFailed = true;
         }
       }
       // Disabled notifications/no registered endpoint means intentionally no
       // push, not an event to surprise the user with days later after opt-in.
-      await supabase.from("streak_events").update({ processed_at: new Date().toISOString() }).eq("id", event.id);
+      if (!eventFailed) {
+        const { error } = await supabase.from("streak_events")
+          .update({ processed_at: new Date().toISOString() }).eq("id", event.id);
+        if (error) return databaseFault("mark streak event processed", error);
+      }
     }
   }
 
@@ -134,9 +128,10 @@ Deno.serve(async (req: Request) => {
   // for rows predating the column. Fetched before the slot loop because the
   // timezone decides which users are in a window at all.
   const prefUserIds = users.map((u: any) => u.user_id);
-  const { data: profiles } = await supabase.from("profiles")
+  const { data: profiles, error: profilesError } = await supabase.from("profiles")
     .select("id, gender, timezone, current_streak, last_complete_date, freeze_credits")
     .in("id", prefUserIds);
+  if (profilesError) return databaseFault("profiles", profilesError);
   const profileById = new Map((profiles ?? []).map((p: any) => [p.id, p]));
 
   const userSlot = new Map<string, string>();
@@ -168,7 +163,7 @@ Deno.serve(async (req: Request) => {
     [...dates, ...advanceDates].flatMap((d) => [addDays(d, -1), d, addDays(d, 1)]),
   )];
 
-  const [{ data: subs }, { data: ups }, { data: panchangamRows }, { data: observanceRules }] = await Promise.all([
+  const [subsResult, upsResult, panchangamResult, rulesResult] = await Promise.all([
     supabase.from("push_subscriptions").select("user_id, endpoint, p256dh, auth_key, platform").in("user_id", ids),
     supabase.from("user_practices")
       .select("id, owner_id, family_member_id, practice:practices(cadence, weekday, is_sandhyavandhanam, affects_streak)")
@@ -178,13 +173,23 @@ Deno.serve(async (req: Request) => {
       .in("date", panchangamDates),
     supabase.from("panchangam_observances").select("*"),
   ]);
+  if (subsResult.error) return databaseFault("push_subscriptions", subsResult.error);
+  if (upsResult.error) return databaseFault("user_practices", upsResult.error);
+  if (panchangamResult.error) return databaseFault("panchangam_days", panchangamResult.error);
+  if (rulesResult.error) return databaseFault("panchangam_observances", rulesResult.error);
+  const subs = subsResult.data;
+  const ups = upsResult.data;
+  const panchangamRows = panchangamResult.data;
+  const observanceRules = rulesResult.data;
   const panchangamByDate = new Map((panchangamRows ?? []).map((r: any) => [r.date, r]));
   const rules = (observanceRules ?? []) as ObservanceRule[];
   const upIds = (ups ?? []).map((u: any) => u.id);
-  const { data: logs } = upIds.length
+  const logsResult = upIds.length
     ? await supabase.from("practice_logs")
         .select("user_practice_id, log_date, slot, counts_toward_streak").in("user_practice_id", upIds).in("log_date", dates)
-    : { data: [] };
+    : { data: [], error: null };
+  if (logsResult.error) return databaseFault("practice_logs", logsResult.error);
+  const logs = logsResult.data;
 
   const logsByUp = new Map<string, any[]>();
   for (const l of logs ?? []) {
@@ -196,24 +201,48 @@ Deno.serve(async (req: Request) => {
   async function deliver(uid: string, date: string, slot: string, title: string, body: string) {
     let count = 0;
     for (const sub of (subs ?? []).filter((s: any) => s.user_id === uid)) {
-      const { error: insErr } = await supabase.from("notification_deliveries")
-        .insert({ user_id: uid, reminder_date: date, slot, endpoint: sub.endpoint.slice(0, 500) });
-      if (insErr) {
-        // 23505 = unique violation: genuinely already sent this slot today to this
-        // endpoint, so skipping is correct. Anything else is a real fault (e.g. a
-        // slot name the CHECK constraint rejects) and must be loud - treating every
-        // insert error as "already sent" is what silently swallowed the
-        // 'nudge_morning' slot for months.
-        if (insErr.code === "23505") continue;
-        console.error("delivery insert failed", { slot, code: insErr.code, message: insErr.message });
-        continue;
-      }
-      const ok = sub.platform === "android"
-        ? await sendFCM(supabase, config, sub.endpoint, title, body, slot)
-        : await sendWebPush(supabase, config, sub, title, body);
-      if (ok) count++;
+      if (await sendClaimed(sub, uid, date, slot, title, body) === "sent") count++;
     }
     return count;
+  }
+
+  async function sendClaimed(
+    sub: any, uid: string, date: string, slot: string, title: string, body: string,
+    eventId: string | null = null,
+  ): Promise<"sent" | "skipped" | "failed"> {
+    const endpoint = sub.endpoint.slice(0, 500);
+    const { data: deliveryId, error: claimError } = await supabase.rpc("claim_notification_delivery", {
+      p_user_id: uid, p_reminder_date: date, p_slot: slot, p_endpoint: endpoint, p_event_id: eventId,
+    });
+    if (claimError) {
+      console.error("[reminders] delivery claim failed", {
+        uid, date, slot, platform: sub.platform, code: claimError.code, message: claimError.message,
+      });
+      return "failed";
+    }
+    if (!deliveryId) return "skipped";
+
+    const ok = sub.platform === "android"
+      ? await sendFCM(supabase, config, sub.endpoint, title, body, slot)
+      : await sendWebPush(supabase, config, sub, title, body);
+    const { error: finalizeError } = await supabase.from("notification_deliveries").update(ok ? {
+      status: "delivered", delivered_at: new Date().toISOString(), last_error: null,
+    } : {
+      status: "failed", last_error: "Push provider did not accept the notification",
+    }).eq("id", deliveryId);
+    if (finalizeError) {
+      console.error("[reminders] delivery finalize failed", {
+        deliveryId, uid, date, slot, ok, code: finalizeError.code, message: finalizeError.message,
+      });
+      return "failed";
+    }
+    if (!ok) {
+      console.warn("[reminders] provider send failed; delivery remains retryable", {
+        deliveryId, uid, date, slot, platform: sub.platform,
+      });
+      return "failed";
+    }
+    return "sent";
   }
 
   let sent = eventSent;
@@ -292,6 +321,6 @@ Deno.serve(async (req: Request) => {
   return json({ message: "done", sent });
 });
 
-function json(obj: unknown) {
-  return new Response(JSON.stringify(obj), { headers: { "Content-Type": "application/json" } });
+function json(obj: unknown, status = 200) {
+  return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 }
