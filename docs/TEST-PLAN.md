@@ -647,6 +647,25 @@ messaging.
     No automated test would have caught this class of bug (unit tests mock pdf.js
     entirely); manual device verification before release is the only thing that
     would.
+12. **NOT an app bug - a false positive from `adb shell input tap` on the `shorts_test`
+    AVD, found and corrected 2026-08-13.** `CelebrationModal`'s "Continue"/"Share to
+    WhatsApp" repeatedly failed to respond to `adb shell input tap` right after
+    `GayatriCountModal`'s Save, reproducing even after a full emulator process kill +
+    cold boot. Root-caused via Chrome DevTools Protocol against the live WebView
+    (`adb forward` to `webview_devtools_remote_<pid>`): `button.click()` and
+    `KEYCODE_TAB`+`KEYCODE_ENTER` both activated the button correctly every time, so
+    the React code was never in question - but this was wrongly taken as proof that
+    *real* touch was broken. It wasn't: a genuine mouse click through the emulator's
+    visible window (`DISPLAY=:0`) worked immediately, first try. `adb shell input
+    tap`'s synthetic touch injection is what's unreliable in this specific
+    modal-swap scenario, not the app. Lesson for future Android E2E work: prefer a
+    real click/tap (visible window, or a physical/virtual pointer) over
+    `adb shell input tap` when a tap "fails" repeatedly and the DOM/JS layer already
+    checks out - don't conclude a platform bug from synthetic-input evidence alone.
+    (The `autoFocus` removal from the Gayatri-count input, made while chasing this,
+    was kept anyway as a small independent UX improvement - it stops the keyboard
+    popping for a value most people leave at the 108 default - but it was never the
+    fix for what turned out not to be a bug.)
 
 **Smaller untested surfaces worth a look:** HistoryPage's 300-log cap at scale;
 PdfViewer never renders a real PDF (pdf.js fully mocked); optimistic-toggle failures
