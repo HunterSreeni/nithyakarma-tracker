@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.31.7](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.6...app-v0.31.7) (2026-08-14)
+
+
+### Bug Fixes
+
+* Gayatri count prompt for yesterday's sandhya backfill ([2401743](https://github.com/HunterSreeni/nithyakarma-tracker/commit/24017434cb74af9cee38529a8f3970885eefcc68))
+* prompt for Gayatri count when backfilling yesterday's sandhya ([705c9d4](https://github.com/HunterSreeni/nithyakarma-tracker/commit/705c9d42026dab902e8df20b16ede88f37416385))
+* stop native min validation from swallowing GayatriCountModal's error ([728bab7](https://github.com/HunterSreeni/nithyakarma-tracker/commit/728bab791b0273792c214d02006a755e4a1eb10f))
+
 ## [0.31.6](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.5...app-v0.31.6) (2026-08-13)
 
 
