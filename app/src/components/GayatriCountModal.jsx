@@ -34,7 +34,7 @@ export default function GayatriCountModal({ slot, onCancel, onConfirm }) {
         tabIndex={-1} ref={modalRef} onClick={e => e.stopPropagation()}>
         <div className="cel-streak" id="gayatri-count-title">{label} Gayatri Count</div>
         <div className="cel-sub" style={{ marginBottom: '0.8rem' }}>How many Gayatri japa did you do?</div>
-        <form onSubmit={confirm}>
+        <form onSubmit={confirm} noValidate>
           <input ref={inputRef} className="field-input" type="number" min="1" step="1" inputMode="numeric"
             value={count} onChange={e => setCount(e.target.value)} />
           {error && <div className="auth-error" role="alert">{error}</div>}

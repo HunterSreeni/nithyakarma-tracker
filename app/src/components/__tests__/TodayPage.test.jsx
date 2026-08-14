@@ -533,19 +533,43 @@ describe('TodayPage - Yesterday sandhya catch-up', () => {
     expect(screen.getByText("All 3 of yesterday's sandhyas are already marked.")).toBeInTheDocument()
   })
 
-  it('marking a slot calls the RPC backdated and streak-counting, shows the full punya note, and refreshes the card', async () => {
+  it('clicking a slot opens a Gayatri count prompt instead of marking immediately', async () => {
+    h.items = [sandhyaItem([])]
+    h.yesterdayLogs = []
+    render(<TodayPage />)
+    await openYesterdayPanel()
+    fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('Prathakala Gayatri Count')).toBeInTheDocument()
+    expect(h.rpc).not.toHaveBeenCalled()
+  })
+
+  it('confirming the count calls the RPC backdated and streak-counting with that count, shows the full punya note, and refreshes the card', async () => {
     h.items = [sandhyaItem([])]
     h.yesterdayLogs = []
     h.rpc.mockResolvedValue({ data: { saved: true, backdated: true, punya_awarded: 5 }, error: null })
     render(<TodayPage />)
     await openYesterdayPanel()
     fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '28' } })
+    fireEvent.click(screen.getByText('Save'))
     await waitFor(() => expect(h.rpc).toHaveBeenCalledWith('submit_practice_log', {
-      p_user_practice_id: 'up-s', p_slot: 'morning', p_count: null,
+      p_user_practice_id: 'up-s', p_slot: 'morning', p_count: 28,
       p_local_date: yesterday, p_award_streak: true,
     }))
     await screen.findByText("+5 punya · yesterday's streak counted")
     expect(h.refresh).toHaveBeenCalled()
+  })
+
+  it('cancelling the prompt does not submit anything', async () => {
+    h.items = [sandhyaItem([])]
+    h.yesterdayLogs = []
+    render(<TodayPage />)
+    await openYesterdayPanel()
+    fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
+    fireEvent.click(screen.getByText('Cancel'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(h.rpc).not.toHaveBeenCalled()
   })
 
   it('explains when a backfill refunds a freeze previously spent for yesterday', async () => {
@@ -556,6 +580,7 @@ describe('TodayPage - Yesterday sandhya catch-up', () => {
     render(<TodayPage />)
     await openYesterdayPanel()
     fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
+    fireEvent.click(screen.getByText('Save'))
     await screen.findByText('+5 punya · yesterday\'s streak counted · freeze refunded')
   })
 
@@ -566,6 +591,7 @@ describe('TodayPage - Yesterday sandhya catch-up', () => {
     render(<TodayPage />)
     await openYesterdayPanel()
     fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
+    fireEvent.click(screen.getByText('Save'))
     await screen.findByText('network down')
     expect(h.refresh).not.toHaveBeenCalled()
     expect(within(yesterdayPanel()).getByText('Morning').closest('button')).not.toBeDisabled()

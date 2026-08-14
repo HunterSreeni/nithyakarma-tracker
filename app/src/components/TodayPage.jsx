@@ -324,6 +324,7 @@ function YesterdaySandhya({ item }) {
   const [busySlot, setBusySlot] = useState(null)
   const [note, setNote] = useState(null)
   const [saveError, setSaveError] = useState(null)
+  const [gayatriSlot, setGayatriSlot] = useState(null)
   const yesterday = localDateString(new Date(Date.now() - 24 * 60 * 60 * 1000))
 
   const yesterdayQuery = useQuery({
@@ -338,11 +339,11 @@ function YesterdaySandhya({ item }) {
   }, queryClient)
   const slotsDone = new Set((yesterdayQuery.data ?? []).map(log => log.slot))
 
-  const markYesterday = async (slot) => {
+  const markYesterday = async (slot, count) => {
     setBusySlot(slot); setSaveError(null); setNote(null)
     try {
       const data = unwrap(await withDeadline(supabase.rpc('submit_practice_log', {
-        p_user_practice_id: item.up.id, p_slot: slot, p_count: null,
+        p_user_practice_id: item.up.id, p_slot: slot, p_count: count,
         p_local_date: yesterday, p_award_streak: true,
       }), 'Save yesterday sandhya'))
       if (!data?.saved) throw new Error('Save could not be verified')
@@ -379,7 +380,7 @@ function YesterdaySandhya({ item }) {
                 {SANDHYA_SLOTS.map(s => (
                   <button key={s.key} disabled={slotsDone.has(s.key) || !!busySlot}
                     className={`slot-btn ${slotsDone.has(s.key) ? 'done' : ''}`}
-                    onClick={() => markYesterday(s.key)}>
+                    onClick={() => setGayatriSlot(s.key)}>
                     {slotsDone.has(s.key) && <Check size={11} strokeWidth={3} />}{s.short}
                   </button>
                 ))}
@@ -389,6 +390,15 @@ function YesterdaySandhya({ item }) {
           {note && <div className="yesterday-note yesterday-success">{note}</div>}
           {saveError && <div className="yesterday-note yesterday-error">{saveError}</div>}
         </div>
+      )}
+      {gayatriSlot && (
+        <GayatriCountModal slot={gayatriSlot}
+          onCancel={() => setGayatriSlot(null)}
+          onConfirm={count => {
+            const slot = gayatriSlot
+            setGayatriSlot(null)
+            markYesterday(slot, count)
+          }} />
       )}
     </div>
   )
