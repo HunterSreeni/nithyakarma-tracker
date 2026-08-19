@@ -2,6 +2,10 @@
 -- unlimited number of times by throwaway referred accounts, farming
 -- ad-free days (the app's only monetization lever) indefinitely. Cap rewards
 -- per referrer to 5 per rolling 24h; tune later from real referral data.
+--
+-- AI-DEV NOTE: Protected referral logic. See AGENTS.md "Referrals" - do not
+-- change the reward, the cap, or the self-referral guard without Sreeni's
+-- explicit instruction.
 create or replace function public.apply_referral(p_code text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare v_referrer uuid; v_recent_count int;

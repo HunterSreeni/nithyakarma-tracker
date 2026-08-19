@@ -1,3 +1,6 @@
+// AI-DEV NOTE: Protected reminder-window logic. See AGENTS.md "Notifications &
+// reminders" - do not change slot times without Sreeni's explicit instruction;
+// must stay aligned with notifications.js's SLOT_CONFIG.
 // Pure reminder-window selection shared with tests. Calendar occasions get a
 // two-hour catch-up window: delivery dedupe guarantees one successful push,
 // while transient failures or one missed cron tick can retry that morning.

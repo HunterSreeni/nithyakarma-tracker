@@ -232,6 +232,10 @@ export function AuthProvider({ children }) {
     })
     if (error) throw error
     if (referralCode) {
+      // AI-DEV NOTE: Protected referral call site. See AGENTS.md "Referrals" -
+      // apply_referral owns the reward/rate-limit logic server-side; do not
+      // change this call or add client-side reward logic without Sreeni's
+      // explicit instruction.
       // best-effort: an invalid code must not block signup
       try {
         await supabase.rpc('apply_referral', { p_code: referralCode })

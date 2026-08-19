@@ -1,3 +1,6 @@
+// AI-DEV NOTE: Protected notification subscription flow. See AGENTS.md
+// "Notifications & reminders" - do not change platform detection, permission
+// gating, or subscription lifecycle without Sreeni's explicit instruction.
 import { useState, useEffect, useCallback } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabase'

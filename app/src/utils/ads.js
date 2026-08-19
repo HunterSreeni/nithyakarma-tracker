@@ -1,6 +1,11 @@
 import { Capacitor } from '@capacitor/core'
 import { track } from './analytics'
 
+// AI-DEV NOTE: Protected ad-gating logic. See AGENTS.md "AdMob / ads" - do not
+// change the dev/prod ad-unit split or ad_free_until honoring without
+// Sreeni's explicit instruction. Real ads stay blocked pre-production per
+// memory admob-ads-blocked-until-production; unblocking is Google's timing,
+// not a code change here.
 const INTERSTITIAL_ID = 'ca-app-pub-2677287550445019/1140728797'
 // Dev builds only: use Google's test ad serving so local/CI runs never request
 // or render real ads. Prod builds always use the real ad unit above for real.

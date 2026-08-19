@@ -1,5 +1,10 @@
 import { supabase } from '../lib/supabase'
 
+// AI-DEV NOTE: Protected web-push subscription logic. See AGENTS.md
+// "Notifications & reminders" - do not change without Sreeni's explicit
+// instruction. VITE_VAPID_PUBLIC_KEY has previously been silently truncated
+// in Netlify env vars (memory nithyakarma-push-fixes-2026-07); verify it in
+// full if push subscription starts failing again.
 // Ported from the Sandhyavandhanam app's useNotifications hook.
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 

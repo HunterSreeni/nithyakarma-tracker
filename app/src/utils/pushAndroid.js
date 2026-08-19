@@ -1,6 +1,10 @@
 import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabase'
 
+// AI-DEV NOTE: Protected FCM registration/token-rotation logic. See AGENTS.md
+// "Notifications & reminders" - do not change without Sreeni's explicit
+// instruction; this is the surface behind a prior push-notification prod
+// incident (memory nithyakarma-push-fixes-2026-07).
 // FCM push for Android (ported from Sandhyavandhanam, hardened).
 // Requires google-services.json in android/app/.
 

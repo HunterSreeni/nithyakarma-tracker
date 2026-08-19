@@ -1,3 +1,8 @@
+-- AI-DEV NOTE: Protected regression source of truth. See AGENTS.md - every
+-- protected business-logic area above must keep its assertions here in sync
+-- with any explicitly authorized change; do not remove or weaken a case
+-- without Sreeni's explicit instruction.
+--
 -- SQL integration assertions for the nithyakarma backend.
 -- Run in the Supabase SQL editor (or via MCP execute_sql). Requires the
 -- dedicated integtest user (integtest@nithyakarma.test) with NO existing profile

@@ -2,6 +2,11 @@
 -- Previously the sender inserted notification_deliveries before calling the
 -- provider; one transient FCM/Web Push failure therefore suppressed every
 -- later 15-minute retry for that slot.
+--
+-- AI-DEV NOTE: Protected notification-delivery logic. See AGENTS.md
+-- "Notifications & reminders" - do not change the claim-then-send state
+-- machine (sending/delivered/failed, 5-minute stuck-claim release) without
+-- Sreeni's explicit instruction.
 
 alter table public.notification_deliveries
   add column status text not null default 'delivered'

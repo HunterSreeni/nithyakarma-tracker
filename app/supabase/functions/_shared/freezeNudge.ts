@@ -1,3 +1,7 @@
+// AI-DEV NOTE: Protected freeze-nudge logic. See AGENTS.md "Notifications &
+// reminders" - do not change the gap thresholds or wording triggers without
+// Sreeni's explicit instruction.
+//
 // Picks the freeze-aware wording for the 08:00 / 20:00 streak nudges.
 //
 // Freezes are consumed by submit_practice_log -> streak_after_completion when

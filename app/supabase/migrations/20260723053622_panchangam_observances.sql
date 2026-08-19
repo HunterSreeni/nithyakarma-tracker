@@ -1,3 +1,7 @@
+-- AI-DEV NOTE: Protected observance-matching logic. See AGENTS.md "Panchangam
+-- / observance calendar" - do not change the day_offset semantics, category
+-- separation, or advance_notify gating without Sreeni's explicit instruction.
+--
 -- Calendar-driven tharpanam and auspicious-day ("observance") notifications.
 -- A small static rule table, not per-date rows: every occasion reduces to a
 -- pattern against a panchangam_days row (thithi/month/day/nakshatra), so this

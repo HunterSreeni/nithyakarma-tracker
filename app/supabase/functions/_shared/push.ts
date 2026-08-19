@@ -1,3 +1,6 @@
+// AI-DEV NOTE: Protected push-sending logic. See AGENTS.md "Notifications &
+// reminders" - do not change without Sreeni's explicit instruction.
+//
 // Shared FCM/web-push sending code, used by both send-reminders (scheduled)
 // and send-test-notification (on-demand). Parametrized on the caller's
 // service-role client and config object rather than module-level state, so
