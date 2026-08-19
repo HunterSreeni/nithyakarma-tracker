@@ -55,6 +55,14 @@ android {
             }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Package native debug symbols already shipped inside dependency AARs
+            // (AdMob etc.) into the AAB, so Play can symbolicate native crashes/ANRs.
+            // Safe/additive - doesn't require this project to build any native code
+            // itself, and has no effect on minifyEnabled (see AGENTS.md/UPGRADE-PLAN
+            // Intent R5 for why minification itself stays off for now).
+            ndk {
+                debugSymbolLevel 'FULL'
+            }
         }
     }
 }
