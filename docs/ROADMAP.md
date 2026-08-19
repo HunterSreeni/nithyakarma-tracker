@@ -9,15 +9,19 @@ needs its own design + test pass when picked up.
 > `docs/architecture/09-STATUS-LEDGER.md` records what is actually built versus planned.
 > Start there rather than scanning the codebase.
 
-> ### Release status: not released anywhere
+> ### Release status: production release submitted, pending Google review
 >
-> As of 2026-07-20, **the app has zero production users.** No Play Store listing, no
-> App Store listing (no iOS platform exists at all yet). The only accounts in use are
-> the developer's own testing accounts (`e2e@nithyakarma.test`, `e2efull@nithyakarma.test`,
-> etc. - see memory `e2e-account-keep`). Android testing-track release is planned for the
-> week of 2026-07-27; iOS is a later phase (Phase 3), not started. Treat infra/DNS/config
-> changes accordingly - there is no live-user blast radius yet, only the developer's own
-> test data and workflow continuity to protect.
+> **19 Aug 2026:** the closed-testing build (`0.31.7`) was promoted to the Production
+> track and submitted for Google review, targeting all 177 available countries/regions
+> worldwide. Not yet live - Google review is in progress. Once approved, this is the
+> app's first real-user release; treat infra/DNS/config changes accordingly from that
+> point on. Catalogue access preference was set to "do not publish to third-party app
+> stores" for now (Play Console - Settings - Catalog Settings, can be changed later).
+> iOS is a later phase (Phase 3), not started.
+>
+> Until Google approves the release, the accounts in use remain the developer's own
+> testing accounts (`e2e@nithyakarma.test`, `e2efull@nithyakarma.test`, etc. - see
+> memory `e2e-account-keep`).
 
 ## Domain and public identity
 

@@ -156,6 +156,30 @@ gate is enforced by CI.
     manual pre-release step (Phase 0 launch checklist) so it doesn't silently
     reopen.
 
+### Intent R5 - Upload ProGuard/R8 mapping + native debug symbols to Play Console
+
+> Raised 19 Aug 2026: the first production release (`0.31.7`) submitted with two Play
+> Console warnings - no deobfuscation file and no native debug symbols. Non-blocking
+> (submission went through), but every crash/ANR report in Play Console/Android
+> vitals until this is fixed shows obfuscated names instead of real function/class
+> names. Bundle this with the already-committed yesterday-Sandhya streak fix
+> (`edaef2a`) in the next release branch/PR, not as an emergency hotfix.
+
+- **Intent:** Crashes and ANRs reported by Play are readable (real symbol names),
+  for both the R8/ProGuard-minified JS/Java layer and any native (NDK) code pulled
+  in by Capacitor plugins.
+- **Commit type:** `chore:` (build config only, no app behavior change)
+- **Changes:** wire up automatic mapping-file output/upload in
+  `android/app/build.gradle` (or the Play Publisher Gradle plugin's `mappingFile`
+  config) so every release bundle carries its `mapping.txt` and native symbol file
+  without a manual upload step.
+- **Testing Gate:**
+  - A release build produces a `mapping.txt` (or equivalent) alongside the AAB.
+  - The next Play Console upload shows zero "no deobfuscation file" /
+    "no native debug symbols" warnings on the Preview and confirm screen.
+  - `npm run build` still passes (this is a Gradle/Android-side change only,
+    doesn't touch `app/src`).
+
 ### Drop-in files for Phase R
 
 `.release-please-manifest.json` (repo root):
