@@ -9,21 +9,25 @@ needs its own design + test pass when picked up.
 > `docs/architecture/09-STATUS-LEDGER.md` records what is actually built versus planned.
 > Start there rather than scanning the codebase.
 
-> ### Release status: production release submitted, pending Google review
+> ### Release status: LIVE on Google Play production (first real-user release)
 >
 > **19 Aug 2026:** the closed-testing build (`0.31.7`) was promoted to the Production
-> track and submitted for Google review, targeting all 177 available countries/regions
-> worldwide. Not yet live - Google review is in progress. Once approved, this is the
-> app's first real-user release; treat infra/DNS/config changes accordingly from that
-> point on. Catalogue access preference was set to "do not publish to third-party app
-> stores" for now (Play Console - Settings - Catalog Settings, can be changed later).
-> IARC content rating questionnaire submitted and rated live the same day (19 Aug
-> 2026), Global Rating ID `e66863d6-9c92-86a6-8290-3f7dbfc189d6`. iOS is a later
-> phase (Phase 3), not started.
+> track, approved by Google, and is now Active - 177 countries/regions worldwide.
+> **This is the app's first real-user release** - treat infra/DNS/config changes
+> accordingly from this point on, including in-flight Supabase migrations/edge
+> function deploys (no longer purely developer test data). Catalogue access
+> preference is set to "do not publish to third-party app stores" for now (Play
+> Console - Settings - Catalog Settings, can be changed later). IARC content rating
+> live the same day, Global Rating ID `e66863d6-9c92-86a6-8290-3f7dbfc189d6`. iOS is
+> a later phase (Phase 3), not started.
 >
-> Until Google approves the release, the accounts in use remain the developer's own
-> testing accounts (`e2e@nithyakarma.test`, `e2efull@nithyakarma.test`, etc. - see
-> memory `e2e-account-keep`).
+> Play Console flagged 3 recommended (non-blocking) actions on this release: edge-to-
+> edge deprecated APIs, R8/mapping optimization (tracked as Intent R5, deferred - see
+> `docs/UPGRADE-PLAN.md`), see status ledger for the edge-to-edge investigation.
+>
+> The developer's own testing accounts remain in use for verification
+> (`e2e@nithyakarma.test`, `e2efull@nithyakarma.test`, etc. - see memory
+> `e2e-account-keep`) alongside real installs now arriving.
 
 ## Domain and public identity
 

@@ -193,6 +193,41 @@ gate is enforced by CI.
   - The next Play Console upload shows zero "no deobfuscation file" warnings.
   - `npm run build` still passes (Gradle/Android-side change only).
 
+### Intent R6 - Edge-to-edge deprecated API warning (tracked, likely upstream)
+
+> Raised 19 Aug 2026: the day the production release went live, Play Console flagged
+> "Edge-to-edge may not display for all users" / "Your app uses deprecated APIs or
+> parameters for edge-to-edge" as a recommended (non-blocking) action, alongside the
+> R5 R8-optimization suggestion.
+
+**Investigation (19 Aug 2026):** the app targets `compileSdk`/`targetSdk` 36 (Android
+15+ enforces edge-to-edge, no opt-out), but has zero edge-to-edge code - no
+`@capacitor/status-bar` plugin, no `colors.xml` (theme's `colorPrimary`/
+`colorPrimaryDark`/`colorAccent` resolve from AppCompat's own defaults - this project
+never customized them), `styles.xml` still `Theme.AppCompat.Light.DarkActionBar`
+unmodified from the Capacitor template. The deprecated `Window.setStatusBarColor`/
+`setNavigationBarColor` calls Play's static analysis is flagging come from **library
+internals** (AppCompat's automatic status-bar coloring from the `colorPrimaryDark`
+theme attribute, and/or `androidx.core:core-splashscreen`, already at its latest
+version `1.2.0`), not from any code this app wrote. Confirmed via web research that
+Flutter, Expo/React Native, and .NET MAUI are all hitting the identical warning
+purely from their own framework/library internals on Android 15+, with no app-level
+fix available until AndroidX/the respective framework ships an update - Google's
+static bytecode scan flags the deprecated API *reference* inside the shipped AAR,
+regardless of whether it's actually invoked at runtime on the installed OS version.
+
+**Decision:** do not attempt a workaround on the live production app right now (e.g.
+ripping out `core-splashscreen`, hand-rolling `WindowInsetsControllerCompat` calls) -
+disproportionate risk for a non-blocking advisory warning on an app that installs and
+runs fine (confirmed: 18 installs, no edge-to-edge-related crash reports). Revisit
+when:
+- `androidx.core:core-splashscreen` or `androidx.appcompat:appcompat` ship a version
+  that resolves it (check `variables.gradle` versions against Maven periodically), or
+- doing a deliberate edge-to-edge adoption pass (own `colors.xml`, explicit
+  `WindowCompat.setDecorFitsSystemWindows`/insets handling in `MainActivity.java`,
+  tested against the WebView content not being obscured by system bars) - likely
+  worth bundling with the UI/UX v1 redesign rather than as an isolated patch.
+
 ### Drop-in files for Phase R
 
 `.release-please-manifest.json` (repo root):
