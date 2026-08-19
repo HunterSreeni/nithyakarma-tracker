@@ -160,25 +160,38 @@ gate is enforced by CI.
 
 > Raised 19 Aug 2026: the first production release (`0.31.7`) submitted with two Play
 > Console warnings - no deobfuscation file and no native debug symbols. Non-blocking
-> (submission went through), but every crash/ANR report in Play Console/Android
-> vitals until this is fixed shows obfuscated names instead of real function/class
-> names. Bundle this with the already-committed yesterday-Sandhya streak fix
-> (`edaef2a`) in the next release branch/PR, not as an emergency hotfix.
+> (submission went through). Split in two on investigation (19 Aug 2026):
 
-- **Intent:** Crashes and ANRs reported by Play are readable (real symbol names),
-  for both the R8/ProGuard-minified JS/Java layer and any native (NDK) code pulled
-  in by Capacitor plugins.
-- **Commit type:** `chore:` (build config only, no app behavior change)
-- **Changes:** wire up automatic mapping-file output/upload in
-  `android/app/build.gradle` (or the Play Publisher Gradle plugin's `mappingFile`
-  config) so every release bundle carries its `mapping.txt` and native symbol file
-  without a manual upload step.
+- **Native debug symbols - done.** `android/app/build.gradle`'s release `buildType`
+  now sets `ndk { debugSymbolLevel 'FULL' }`, so AGP packages native symbol files
+  already shipped inside dependency AARs (AdMob etc.) into the AAB. Additive, zero
+  behavior change, verified with a clean `assembleDebug`/`assembleRelease`.
+- **ProGuard/R8 mapping - deferred, not a quick flip.** `minifyEnabled` was found to
+  be `false` with `proguard-rules.pro` still the unfilled Android Studio template -
+  no project-specific keep rules exist. This is a WebView + reflection-heavy
+  Capacitor app (AdMob, Firebase, in-app-review all use reflection across the JS
+  bridge); flipping `minifyEnabled` on blind, with an untested rule set, going into
+  the first production review, is a real crash-risk class of bug that only a real
+  device catches (same lesson as `pdfjs-android-webview-incompatibility`). Decided
+  to skip for now rather than rush it - the mapping-file warning is also technically
+  inapplicable while `minifyEnabled` is off, since nothing is actually obfuscated.
+
+**Remaining work, next time there's room for a proper on-device regression pass:**
+- **Intent:** Crashes/ANRs from the JS/Java layer are readable (real symbol names)
+  in Play Console/Android vitals.
+- **Commit type:** `chore:` (build config) + likely `fix:`/`chore:` follow-ups as
+  reflection breakage from minification gets found and rule-fixed.
+- **Changes:** write project-specific keep rules in `proguard-rules.pro` for every
+  Capacitor plugin in use (WebView JS interface, AdMob, Firebase messaging,
+  in-app-review, local-notifications, etc.), then flip `minifyEnabled true` (and
+  optionally `shrinkResources true` for the app-size win Play's warning mentioned).
 - **Testing Gate:**
-  - A release build produces a `mapping.txt` (or equivalent) alongside the AAB.
-  - The next Play Console upload shows zero "no deobfuscation file" /
-    "no native debug symbols" warnings on the Preview and confirm screen.
-  - `npm run build` still passes (this is a Gradle/Android-side change only,
-    doesn't touch `app/src`).
+  - A release build produces `app/build/outputs/mapping/release/mapping.txt`.
+  - Full on-device regression pass: login, mark today's practices, yesterday
+    Sandhya catch-up, notifications (FCM), AdMob interstitial, in-app review
+    prompt - nothing silently breaks from stripped/renamed classes.
+  - The next Play Console upload shows zero "no deobfuscation file" warnings.
+  - `npm run build` still passes (Gradle/Android-side change only).
 
 ### Drop-in files for Phase R
 
