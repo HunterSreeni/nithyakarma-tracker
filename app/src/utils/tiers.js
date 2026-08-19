@@ -1,3 +1,6 @@
+// AI-DEV NOTE: Protected mirror of the server tier ladder. See AGENTS.md
+// "Punya & tiers" - do not change these thresholds without Sreeni's explicit
+// instruction; must stay in lockstep with public.tier_for() and freeze_cap_for().
 // Tier ladder mirrors public.tier_for() in the database.
 export const TIERS = [
   { name: 'Shishya', min: 0 },

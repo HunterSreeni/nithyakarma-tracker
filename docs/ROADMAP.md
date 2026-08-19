@@ -9,15 +9,25 @@ needs its own design + test pass when picked up.
 > `docs/architecture/09-STATUS-LEDGER.md` records what is actually built versus planned.
 > Start there rather than scanning the codebase.
 
-> ### Release status: not released anywhere
+> ### Release status: LIVE on Google Play production (first real-user release)
 >
-> As of 2026-07-20, **the app has zero production users.** No Play Store listing, no
-> App Store listing (no iOS platform exists at all yet). The only accounts in use are
-> the developer's own testing accounts (`e2e@nithyakarma.test`, `e2efull@nithyakarma.test`,
-> etc. - see memory `e2e-account-keep`). Android testing-track release is planned for the
-> week of 2026-07-27; iOS is a later phase (Phase 3), not started. Treat infra/DNS/config
-> changes accordingly - there is no live-user blast radius yet, only the developer's own
-> test data and workflow continuity to protect.
+> **19 Aug 2026:** the closed-testing build (`0.31.7`) was promoted to the Production
+> track, approved by Google, and is now Active - 177 countries/regions worldwide.
+> **This is the app's first real-user release** - treat infra/DNS/config changes
+> accordingly from this point on, including in-flight Supabase migrations/edge
+> function deploys (no longer purely developer test data). Catalogue access
+> preference is set to "do not publish to third-party app stores" for now (Play
+> Console - Settings - Catalog Settings, can be changed later). IARC content rating
+> live the same day, Global Rating ID `e66863d6-9c92-86a6-8290-3f7dbfc189d6`. iOS is
+> a later phase (Phase 3), not started.
+>
+> Play Console flagged 3 recommended (non-blocking) actions on this release: edge-to-
+> edge deprecated APIs, R8/mapping optimization (tracked as Intent R5, deferred - see
+> `docs/UPGRADE-PLAN.md`), see status ledger for the edge-to-edge investigation.
+>
+> The developer's own testing accounts remain in use for verification
+> (`e2e@nithyakarma.test`, `e2efull@nithyakarma.test`, etc. - see memory
+> `e2e-account-keep`) alongside real installs now arriving.
 
 ## Domain and public identity
 

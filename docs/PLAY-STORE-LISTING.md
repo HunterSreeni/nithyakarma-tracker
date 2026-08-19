@@ -1,7 +1,8 @@
 # Play Store Listing Copy
 
-Draft copy for Intent 0.5 (`docs/UPGRADE-PLAN.md`). Not yet submitted - review and
-edit before pasting into Play Console. Character counts are exact Play Store limits.
+Draft copy for Intent 0.5 (`docs/UPGRADE-PLAN.md`). Used for the closed-testing listing
+and carried into the production release submitted 19 Aug 2026 (pending Google review).
+Character counts are exact Play Store limits.
 
 ## Short description (max 80 characters)
 

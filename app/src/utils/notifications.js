@@ -1,5 +1,9 @@
 import { Capacitor } from '@capacitor/core'
 
+// AI-DEV NOTE: Protected local-notification scheduling. See AGENTS.md
+// "Notifications & reminders" - slot times must stay in sync with
+// send-reminders' TITLES/BODIES and reminderWindow.ts; do not change without
+// Sreeni's explicit instruction.
 // Ported pattern from the Sandhyavandhanam app's notifications.js.
 // Native-only (Capacitor LocalNotifications); silent no-op on web.
 

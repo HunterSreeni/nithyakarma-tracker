@@ -76,6 +76,10 @@ export function AuthProvider({ children }) {
   // than expected" Reload wall instead of finishing normally.
   // Takes the full session (not just the id) so it can key the cache by
   // session.user.email too - see writeProfileCache above.
+  // AI-DEV NOTE: Protected streak/freeze refresh connection. This must reload
+  // both profile and family-member subject state, preserve timezone alignment,
+  // and replace the selected-member snapshot after a mark. Do not change
+  // without Sreeni's explicit instruction; see AGENTS.md.
   const loadProfile = useCallback(async (session) => {
     const uid = session.user.id
     const result = await queryClient.fetchQuery({
@@ -228,6 +232,10 @@ export function AuthProvider({ children }) {
     })
     if (error) throw error
     if (referralCode) {
+      // AI-DEV NOTE: Protected referral call site. See AGENTS.md "Referrals" -
+      // apply_referral owns the reward/rate-limit logic server-side; do not
+      // change this call or add client-side reward logic without Sreeni's
+      // explicit instruction.
       // best-effort: an invalid code must not block signup
       try {
         await supabase.rpc('apply_referral', { p_code: referralCode })

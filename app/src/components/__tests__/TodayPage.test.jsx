@@ -547,17 +547,19 @@ describe('TodayPage - Yesterday sandhya catch-up', () => {
   it('confirming the count calls the RPC backdated and streak-counting with that count, shows the full punya note, and refreshes the card', async () => {
     h.items = [sandhyaItem([])]
     h.yesterdayLogs = []
-    h.rpc.mockResolvedValue({ data: { saved: true, backdated: true, punya_awarded: 5 }, error: null })
+    h.rpc.mockResolvedValue({
+      data: { saved: true, backdated: true, punya_awarded: 5, overall_streak: 2 }, error: null,
+    })
     render(<TodayPage />)
     await openYesterdayPanel()
     fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
     fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '28' } })
     fireEvent.click(screen.getByText('Save'))
-    await waitFor(() => expect(h.rpc).toHaveBeenCalledWith('submit_practice_log', {
+    await waitFor(() => expect(h.rpc).toHaveBeenCalledWith('submit_yesterday_sandhya', {
       p_user_practice_id: 'up-s', p_slot: 'morning', p_count: 28,
-      p_local_date: yesterday, p_award_streak: true,
+      p_local_date: yesterday,
     }))
-    await screen.findByText("+5 punya · yesterday's streak counted")
+    await screen.findByText('+5 punya · streak is now 2 days')
     expect(h.refresh).toHaveBeenCalled()
   })
 
@@ -575,13 +577,16 @@ describe('TodayPage - Yesterday sandhya catch-up', () => {
   it('explains when a backfill refunds a freeze previously spent for yesterday', async () => {
     h.items = [sandhyaItem([])]
     h.rpc.mockResolvedValue({
-      data: { saved: true, backdated: true, punya_awarded: 5, freeze_refunded: true }, error: null,
+      data: {
+        saved: true, backdated: true, punya_awarded: 5, overall_streak: 6,
+        freeze_refunded: true,
+      }, error: null,
     })
     render(<TodayPage />)
     await openYesterdayPanel()
     fireEvent.click(within(yesterdayPanel()).getByText('Morning'))
     fireEvent.click(screen.getByText('Save'))
-    await screen.findByText('+5 punya · yesterday\'s streak counted · freeze refunded')
+    await screen.findByText('+5 punya · streak is now 6 days · freeze refunded')
   })
 
   it('shows an inline error and leaves the slot markable when the RPC fails', async () => {

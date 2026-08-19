@@ -1,3 +1,7 @@
+// AI-DEV NOTE: Protected day-completion mirror. See AGENTS.md "Notifications &
+// reminders" and "Streak & freeze" - do not change without Sreeni's explicit
+// instruction; must stay aligned with cadence.js and the SQL bool_or aggregate.
+//
 // Mirrors app/src/utils/cadence.js's dayComplete/isScheduled (client-side)
 // and the bool_or day-completion aggregate inside public.submit_practice_log
 // (see migration 20260802090000_any_practice_completes_day_and_tier_up.sql):

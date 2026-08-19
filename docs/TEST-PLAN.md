@@ -39,7 +39,7 @@ a different screen.
 ### Test accounts
 | Account | Purpose | Seed | Fate |
 |---|---|---|---|
-| `e2e@nithyakarma.test` | Preserved manual UI account | - | Kept until Play Store prod release, never deleted |
+| `e2e@nithyakarma.test` | Preserved manual UI account | - | Kept until Play Store prod release (submitted 19 Aug 2026, pending review - not yet live), never deleted |
 | `integtest@nithyakarma.test` | Profile-less, for rolled-back SQL assertions | - | Never mutated (transaction always rolls back). Went missing from `auth.users` at some point before 2026-08-10 (the suite aborts on its own `TEST SETUP` guard when it is); recreated 2026-08-10 with a deliberately invalid password hash, since the suite only resolves its id and must never be signable-in |
 | `e2efull@nithyakarma.test` | Male full-journey destructive Playwright spec | `seed-e2efull.sql` | Deleted at end of `journey.spec.js`; reseed before each run |
 | `e2efemale@nithyakarma.test` | Female onboarding destructive Playwright spec | `seed-e2efemale.sql` | Deleted at end of `journey-female.spec.js`; reseed before each run |

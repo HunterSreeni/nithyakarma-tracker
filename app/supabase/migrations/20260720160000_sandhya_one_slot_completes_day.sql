@@ -166,6 +166,9 @@ begin
 end
 $$;
 
+-- AI-DEV NOTE: Protected leaderboard logic. See AGENTS.md "Leaderboard /
+-- Sabha" - do not change the period boundaries or the kids/adults scope
+-- split without Sreeni's explicit instruction.
 create or replace function public.get_leaderboard(p_period text, p_scope text)
 returns table (subject_id uuid, display_name text, punya int, tier text, streak int, score bigint, is_me boolean)
 language plpgsql security definer set search_path = public as $$

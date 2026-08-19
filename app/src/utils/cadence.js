@@ -1,3 +1,6 @@
+// AI-DEV NOTE: Protected daily-completion mirror. One qualifying practice (and
+// one Sandhya slot) completes the local day once. Do not change without
+// Sreeni's explicit instruction; see AGENTS.md and SQL integration tests.
 // Pure cadence logic shared by Today page, notifications, and tests.
 
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']

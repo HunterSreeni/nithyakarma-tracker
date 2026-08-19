@@ -1,3 +1,9 @@
+// AI-DEV NOTE: Protected reminder-sending logic. See AGENTS.md "Notifications
+// & reminders" - do not change reminder windows, dayComplete gating, or the
+// claim-then-send delivery flow without Sreeni's explicit instruction. Redeploy
+// via the Supabase MCP after any change (edge functions do not deploy from CI -
+// memory edge-fn-deploy-drift).
+//
 // Cron-invoked reminder sender. Ported from the Sandhyavandhanam app's
 // send-reminders edge function, adapted to the nithyakarma schema.
 // Windows (user's local time): 6:00-7:59 calendar (tharpanam/observance, see

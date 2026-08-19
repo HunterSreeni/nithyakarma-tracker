@@ -1,3 +1,7 @@
+// AI-DEV NOTE: Protected observance-matching logic. See AGENTS.md "Panchangam
+// / observance calendar" - do not change day_offset semantics, category
+// separation, or advance_notify gating without Sreeni's explicit instruction.
+//
 // Pure matcher for panchangam_observances rules against panchangam_days rows.
 // Isolated as a pure function (no Supabase client, no I/O) so it's unit
 // testable independent of the Deno.serve handler - same reasoning as why

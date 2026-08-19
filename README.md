@@ -22,7 +22,7 @@ Keeping up a daily practice is easy to start and easy to quietly let slip. There
 ## Status
 
 - **Web** - live at [app.nithyakarma.org](https://app.nithyakarma.org)
-- **Android** - in Play Store internal testing, public release imminent
+- **Android** - **live** on Google Play production, 19 Aug 2026 (worldwide, 177 countries/regions)
 - **iOS** - planned
 
 ## Tech stack

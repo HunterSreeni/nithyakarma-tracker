@@ -1,3 +1,5 @@
+// AI-DEV NOTE: Protected streak-event push copy. See AGENTS.md "Notifications
+// & reminders" - do not change without Sreeni's explicit instruction.
 export type StreakEvent = {
   event_type: "freeze_used" | "streak_reset"
   streak_before: number

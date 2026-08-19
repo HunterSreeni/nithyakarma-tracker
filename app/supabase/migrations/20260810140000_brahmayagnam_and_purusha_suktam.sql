@@ -14,6 +14,11 @@ values ('brahmayagnam', 'Brahmayagnam', '📖', 'daily', false, true, 8, true);
 insert into public.practices (slug, name, icon, cadence, is_sandhyavandhanam, punya_value, affects_streak)
 values ('purusha-suktam', 'Purusha Suktam', '📜', 'daily', false, 8, true);
 
+-- AI-DEV NOTE: Protected eligibility-gating logic. See AGENTS.md "Sandhya /
+-- Samidhadhanam eligibility gating" - do not change the male/upanayanam/
+-- unmarried requirements without Sreeni's explicit instruction. This is the
+-- latest definition of check_sandhya_eligibility (supersedes the version in
+-- 20260726140000_samidhadhanam_and_marital_status.sql).
 create or replace function public.check_sandhya_eligibility() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare

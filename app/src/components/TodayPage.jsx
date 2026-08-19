@@ -315,9 +315,10 @@ function PracticeCard({ item, busy, onMark, onSlotClick, onRudramSlotClick }) {
   )
 }
 
-// Catch-up for a Sandhya slot missed yesterday. It earns normal punya and the
-// first backfilled slot repairs that day's streak; the server owns the actual
-// accounting/refund policy. Scoped to Sandhyavandhanam only.
+// AI-DEV NOTE: Protected product logic. Do not change yesterday catch-up's
+// one-day-only/full-punya/streak/freeze behavior without Sreeni's explicit
+// instruction. The dedicated server RPC owns the accounting and validation.
+// See AGENTS.md and the Supabase integration assertions.
 function YesterdaySandhya({ item }) {
   const { refresh } = useAuth()
   const [open, setOpen] = useState(false)
@@ -342,14 +343,17 @@ function YesterdaySandhya({ item }) {
   const markYesterday = async (slot, count) => {
     setBusySlot(slot); setSaveError(null); setNote(null)
     try {
-      const data = unwrap(await withDeadline(supabase.rpc('submit_practice_log', {
+      const data = unwrap(await withDeadline(supabase.rpc('submit_yesterday_sandhya', {
         p_user_practice_id: item.up.id, p_slot: slot, p_count: count,
-        p_local_date: yesterday, p_award_streak: true,
+        p_local_date: yesterday,
       }), 'Save yesterday sandhya'))
       if (!data?.saved) throw new Error('Save could not be verified')
       await yesterdayQuery.refetch()
+      const streak = Number.isInteger(data.overall_streak)
+        ? ` · streak is now ${data.overall_streak} day${data.overall_streak === 1 ? '' : 's'}`
+        : ` · yesterday's streak counted`
       const refund = data.freeze_refunded ? ' · freeze refunded' : ''
-      setNote(`+${data.punya_awarded} punya · yesterday's streak counted${refund}`)
+      setNote(`+${data.punya_awarded} punya${streak}${refund}`)
       await refresh() // punya/streak/freeze in the topbar and card
     } catch (err) {
       setSaveError(err.message)
