@@ -651,6 +651,7 @@ begin
     v_punya_before int; v_streak_before int; v_last_complete_before date; v_freeze_before int;
     v_up_streak_before int; v_full_punya int;
     v_repair_kid uuid; v_repair_up uuid; v_no_freeze_kid uuid; v_no_freeze_up uuid;
+    v_fresh_kid uuid; v_fresh_up uuid;
   begin
     select id into v_fm_boy from family_members where parent_id = v_uid and name = 'Test Boy';
     select id into v_sup_boy from user_practices
@@ -663,8 +664,7 @@ begin
     select current_streak into v_up_streak_before from user_practices where id = v_sup_boy;
     select punya_value into v_full_punya from practices where id = v_sandhya;
 
-    -- Even a false caller hint is overridden: a valid backfill always counts.
-    r2 := submit_practice_log(v_sup_boy, 'morning', null, v_local_today - 1, false);
+    r2 := submit_yesterday_sandhya(v_sup_boy, 'morning', null, v_local_today - 1);
     if not (r2->>'backdated')::boolean then
       raise exception 'FAIL: yesterday sandhya submission not reported as backdated';
     end if;
@@ -705,7 +705,7 @@ begin
     if not (r2->>'freeze_used')::boolean or (r2->>'freeze_credits')::int <> 0 then
       raise exception 'FAIL: today-first completion did not consume exactly one freeze';
     end if;
-    r2 := submit_practice_log(v_repair_up, 'afternoon', null, v_local_today - 1, true);
+    r2 := submit_yesterday_sandhya(v_repair_up, 'afternoon', null, v_local_today - 1);
     if (r2->>'overall_streak')::int <> 6 or not (r2->>'freeze_refunded')::boolean
        or (r2->>'freeze_credits')::int <> 1 then
       raise exception 'FAIL: backfill did not repair both days and refund freeze: %', r2;
@@ -725,18 +725,66 @@ begin
       values(v_uid, v_no_freeze_kid, v_sandhya) returning id into v_no_freeze_up;
     r2 := submit_practice_log(v_no_freeze_up, 'morning', null, v_local_today, true);
     if (r2->>'overall_streak')::int <> 1 then raise exception 'FAIL: no-freeze today-first mark did not restart at 1'; end if;
-    r2 := submit_practice_log(v_no_freeze_up, 'afternoon', null, v_local_today - 1, true);
+    r2 := submit_yesterday_sandhya(v_no_freeze_up, 'afternoon', null, v_local_today - 1);
     if (r2->>'overall_streak')::int <> 6 or (r2->>'freeze_refunded')::boolean then
       raise exception 'FAIL: no-freeze backfill did not repair without inventing a refund: %', r2;
     end if;
 
-    -- a date further back than yesterday must clamp to today, not be honored
-    r2 := submit_practice_log(v_sup_boy, 'afternoon', null, v_local_today - 2, false);
-    if (r2->>'backdated')::boolean then
-      raise exception 'FAIL: a 2-day-old date was accepted as a backdate';
+    -- Fresh subject, today first: no freeze/restart event exists to repair.
+    -- Yesterday must still turn the two completed consecutive days into 2.
+    insert into family_members(parent_id, name, gender, upanayanam_done, punya,
+      current_streak, best_streak, last_complete_date, freeze_credits)
+      values(v_uid, 'Fresh Backfill Kid', 'male', true, 0, 0, 0, null, 1)
+      returning id into v_fresh_kid;
+    insert into user_practices(owner_id, family_member_id, practice_id)
+      values(v_uid, v_fresh_kid, v_sandhya) returning id into v_fresh_up;
+    r2 := submit_practice_log(v_fresh_up, 'morning', null, v_local_today, true);
+    if (r2->>'overall_streak')::int <> 1 then
+      raise exception 'FAIL: fresh today-first completion did not start at 1';
     end if;
-    if (select log_date from practice_logs where user_practice_id = v_sup_boy and slot = 'afternoon') <> v_local_today then
-      raise exception 'FAIL: an out-of-range backdate date was not clamped to today';
+    r2 := submit_yesterday_sandhya(v_fresh_up, 'afternoon', null, v_local_today - 1);
+    if (r2->>'overall_streak')::int <> 2
+       or not (r2->>'backfill_streak_repaired')::boolean then
+      raise exception 'FAIL: fresh today-first backfill did not create streak 2: %', r2;
+    end if;
+    if (select last_complete_date from family_members where id = v_fresh_kid)
+       is distinct from v_local_today then
+      raise exception 'FAIL: fresh backfill moved last_complete_date away from today';
+    end if;
+    if (select freeze_credits from family_members where id = v_fresh_kid) <> 1 then
+      raise exception 'FAIL: fresh backfill consumed or added a freeze';
+    end if;
+
+    -- A second yesterday slot earns punya but cannot count the day twice.
+    r2 := submit_yesterday_sandhya(v_fresh_up, 'evening', null, v_local_today - 1);
+    if (r2->>'overall_streak')::int <> 2
+       or (r2->>'backfill_streak_repaired')::boolean then
+      raise exception 'FAIL: second yesterday slot double-counted the daily streak: %', r2;
+    end if;
+
+    -- The dedicated endpoint rejects anything other than exactly local-yesterday.
+    v_failed := false;
+    begin
+      perform submit_yesterday_sandhya(v_sup_boy, 'afternoon', null, v_local_today - 2);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then
+      raise exception 'FAIL: submit_yesterday_sandhya accepted a 2-day-old date';
+    end if;
+    if exists (select 1 from practice_logs where user_practice_id = v_sup_boy
+        and slot = 'afternoon' and log_date = v_local_today - 2) then
+      raise exception 'FAIL: rejected 2-day-old catch-up still wrote a log';
+    end if;
+
+    if not exists (
+      select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'submit_yesterday_sandhya' and p.prosecdef
+    ) then
+      raise exception 'FAIL: submit_yesterday_sandhya missing or not SECURITY DEFINER';
+    end if;
+    if has_function_privilege('anon',
+      'public.submit_yesterday_sandhya(uuid,text,integer,date)', 'execute') then
+      raise exception 'FAIL: anon can execute submit_yesterday_sandhya';
     end if;
   end;
 

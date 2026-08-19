@@ -53,6 +53,9 @@ export function useToday(ownerId, familyMemberId = null) {
     return result.data
   }
 
+  // AI-DEV NOTE: Protected connection to the authoritative daily streak RPC.
+  // Do not change its local-date or award-streak contract without Sreeni's
+  // explicit instruction and matching SQL/client tests; see AGENTS.md.
   const submit = async (userPracticeId, { slot = null, count = null, awardStreak = true } = {}) => {
     const result = await withDeadline(supabase.rpc('submit_practice_log', {
       p_user_practice_id: userPracticeId, p_slot: slot, p_count: count,

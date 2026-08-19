@@ -1,3 +1,6 @@
+// AI-DEV NOTE: Protected mirror of the server streak/freeze boundary. Do not
+// change without Sreeni explicitly authorizing the product-rule change and
+// updating AGENTS.md plus SQL and JS agreement tests.
 // Client-side mirror of the server's "is this streak still alive" boundary,
 // shared by decay_stale_streaks() (the nightly reset) and
 // streak_after_completion() (the write path). See
