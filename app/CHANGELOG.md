@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.31.8](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.7...app-v0.31.8) (2026-08-19)
+
+
+### Bug Fixes
+
+* also closes the notification-delivery deploy-drift bug found while ([a6d3e28](https://github.com/HunterSreeni/nithyakarma-tracker/commit/a6d3e288f06df614139fdfe50172a1ab23f54458))
+* repair yesterday Sandhya streak ([edaef2a](https://github.com/HunterSreeni/nithyakarma-tracker/commit/edaef2ae484c53deebcad84fb89c54b2e7a41acb))
+* yesterday Sandhya streak repair + production release follow-ups ([39907b9](https://github.com/HunterSreeni/nithyakarma-tracker/commit/39907b91fb1aa5e05939da5e33b59173ec563d16))
+
 ## [0.31.7](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.6...app-v0.31.7) (2026-08-14)
 
 
