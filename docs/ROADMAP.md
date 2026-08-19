@@ -17,7 +17,9 @@ needs its own design + test pass when picked up.
 > app's first real-user release; treat infra/DNS/config changes accordingly from that
 > point on. Catalogue access preference was set to "do not publish to third-party app
 > stores" for now (Play Console - Settings - Catalog Settings, can be changed later).
-> iOS is a later phase (Phase 3), not started.
+> IARC content rating questionnaire submitted and rated live the same day (19 Aug
+> 2026), Global Rating ID `e66863d6-9c92-86a6-8290-3f7dbfc189d6`. iOS is a later
+> phase (Phase 3), not started.
 >
 > Until Google approves the release, the accounts in use remain the developer's own
 > testing accounts (`e2e@nithyakarma.test`, `e2efull@nithyakarma.test`, etc. - see
