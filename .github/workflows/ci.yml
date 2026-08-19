@@ -12,6 +12,7 @@ defaults:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,6 +35,7 @@ jobs:
     # is the first Deno-side test this project has, added alongside Phase 3
     # of the panchangam-observances work (2026-07-23).
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
@@ -47,6 +49,13 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # 2026-08-19: npx playwright install --with-deps chromium's internal
+    # apt-get hung silently (network flake on the runner's package mirror)
+    # for 1h19m with zero output before the default 6h job timeout would
+    # ever have caught it - had to be manually cancelled. This bound fails
+    # the job fast instead. 20 min is generous headroom over a normal run
+    # (npm ci + browser install + build + the non-destructive e2e suite).
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
