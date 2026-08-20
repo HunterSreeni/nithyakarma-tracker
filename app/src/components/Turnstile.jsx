@@ -3,6 +3,13 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 const SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY
 export const TURNSTILE_ENABLED = Boolean(SITE_KEY)
 
+// A <script> that never fires onload/onerror (request stalls on a flaky
+// mobile connection) would leave this promise pending forever, and a pending
+// promise here means the widget never renders and the submit button sits at
+// "Verifying..." for the rest of the session. Bound it so it fails instead.
+const SCRIPT_LOAD_TIMEOUT_MS = 10000
+const SCRIPT_RETRY_DELAY_MS = 3000
+
 let scriptPromise = null
 function loadTurnstileScript() {
   if (scriptPromise) return scriptPromise
@@ -12,10 +19,18 @@ function loadTurnstileScript() {
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
     script.async = true
     script.defer = true
-    script.onload = () => resolve(window.turnstile)
-    script.onerror = reject
+    const timer = setTimeout(() => {
+      script.remove()
+      reject(new Error('Turnstile script load timed out'))
+    }, SCRIPT_LOAD_TIMEOUT_MS)
+    script.onload = () => { clearTimeout(timer); resolve(window.turnstile) }
+    script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error('Turnstile script failed to load')) }
     document.head.appendChild(script)
   })
+  // Never cache a rejection: a single failed load would otherwise be handed to
+  // every later caller, permanently disabling the captcha (and with it every
+  // auth submit) until the app is restarted.
+  scriptPromise.catch(() => { scriptPromise = null })
   return scriptPromise
 }
 
@@ -38,17 +53,30 @@ const Turnstile = forwardRef(function Turnstile({ onVerify }, ref) {
   useEffect(() => {
     if (!SITE_KEY) return
     let cancelled = false
-    loadTurnstileScript().then(turnstile => {
-      if (cancelled || !elRef.current) return
-      widgetId.current = turnstile.render(elRef.current, {
-        sitekey: SITE_KEY,
-        callback: onVerify,
-        'expired-callback': () => onVerify(null),
-        'error-callback': () => onVerify(null),
+    let retryTimer
+
+    const attempt = (remaining) => {
+      loadTurnstileScript().then(turnstile => {
+        if (cancelled || !elRef.current) return
+        widgetId.current = turnstile.render(elRef.current, {
+          sitekey: SITE_KEY,
+          callback: onVerify,
+          'expired-callback': () => onVerify(null),
+          'error-callback': () => onVerify(null),
+        })
+      }).catch(() => {
+        // Without a retry, one failed load on a flaky connection leaves the
+        // user with a permanently disabled submit button and no way forward
+        // short of restarting the app.
+        if (cancelled || remaining <= 0) return
+        retryTimer = setTimeout(() => attempt(remaining - 1), SCRIPT_RETRY_DELAY_MS)
       })
-    })
+    }
+    attempt(2)
+
     return () => {
       cancelled = true
+      clearTimeout(retryTimer)
       if (widgetId.current != null) window.turnstile?.remove(widgetId.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

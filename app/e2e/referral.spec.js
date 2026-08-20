@@ -10,7 +10,18 @@ const EMAIL = 'referral-throwaway@nithyakarma.test'
 const PASSWORD = process.env.E2E_REFERRAL_THROWAWAY_PASSWORD
 const REFERRAL_CODE = process.env.E2E_REFERRER_CODE
 
-test.describe('Referral applied at signup', () => {
+// Tagged @manual, and excluded from CI alongside @destructive. Two reasons it
+// cannot be a CI gate, both structural rather than a missing secret:
+//   1. it signs in through the form, and Auth's captcha protection blocks that
+//      for a headless browser (see helpers/session.js) - seeding a session is
+//      no help here either, because the flow under test *is* signup;
+//   2. it needs its throwaway account seeded by hand first, via
+//      supabase/tests/seed-referral-throwaway.sql.
+// It previously carried neither tag and gated on two env vars that were never
+// created as repo secrets, so it skipped silently on every CI run while
+// reading as coverage. Run it deliberately as a pre-release gate:
+//   npx playwright test referral --grep @manual
+test.describe('Referral applied at signup @manual', () => {
   test.skip(!PASSWORD || !REFERRAL_CODE,
     'E2E_REFERRAL_THROWAWAY_PASSWORD / E2E_REFERRER_CODE not set (see supabase/tests/seed-referral-throwaway.sql)')
 

@@ -76,18 +76,36 @@ jobs:
       # request with "no captcha_token found". Real users get a real browser
       # and resolve fine; CI stays Turnstile-free per Turnstile.jsx's own
       # design (a no-op until a site key is configured).
-      # Non-destructive specs only. The full journey (@destructive) deletes a
-      # shared live account and must be re-seeded first, so it is a manual
-      # pre-release gate, not a CI gate. E2E_EMAIL/PASSWORD are the e2efull
-      # journey account's own fallback creds (journey.spec.js is @destructive
-      # and excluded here anyway). E2E_UI_EMAIL/PASSWORD are the separate,
-      # never-deleted e2e@nithyakarma.test account that auth-signout.spec.js
-      # signs in and back out of - non-destructive, safe to run every CI run.
-      - run: npx playwright test --grep-invert "@destructive"
+      # Two tags are excluded here, and both are deliberate manual gates:
+      #   @destructive - journey.spec.js deletes a shared live account and must
+      #     be re-seeded before each run.
+      #   @manual - referral.spec.js tests the *signup* flow (captcha-blocked
+      #     for a headless browser, and seeding a session cannot help because
+      #     signup is the thing under test) and needs a hand-seeded throwaway
+      #     account first.
+      # E2E_EMAIL/PASSWORD are the e2efull journey account's own fallback creds
+      # (journey.spec.js is @destructive and excluded here anyway).
+      #
+      # auth-signout.spec.js and journey-child.spec.js both need a signed-in
+      # session. Neither can get one by typing a password: captcha protection
+      # is on project-wide and Turnstile issues no token to a headless browser
+      # (see e2e/helpers/session.js). They seed one through the admin API
+      # instead, which needs SUPABASE_SERVICE_ROLE_KEY + E2E_UI_EMAIL (the
+      # never-deleted e2e@nithyakarma.test account).
+      #
+      # This previously listed E2E_UI_EMAIL/E2E_UI_PASSWORD as though they were
+      # configured. Neither ever existed as a repo secret, so *both* of those
+      # specs skipped themselves on every run while CI reported green. They now
+      # fail loudly in CI if these are missing, rather than skipping.
+      #
+      # SUPABASE_SERVICE_ROLE_KEY is not VITE_-prefixed on purpose: it is read
+      # only in the Playwright node process and must never be inlined into the
+      # client bundle.
+      - run: npx playwright test --grep-invert "@destructive|@manual"
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
           E2E_UI_EMAIL: ${{ secrets.E2E_UI_EMAIL }}
-          E2E_UI_PASSWORD: ${{ secrets.E2E_UI_PASSWORD }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
