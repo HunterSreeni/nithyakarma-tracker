@@ -26,7 +26,7 @@ month names render in their native scripts.
 | Domain | Registered 2026-07-19 | `nithyakarma.org` (marketing site) and `app.nithyakarma.org` (React app) both live since 23 July 2026, Cloudflare CNAMEs to their respective Netlify sites, proxied. Original `nithykarma.netlify.app` origin kept alive, no redirect |
 | Errors | Sentry (`@sentry/react` 10.65) | DSN live in production (23 July 2026) |
 | Analytics | First-party, own Postgres table | No third-party vendor, no PII in props |
-| Ads | AdMob via `@capacitor-community/admob` | Real app + interstitial IDs live (23 July 2026), G content rating + gambling/dating/alcohol/etc. blocked |
+| Ads | AdMob via `@capacitor-community/admob` | Real app + interstitial IDs live (23 July 2026), G content rating + gambling/dating/alcohol/etc. blocked. App-store linked, app-ads.txt verified, ad-serving review passed, ads confirmed live on-device (20 Aug 2026) |
 | Testing | Vitest + Testing Library + axe-core + Playwright | |
 | Lint | oxlint | |
 | Release | release-please, Conventional Commits | Auto SemVer, tag prefix `app-` |

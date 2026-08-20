@@ -25,6 +25,12 @@ needs its own design + test pass when picked up.
 > edge deprecated APIs, R8/mapping optimization (tracked as Intent R5, deferred - see
 > `docs/UPGRADE-PLAN.md`), see status ledger for the edge-to-edge investigation.
 >
+> **20 Aug 2026:** AdMob linking + app-ads.txt verification cleared, the app passed
+> Google's ad-serving review, and a real interstitial was confirmed live on a physical
+> device. Seller information (sellers.json) set to Transparent in the AdMob console.
+> Ad revenue is now flowing for real. Marketing site's "Android - coming soon" badge
+> replaced with the real Play Store link (PR #131).
+>
 > The developer's own testing accounts remain in use for verification
 > (`e2e@nithyakarma.test`, `e2efull@nithyakarma.test`, etc. - see memory
 > `e2e-account-keep`) alongside real installs now arriving.

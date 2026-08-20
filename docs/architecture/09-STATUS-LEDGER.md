@@ -18,10 +18,10 @@ Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 | Intent | Status | Evidence |
 |---|---|---|
 | 0.1 Real launcher/adaptive icon | ⬜ **Open** | `mipmap-*/ic_launcher.png` is still the **stock Capacitor blue-X placeholder** - files dated 19 June 2026, predating the project (created 7 July). Visually confirmed |
-| 0.2 Production AdMob | ✅ **Done** | Real app ID in `AndroidManifest.xml:16` (`ca-app-pub-2677287550445019~...`) and real interstitial unit in `utils/ads.js`, `isTesting` gated on `import.meta.env.DEV`. G content rating + Dating/Gambling/Alcohol/etc. blocked in the AdMob console (23 July 2026) |
+| 0.2 Production AdMob | ✅ **Done** | Real app ID in `AndroidManifest.xml:16` (`ca-app-pub-2677287550445019~...`) and real interstitial unit in `utils/ads.js`, `isTesting` gated on `import.meta.env.DEV`. G content rating + Dating/Gambling/Alcohol/etc. blocked in the AdMob console (23 July 2026). **App store linked, app-ads.txt verified, ad-serving review passed, sellers.json set to Transparent, real interstitial confirmed live on a physical device (20 Aug 2026)** |
 | 0.3 Password reset | ✅ Done | `components/ResetPassword.jsx`, `/reset` route in `App.jsx:56`, tests present |
 | 0.4 Accessibility pass | ✅ Done | `utils/contrast.js`, `components/__tests__/a11y.test.jsx` with contrast assertions |
-| 0.5 Store readiness assets | 🟡 Partial | `docs/PLAY-STORE-LISTING.md` drafted, screenshots captured (commit `4c7a74f`), privacy policy live. **Content rating done** - IARC questionnaire submitted and rated live 19 Aug 2026 (Global Rating ID `e66863d6-9c92-86a6-8290-3f7dbfc189d6`), production release (`0.31.7`) submitted the same day using the existing signing keystore. Still unverified in this ledger: feature graphic |
+| 0.5 Store readiness assets | 🟡 Partial | `docs/PLAY-STORE-LISTING.md` drafted, screenshots captured (commit `4c7a74f`), privacy policy live. **Content rating done** - IARC questionnaire submitted and rated live 19 Aug 2026 (Global Rating ID `e66863d6-9c92-86a6-8290-3f7dbfc189d6`), production release (`0.31.7`) approved and **Active** on the Production track the same day, 177 countries. Marketing site now links the real Play Store listing (PR #131, 20 Aug 2026). Still unverified in this ledger: feature graphic |
 | 0.6 Onboarding value-prop | ✅ Done | `Onboarding.jsx:12` `useState('intro')`, intro step at `:34`, advances to form |
 | 0.7 Password policy | 🟡 Partial | Client `minLength={8}` at `AuthPage.jsx:81`. **HIBP still disabled** server-side - Supabase Pro feature, noted won't-fix |
 

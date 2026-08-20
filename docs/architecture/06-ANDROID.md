@@ -120,6 +120,11 @@ Sexual & Reproductive Health, and Social Casino Games blocked (Alcohol and Gambl
 Betting are blocked by default as Restricted categories) - a sectarian-adjacent app
 cannot afford a gambling or dating ad beside a sandhya prompt.
 
+**20 Aug 2026:** app store linked in AdMob, `app-ads.txt` verified (served from
+`nithyakarma.org`, the marketing site domain), the ad-serving policy review passed,
+seller information set to Transparent (`sellers.json`), and a real interstitial was
+confirmed showing on a physical device. Ads are live and earning.
+
 ## Capacitor plugins
 
 | Plugin | Used for |
