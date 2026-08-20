@@ -67,6 +67,12 @@ const rudramItem = (slots) => ({
   logs: slots.map(s => ({ slot: s })),
 })
 
+const samidhaItem = (slots) => ({
+  up: { id: 'up-sm', current_streak: 0, sequence_position: 0 },
+  practice: { id: 20, name: 'Samidhadhanam', icon: '🔥', is_samidhadhanam: true, requires_brahmachari: true, cadence: 'daily', target_count: null },
+  logs: slots.map(s => ({ slot: s })),
+})
+
 beforeEach(() => {
   queryClient.clear()
   h.items = []; h.catalog = []; h.yesterdayLogs = []
@@ -354,6 +360,39 @@ describe('TodayPage - Sri Rudram 3-slot marking (2026-08-11)', () => {
     render(<TodayPage />)
     expect(screen.getByText('Both').closest('button')).toBeDisabled()
     expect(screen.getByText('Namakam').closest('button')).not.toBeDisabled()
+  })
+})
+
+describe('TodayPage - Samidhadhanam morning/evening either-or slots (Intent 2.9)', () => {
+  it('shows both slot options, not a "Mark Done" button', () => {
+    h.items = [samidhaItem([])]
+    render(<TodayPage />)
+    expect(screen.getByText('Morning')).toBeInTheDocument()
+    expect(screen.getByText('Evening')).toBeInTheDocument()
+    expect(screen.queryByText('Mark Done')).not.toBeInTheDocument()
+  })
+
+  it('clicking a slot marks it directly, with no count prompt (unlike Sandhya)', async () => {
+    h.items = [samidhaItem([])]
+    h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 1, practice_name: 'Samidhadhanam' })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Morning'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(() => expect(h.submit).toHaveBeenCalledWith('up-sm', { slot: 'morning', count: null }))
+  })
+
+  it('either slot alone marks the day complete - not both required', () => {
+    h.items = [samidhaItem(['evening'])]
+    render(<TodayPage />)
+    expect(screen.getByText('1 anushtanam done today. Wonderful, all done!')).toBeInTheDocument()
+    expect(screen.queryByText('Mark Done')).not.toBeInTheDocument()
+  })
+
+  it('an already-marked slot is shown done and disabled, the other stays open', () => {
+    h.items = [samidhaItem(['morning'])]
+    render(<TodayPage />)
+    expect(screen.getByText('Morning').closest('button')).toBeDisabled()
+    expect(screen.getByText('Evening').closest('button')).not.toBeDisabled()
   })
 })
 

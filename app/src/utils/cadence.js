@@ -26,7 +26,7 @@ export function cadenceLabel(practice) {
       return practice.sequence_length ? `1 of ${practice.sequence_length} / day` : 'daily reading'
     default:
       return (practice.is_sandhyavandhanam ? '1 sandhya today'
-        : practice.is_sri_rudram ? 'any 1 today' : 'daily') + dayHint
+        : practice.is_sri_rudram || practice.is_samidhadhanam ? 'any 1 today' : 'daily') + dayHint
   }
 }
 
@@ -42,6 +42,13 @@ export const RUDRAM_SLOTS = [
   { key: 'namakam', label: 'Namakam', short: 'Namakam' },
   { key: 'chamakam', label: 'Chamakam', short: 'Chamakam' },
   { key: 'both', label: 'Both (Namakam + Chamakam)', short: 'Both' },
+]
+
+// Samidhadhanam: morning or evening, any 1 of 2 completes the practice for
+// the day - same any-1-of-N semantics as RUDRAM_SLOTS, not both required.
+export const SAMIDHA_SLOTS = [
+  { key: 'morning', label: 'Morning', short: 'Morning' },
+  { key: 'evening', label: 'Evening', short: 'Evening' },
 ]
 
 // Done-state for a practice given today's logs for it. "Has this been logged

@@ -29,7 +29,7 @@ a different screen.
 
 ## Test layers
 - **Unit** (Vitest + Testing Library + jsdom) - pure logic (`utils/`), hooks, components. 61 test files.
-- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 22 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
+- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 24 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
 - **Deno** (`supabase/functions/_shared/observanceMatch.test.ts`) - the tharpanam/observance rule-matching engine. Runs in CI as of 2026-07-23 (`edge-functions` job) - the first Deno test ever wired into CI.
 - **E2E web** (Playwright, `app/e2e/*.spec.js`) - full flows against a real built app + live Supabase.
 - **E2E Android** (adb screenshot-tap shell scripts, `app/e2e/*.sh`) - build/install/launch + blind taps at hardcoded coordinates. **Assert only "no crash" via logcat + `pidof`** - no in-app text/state assertion is possible (WebView exposes no accessibility tree to `uiautomator`). Pass beyond that requires eyeballing saved screenshots and cross-checking DB state via Supabase MCP.
