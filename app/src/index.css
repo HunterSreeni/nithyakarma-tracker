@@ -377,7 +377,7 @@ a.verse-card { text-decoration: none; color: inherit; }
 .field-input:focus { border-color: var(--saffron-400); box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.35); }
 .btn-primary { display: inline-flex; align-items: center; gap: 5px; margin-top: 0.8rem; background: var(--action); color: #fff; border: none; border-radius: 100px; padding: 10px 22px; font-weight: 700; font-size: 0.74rem; }
 .btn-primary:disabled { opacity: 0.5; }
-.btn-secondary { margin-top: 0.8rem; background: none; border: 1.5px dashed var(--warm); color: var(--text-2); border-radius: 100px; padding: 8px 18px; font-weight: 700; font-size: 0.7rem; }
+.btn-secondary { display: inline-flex; align-items: center; gap: 5px; margin-top: 0.8rem; background: none; border: 1.5px dashed var(--warm); color: var(--text-2); border-radius: 100px; padding: 8px 18px; font-weight: 700; font-size: 0.7rem; }
 .tp-row { display: flex; justify-content: space-between; font-size: 0.72rem; font-weight: 700; }
 .tp-row .next { color: var(--text-2); }
 .tp-bar { height: 8px; background: var(--cream); border-radius: 100px; margin-top: 8px; overflow: hidden; }
@@ -397,6 +397,9 @@ a.verse-card { text-decoration: none; color: inherit; }
 .ref-title { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.88rem; }
 .ref-sub { font-size: 0.72rem; color: #fff; margin-top: 3px; line-height: 1.45; font-weight: 300; }
 .btn-ref { margin-top: 0.7rem; background: #25D366; border: none; color: #fff; border-radius: 100px; padding: 9px 18px; font-weight: 700; font-size: 0.68rem; }
+.ref-btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.ref-btn-row .btn-ref, .ref-btn-row .btn-ref-outline { margin-top: 0; }
+.btn-ref-outline { display: inline-flex; align-items: center; gap: 5px; margin-top: 0.7rem; background: none; border: 1.5px solid rgba(255,255,255,0.4); color: #fff; border-radius: 100px; padding: 8px 16px; font-weight: 700; font-size: 0.68rem; }
 .danger-zone { border: 1.5px solid #f3caca; background: #fdf6f6; border-radius: 14px; padding: 0.9rem 1rem; margin-top: 0.9rem; }
 .dz-title { font-weight: 700; font-size: 0.8rem; color: var(--danger); }
 .dz-sub { font-size: 0.72rem; color: #7a3f3f; margin-top: 3px; font-weight: 300; line-height: 1.5; }

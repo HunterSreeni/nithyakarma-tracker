@@ -7,6 +7,7 @@ import { track } from '../utils/analytics'
 import ErrorBanner from './ErrorBanner'
 import { friendlyError } from '../utils/friendlyError'
 import { readReferralsCache, writeReferralsCache } from '../utils/referralsCache'
+import CopyLinkButton from './CopyLinkButton'
 
 // A plain outbound tracking list ("who joined with my link, and when") -
 // deliberately not a competitive leaderboard. apply_referral() grants both
@@ -60,12 +61,18 @@ export default function ReferralsPage() {
             Invite people with your link. When they join, they'll show up here -
             and you'll both get a month ad-free plus a streak freeze.
           </div>
-          <button className="btn-ref" onClick={inviteWhatsApp}>Invite on WhatsApp</button>
+          <div className="ref-btn-row">
+            <button className="btn-ref" onClick={inviteWhatsApp}>Invite on WhatsApp</button>
+            <CopyLinkButton referralCode={profile.referral_code} variant="outline" />
+          </div>
         </div>
       ) : (
         <>
           {rows.map(r => <ReferralRow key={r.referred_id} r={r} initials={initials} />)}
-          <button className="btn-secondary" onClick={inviteWhatsApp}>Invite another</button>
+          <div className="ref-btn-row">
+            <button className="btn-secondary" onClick={inviteWhatsApp}>Invite another</button>
+            <CopyLinkButton referralCode={profile.referral_code} />
+          </div>
         </>
       )}
     </>

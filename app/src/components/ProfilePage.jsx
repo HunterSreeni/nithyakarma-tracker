@@ -8,6 +8,7 @@ import { shareUrl } from '../utils/share'
 import { streakState } from '../utils/streak'
 import { track } from '../utils/analytics'
 import { APP_VERSION } from '../version'
+import CopyLinkButton from './CopyLinkButton'
 
 export default function ProfilePage() {
   const { session, profile, familyMembers, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount, signOut } = useAuth()
@@ -148,7 +149,10 @@ export default function ProfilePage() {
           Every member who joins with your link gives you both 1 month ad-free
           and a streak freeze. Your code: <strong>{profile.referral_code}</strong>
         </div>
-        <button className="btn-ref" onClick={inviteWhatsApp}>Share invite on WhatsApp</button>
+        <div className="ref-btn-row">
+          <button className="btn-ref" onClick={inviteWhatsApp}>Share invite on WhatsApp</button>
+          <CopyLinkButton referralCode={profile.referral_code} variant="outline" />
+        </div>
       </div>
 
       <div className="card">
