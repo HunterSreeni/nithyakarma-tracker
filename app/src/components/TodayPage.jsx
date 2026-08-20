@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { supabase } from '../lib/supabase'
-import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, localDateString, SANDHYA_SLOTS, RUDRAM_SLOTS } from '../utils/cadence'
+import { isDoneToday, countsTowardDayCompletion, dayComplete, cadenceLabel, localDateString, SANDHYA_SLOTS, RUDRAM_SLOTS, SAMIDHA_SLOTS } from '../utils/cadence'
 import { dayGap, streakState } from '../utils/streak'
 import { tierFor, tierClass } from '../utils/tiers'
 import CelebrationModal from './CelebrationModal'
@@ -76,6 +76,7 @@ export default function TodayPage() {
         overall_streak: result.overall_streak ?? 0,
         is_sandhya: !!item.practice.is_sandhyavandhanam,
         is_sri_rudram: !!item.practice.is_sri_rudram,
+        is_samidhadhanam: !!item.practice.is_samidhadhanam,
       })
       // Ad fires here - after the verified save, BEFORE the celebration reward
       // (Intent 0.2). At a streak milestone, ask for a review instead (Intent 1.4);
@@ -102,7 +103,8 @@ export default function TodayPage() {
   }
 
   const onSlotClick = (item, slot) => setGayatriPrompt({ item, slot })
-  // Sri Rudram slots mark directly, unlike Sandhya's - no Gayatri-count prompt applies.
+  // Sri Rudram and Samidhadhanam slots mark directly, unlike Sandhya's - no
+  // Gayatri-count prompt applies.
   const onRudramSlotClick = (item, slot) => mark(item, slot)
 
   return (
@@ -304,9 +306,20 @@ function PracticeCard({ item, busy, onMark, onSlotClick, onRudramSlotClick }) {
             ))}
           </div>
         )}
+        {practice.is_samidhadhanam && (
+          <div className="slot-row">
+            {SAMIDHA_SLOTS.map(s => (
+              <button key={s.key} disabled={slotsDone.has(s.key) || busy}
+                className={`slot-btn ${slotsDone.has(s.key) ? 'done' : ''}`}
+                onClick={() => onRudramSlotClick(item, s.key)}>
+                {slotsDone.has(s.key) && <Check size={11} strokeWidth={3} />}{s.short}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       {done ? <div className="done-check"><Check size={16} strokeWidth={3} /></div>
-        : !practice.is_sandhyavandhanam && !practice.is_sri_rudram && (
+        : !practice.is_sandhyavandhanam && !practice.is_sri_rudram && !practice.is_samidhadhanam && (
           <button className="btn-done" disabled={busy} onClick={() => onMark(item)}>
             {busy ? 'Saving...' : 'Mark Done'}
           </button>
