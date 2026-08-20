@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.31.9](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.8...app-v0.31.9) (2026-08-20)
+
+
+### Bug Fixes
+
+* recover from transient auth failures instead of showing raw timeouts ([3424301](https://github.com/HunterSreeni/nithyakarma-tracker/commit/34243016024c28770651a6953cada124456c85a8))
+* recover from transient auth failures, and run the e2e specs that were silently skipping ([c7889e2](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c7889e2a9ceeb7284e8b50ce3bc3daac37052669))
+* **test:** stop journey-child leaking a fixture into the live account ([8230cf0](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8230cf0df1f1d54ee967c79dfa1f317649418a8c))
+
 ## [0.31.8](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.7...app-v0.31.8) (2026-08-19)
 
 
