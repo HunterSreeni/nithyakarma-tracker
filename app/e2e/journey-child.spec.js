@@ -42,6 +42,10 @@ test.describe('Family member (child) - Sandhyavandhanam + yesterday catch-up', (
     // Idempotency: a previous run that failed before its own cleanup could
     // have left this fixture behind - remove it before creating a fresh one.
     await page.getByRole('link', { name: /Profile/ }).first().click()
+    // Same count() race as the cleanup below: wait for the family section to
+    // actually render first, otherwise this check runs against an empty list
+    // and a real leftover slips through, accumulating a new child every run.
+    await expect(page.getByRole('button', { name: '+ Add family member' })).toBeVisible({ timeout: 15000 })
     const leftover = page.locator('.fam-row', { hasText: CHILD_NAME })
     if (await leftover.count()) {
       page.once('dialog', d => d.accept())
@@ -109,11 +113,17 @@ test.describe('Family member (child) - Sandhyavandhanam + yesterday catch-up', (
       await page.locator('.ps-chip', { hasText: 'Me' }).click()
       await page.getByRole('link', { name: /Profile/ }).first().click()
       const fixture = page.locator('.fam-row', { hasText: CHILD_NAME })
-      if (await fixture.count()) {
-        page.once('dialog', d => d.accept())
-        await fixture.getByRole('button', { name: 'Remove' }).click()
-        await expect(fixture).toHaveCount(0, { timeout: 15000 })
-      }
+      // Wait for the row instead of counting immediately. locator.count()
+      // resolves at once and does NOT wait for the family list to render, so
+      // on a slower CI load it returned 0, the guard skipped the whole
+      // cleanup, and the test still reported PASS while leaving the fixture
+      // behind on the live account (CI run 32375374261 leaked one this way).
+      // The fixture is created before the try block, so it must exist here -
+      // asserting that is what makes a failed cleanup loud instead of silent.
+      await expect(fixture).toHaveCount(1, { timeout: 15000 })
+      page.once('dialog', d => d.accept())
+      await fixture.getByRole('button', { name: 'Remove' }).click()
+      await expect(fixture).toHaveCount(0, { timeout: 15000 })
     }
   })
 })
