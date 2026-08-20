@@ -2,7 +2,17 @@ import { test, expect } from '@playwright/test'
 
 // Negative / edge-case auth paths that need no authenticated session.
 test.describe('Auth edge cases', () => {
-  test('rejects invalid credentials with a visible error', async ({ page }) => {
+  // Deliberately NOT called "rejects invalid credentials". It cannot verify
+  // that, and claiming otherwise is what made this test misleading: with Auth's
+  // captcha protection on project-wide, a headless run has no Turnstile token,
+  // so Supabase rejects on "no captcha_token found" long before it ever looks
+  // at the password. The test passed on that error while reading as if bad
+  // credentials had been exercised. There is no way to reach a genuine
+  // credentials rejection here without turning captcha off in production - so
+  // this asserts only what it can actually observe, and the credentials-
+  // specific error message is covered in
+  // src/components/__tests__/AuthPage.test.jsx ("shows auth errors").
+  test('a rejected sign-in surfaces a visible error and keeps the user out', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByText('Continue with Google')).toBeVisible()
     await page.fill('#auth-email', 'nobody@nithyakarma.test')
@@ -13,10 +23,6 @@ test.describe('Auth edge cases', () => {
     const signIn = page.getByRole('button', { name: 'Sign In' })
     await expect(signIn).toBeEnabled({ timeout: 20000 })
     await signIn.click()
-    // Whatever Supabase's exact rejection reason - bad credentials, or (when
-    // Auth's captcha protection is on and this run has no Turnstile token to
-    // offer, as in CI) "no captcha_token found" - a bad submit must surface
-    // a visible error and never let the user through.
     await expect(page.locator('.auth-error')).toBeVisible({ timeout: 15000 })
     // stays on the auth screen
     await expect(page.getByText('Continue with Google')).toBeVisible()
