@@ -70,10 +70,18 @@ export function AuthProvider({ children }) {
 
   // Parallel, not sequential: each Supabase call is independently capped at
   // REQUEST_TIMEOUT_MS (see lib/supabase.js), but two of those stacked one
-  // after another can still add up to ~2x that - enough to blow past the
-  // 15s "stuck" watchdog in App.jsx's Gate() on a just-reconnected network
-  // (e.g. resuming from a long background), landing on the "Taking longer
-  // than expected" Reload wall instead of finishing normally.
+  // after another can still add up to ~2x that on a just-reconnected network
+  // (e.g. resuming from a long background), delaying the load enough to risk
+  // the "Taking longer than expected" Reload wall instead of finishing
+  // normally.
+  // AI-DEV NOTE: this comment used to name a "15s stuck watchdog" in App.jsx's
+  // Gate(). That number is stale - STUCK_TIMEOUT_MS was raised to 55s
+  // (2026-08-09/10) once it was understood that auth-js retries a timed-out
+  // refresh internally for ~30s, so a 15s wall fired mid-recovery. Keep this
+  // load parallel regardless: the watchdog headroom is budgeted against
+  // getSession() + one loadProfile, not two serial profile calls. If you
+  // change either timeout, update the other's comment too - App.jsx:53 and
+  // lib/supabase.js:37 are the two sources of truth.
   // Takes the full session (not just the id) so it can key the cache by
   // session.user.email too - see writeProfileCache above.
   // AI-DEV NOTE: Protected streak/freeze refresh connection. This must reload
