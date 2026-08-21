@@ -29,7 +29,7 @@ a different screen.
 
 ## Test layers
 - **Unit** (Vitest + Testing Library + jsdom) - pure logic (`utils/`), hooks, components. 61 test files.
-- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 22 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
+- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 24 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
 - **Deno** (`supabase/functions/_shared/observanceMatch.test.ts`) - the tharpanam/observance rule-matching engine. Runs in CI as of 2026-07-23 (`edge-functions` job) - the first Deno test ever wired into CI.
 - **E2E web** (Playwright, `app/e2e/*.spec.js`) - full flows against a real built app + live Supabase.
 - **E2E Android** (adb screenshot-tap shell scripts, `app/e2e/*.sh`) - build/install/launch + blind taps at hardcoded coordinates. **Assert only "no crash" via logcat + `pidof`** - no in-app text/state assertion is possible (WebView exposes no accessibility tree to `uiautomator`). Pass beyond that requires eyeballing saved screenshots and cross-checking DB state via Supabase MCP.
@@ -49,17 +49,20 @@ a different screen.
 
 ---
 
-## Android tooling (this dev machine, verified 2026-07-14)
+## Android tooling (this dev machine, updated 2026-08-21)
 
-- **Android Studio** runs on Sreeni's desktop session (GUI) - it is not
-  filesystem-visible from an agent's sandboxed shell, so an agent can't launch
-  it directly. What an agent *can* do: connect to whatever emulator/device is
-  already running via `adb`, which talks to a local `adb` server over
-  `localhost:5037` regardless of which process started the emulator.
+- **An agent can launch the emulator itself.** Android Studio's own GUI is
+  still not reachable from an agent's sandboxed shell, but this machine has a
+  display server (`DISPLAY=:0`) and `emulator -list-avds` / `emulator -avd
+  <name>` work directly from the shell - no need to wait for Sreeni to start
+  one from Android Studio first (superseded 2026-08-21; the old "an agent
+  can't launch it directly" note was itself stale - see memory
+  `android-tooling-setup`). `adb` talks to a local server over
+  `localhost:5037` regardless of which process started the emulator or device.
 - **SDK location**: `~/Android/Sdk` (`$ANDROID_HOME` / `$ANDROID_SDK_ROOT`).
   - `adb`: `~/Android/Sdk/platform-tools/adb`
   - `emulator`: `~/Android/Sdk/emulator/emulator`
-  - AVDs: `~/.android/avd/`
+  - AVDs: `~/.android/avd/` (list with `emulator -list-avds`)
 - **Build + install a fresh debug build** (from `app/`):
   ```
   npm run build && npx cap sync android
@@ -68,9 +71,9 @@ a different screen.
   adb install app/build/outputs/apk/debug/app-debug.apk
   adb shell am start -n org.nithyakarma.app/.MainActivity
   ```
-- **Driving the UI from an agent (no display server available)**: the WebView is
-  `NAF="true"` ("not accessibility friendly") - `uiautomator` sees nothing, so
-  interaction is screenshot-then-tap:
+- **Driving the UI from an agent**: the WebView is `NAF="true"` ("not
+  accessibility friendly") - `uiautomator` sees nothing even though a display
+  server is available, so interaction is still screenshot-then-tap:
   ```
   adb exec-out screencap -p > screen.png   # inspect, pick a target pixel
   adb shell input tap <x> <y>              # native-resolution coordinates
@@ -81,6 +84,15 @@ a different screen.
   Android 13+ OS notification-permission dialog, the driver.js guided tour on first
   run, and a live AdMob test interstitial (seed `ad_free_until` into the future to
   remove the third hazard).
+- **Signing in on the emulator (2026-08-21 exception to the web "manual
+  sign-in only" rule)**: the emulator's on-screen keyboard has a known bug
+  that makes tapping keys unreliable, so credential entry on Android goes
+  through `adb shell input text "..."` / `input keyevent` instead of relying
+  on the on-screen keyboard - an agent may do this directly for the app's own
+  email/password sign-in on the emulator. This does NOT extend to the web
+  app: the web sign-in form is still hands-off for an agent (Turnstile-gated,
+  see memory `manual-login-only`) - the two are unrelated blockers with
+  unrelated exceptions.
 - **Logs**: `adb logcat -d -t <N> | grep -iE "nithyakarma|capacitor|error"`.
 - **Manual pre-release gate**: reseed the relevant throwaway account via its
   `seed-*.sql` (Supabase MCP) before each run.
@@ -356,6 +368,22 @@ Sandhya-exclusive in the RPC).
 | A log with no slot is rejected; re-marking an already-done slot is rejected (unique same-day slot) | Integration(§23) | ✅ |
 | History shows a Rudram-specific slot-count suffix, not the sandhya "(N/3 sandhyas)" one | Unit (`HistoryPage.test.jsx`) | ✅ |
 
+### Samidhadhanam morning/evening slots (Intent 2.9, 2026-08-20)
+Same any-1-of-N pattern as Sri Rudram, split into 2 independent options
+(morning/evening, `is_samidhadhanam` flag, `submit_practice_log` generalized
+again to `is_sandhyavandhanam or is_sri_rudram or is_samidhadhanam`) instead
+of 3 - either slot alone completes the practice for the day, not both. No
+Gayatri-count prompt (marks directly, shares Rudram's click handler) and no
+yesterday-backdate (Sandhya-exclusive in the RPC, same as Rudram).
+| Case | Layer | Status |
+|---|---|---|
+| Both slot buttons shown, `cadenceLabel` reads "any 1 today" like Rudram | Unit (`TodayPage.test.jsx`, `cadence.test.js`) | ✅ |
+| Clicking a slot marks directly - no count prompt | Unit (`TodayPage.test.jsx`) | ✅ |
+| Either 1 of 2 slots completes the practice for the day, no "Mark Done" button shown | Unit (`TodayPage.test.jsx`) | ✅ |
+| An already-marked slot shown done and disabled, the other stays open | Unit (`TodayPage.test.jsx`) + E2E(W, `journey.spec.js`) | ✅ |
+| A log with no slot is rejected; re-marking an already-done slot is rejected (unique same-day slot) | Integration(§24) | ✅ |
+| Marking morning then evening: streak advances once (no double-advance), punya stacks (+10 for both), day_complete true | Integration(§24) | ✅ run against production via Supabase MCP 2026-08-20, rolled back |
+
 ### History
 | Case | Layer | Status |
 |---|---|---|
@@ -419,6 +447,8 @@ messaging.
 | `monthly_purnima`'s lower priority (-1) loses to `avani_avittam`'s (0) on the one day/year they coincide (Purnima + Shravana nakshatra); generic Purnima still fires on an ordinary Purnima | Deno (`observanceMatch.test.ts`) | ✅ |
 | Dismiss persists per-day via localStorage, resets the next day (or once the tithi changes) | Unit | ✅ |
 | Also drives `send-reminders` push automatically (same table, `bestMatch()` already generic) - no edge function change needed | Deno (`observanceMatch.test.ts`) | ✅ |
+| **Intent 2.8 (2026-08-20): a same-day tharpanam + observance render as 2 independent cards (own title/subtitle/dismiss), not one card with the 2nd squeezed into "Also today: ..."; each dismisses independently** | Unit (`ObservanceBanner.test.jsx`) | ✅ |
+| E2E coverage of the 2-card render itself | - | ⬜ deliberately not e2e - needs a real calendar day where a tharpanam and an observance coincide, which is rare and would make the spec date-dependent/flaky; the unit test drives `bannerMatches()` directly against synthetic same-day rows instead |
 
 ### Panchangam
 | Case | Layer | Status |
@@ -480,6 +510,7 @@ messaging.
 | Delete flow: type-email-to-confirm gate, returns to auth | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Referral reward copy is static, doesn't reflect the server-side 5/24h cap | - | ⬜ |
 | Referrals list paints from a localStorage cache (keyed by owner) on reopen instead of a spinner, revalidates in the background; manual Retry always bypasses the cache | Unit(`referralsCache.test.js`) | ✅ (2026-08-11) |
+| **Intent 2.10 (2026-08-20): "Copy link" button next to WhatsApp share, on both Profile and Referrals - writes the real referral URL to the clipboard, shows "Copied" for 2s, then reverts; clipboard failure is a silent no-op (WhatsApp stays the primary path)** | Unit (`CopyLinkButton.test.jsx`) + E2E(W, `journey.spec.js`) | ✅ |
 
 ### Streaks & freezes
 | Case | Layer | Status |
@@ -550,6 +581,21 @@ messaging.
   request..."`) that `loggingBehavior: 'none'` (2026-07-19, a deliberate security
   fix) now suppresses by design - the script reported FAIL on a fully working build.
   Replaced with a boot screenshot for manual confirmation.
+- ~~`journey.spec.js`'s Arjun yesterday-catch-up test asserted copy that no longer
+  exists~~ - **fixed 2026-08-21**: expected `"Half punya, no streak effect - just
+  credit for doing it."` and `/\+\d+ punya for yesterday's Morning/`, neither of
+  which exists anywhere in the app - stale from before AGENTS.md's current "full
+  punya, counts toward the streak" rule. Never caught because this `@destructive`
+  spec only runs as a manual pre-release gate, not in CI. Found during a full
+  page-by-page audit, not a live run; fixed to match the real `TodayPage.jsx` copy.
+- **Raw `err.message` shown to users on 8 catch sites** (`TodayPage.jsx` x4,
+  `ProfilePage.jsx` x3, `Onboarding.jsx` x1) instead of `friendlyError.js`'s
+  plain-language copy, despite that util's own header comment claiming "users
+  never see a raw error string" - found 2026-08-21, fixed by routing all 8
+  through `friendlyError()`. `AuthPage.jsx`/`ResetPassword.jsx` were deliberately
+  left alone: their `error.message` comes from Supabase GoTrue and is already
+  user-appropriate ("Invalid login credentials"), so wrapping it would replace
+  useful detail with a generic message - a regression, not a fix.
 
 **New bug found + fixed 2026-07-23 (during a live full-suite run):**
 1. **Every sign-in of an already-onboarded user re-showed the "Turn on reminders?"

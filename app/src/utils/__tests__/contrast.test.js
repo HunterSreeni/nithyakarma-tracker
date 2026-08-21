@@ -18,6 +18,10 @@ describe('WCAG AA contrast of accessibility tokens', () => {
   const saffron950 = token('--saffron-950')
   const saffron900 = token('--saffron-900')
   const saffron700 = token('--saffron-700')
+  const success = token('--success')
+  const gold = token('--gold')
+  const silver = token('--silver')
+  const bronze = token('--bronze')
 
   it('computes known ratios correctly', () => {
     expect(contrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 0)
@@ -43,5 +47,20 @@ describe('WCAG AA contrast of accessibility tokens', () => {
 
   it('danger-zone subtext passes AA on its light red card (>=4.5:1)', () => {
     expect(contrastRatio('#7a3f3f', '#fdf6f6')).toBeGreaterThanOrEqual(4.5)
+  })
+
+  // Darkened 20 Aug 2026 (docs/DESIGN-GUIDE-V1.md) - the previous values
+  // failed 4.5:1 on their real backgrounds: --success as low as 2.78:1 on
+  // .slot-btn.done's light-green chip, --gold/--silver/--bronze as low as
+  // 2.09:1 as leaderboard rank text on a white .lb-row.
+  it('--success passes AA on paper and on the light-green done-chip background', () => {
+    expect(contrastRatio(success, paper)).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(success, '#d9f2e1')).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('--gold/--silver/--bronze pass AA as leaderboard rank text on white', () => {
+    expect(contrastRatio(gold, '#ffffff')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(silver, '#ffffff')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(bronze, '#ffffff')).toBeGreaterThanOrEqual(4.5)
   })
 })

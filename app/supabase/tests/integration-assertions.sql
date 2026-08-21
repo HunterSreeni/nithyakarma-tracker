@@ -890,6 +890,48 @@ begin
     if not (r->>'saved')::boolean then raise exception 'FAIL: Aditya Hrudayam (reclassified daily) could not be logged today'; end if;
   end;
 
+  -- 24. Samidhadhanam morning/evening either-or slots (Intent 2.9, migration
+  -- 20260820100000): any 1 of 2 slots completes the practice for the day -
+  -- same any-1-of-N semantics as Sri Rudram's slots (section 23), generalized
+  -- via is_samidhadhanam. v_uid is unmarried at this point (restored line 819).
+  declare
+    v_samidha2 int; v_sup_samidha uuid;
+    v_punya_before2 int; v_punya_after2 int;
+  begin
+    select id into v_samidha2 from practices where slug = 'samidhadhanam';
+    select punya into v_punya_before2 from profiles where id = v_uid;
+
+    insert into user_practices (owner_id, practice_id) values (v_uid, v_samidha2) returning id into v_sup_samidha;
+
+    r := submit_practice_log(v_sup_samidha, 'morning');
+    if not (r->>'practice_done_today')::boolean then raise exception 'FAIL: Samidhadhanam not done after 1 slot (morning)'; end if;
+    if (r->>'practice_streak')::int <> 1 then raise exception 'FAIL: Samidhadhanam streak did not advance on slot 1'; end if;
+    if not (r->>'day_complete')::boolean then raise exception 'FAIL: day not complete after 1 Samidhadhanam slot'; end if;
+
+    r := submit_practice_log(v_sup_samidha, 'evening');
+    if (r->>'practice_streak')::int <> 1 then raise exception 'FAIL: Samidhadhanam streak double-advanced on slot 2'; end if;
+    select punya into v_punya_after2 from profiles where id = v_uid;
+    if v_punya_after2 - v_punya_before2 <> 10 then
+      raise exception 'FAIL: Samidhadhanam punya not +10 after 2 slots (5 each, got %)', v_punya_after2 - v_punya_before2;
+    end if;
+
+    -- requires a slot
+    v_failed := false;
+    begin
+      perform submit_practice_log(v_sup_samidha, null);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: Samidhadhanam accepted a log with no slot'; end if;
+
+    -- re-marking an already-done slot is rejected (unique same-day slot)
+    v_failed := false;
+    begin
+      perform submit_practice_log(v_sup_samidha, 'morning');
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: duplicate Samidhadhanam slot accepted'; end if;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;

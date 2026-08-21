@@ -29,7 +29,7 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     context = await chromium.launchPersistentContext(userDataDir, {
       channel: 'chromium',
       baseURL: BASE_URL,
-      permissions: ['notifications'],
+      permissions: ['notifications', 'clipboard-read', 'clipboard-write'],
     })
     page = await context.newPage()
   })
@@ -118,6 +118,28 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await expect(page.locator('.practice-card.done', { hasText: 'Hanuman Chalisa' })).toBeVisible()
   })
 
+  // Intent 2.9 (2026-08-20): morning/evening either-or, same any-1-of-N
+  // semantics as Sri Rudram's 3 slots, not a required pair. Self is an
+  // unmarried male throughout this journey (the onboarding test above never
+  // sets Married), so Samidhadhanam is eligible and offered.
+  test('add and mark Samidhadhanam: either slot alone completes it, the other stays available', async () => {
+    await page.getByRole('button', { name: /Add an anushtanam/ }).click()
+    await page.getByPlaceholder('Search...').fill('samidhadhanam')
+    await page.getByRole('button', { name: /Samidhadhanam/ }).click()
+    const card = page.locator('.practice-card', { hasText: 'Samidhadhanam' })
+    await expect(card).toBeVisible({ timeout: 15000 })
+    await expect(card.getByRole('button', { name: 'Morning' })).toBeVisible()
+    await expect(card.getByRole('button', { name: 'Evening' })).toBeVisible()
+    // No "Mark Done" button - like Sandhya/Rudram, it only ever marks by slot.
+    await expect(card.getByRole('button', { name: 'Mark Done' })).toHaveCount(0)
+
+    await card.getByRole('button', { name: 'Evening' }).click()
+    await expect(card.locator('.done-check')).toBeVisible({ timeout: 15000 })
+    await expect(card.getByRole('button', { name: 'Evening' })).toBeDisabled()
+    // Morning was never required - still open, not forced into a 2nd mark.
+    await expect(card.getByRole('button', { name: 'Morning' })).toBeEnabled()
+  })
+
   test('Sabha leaderboard shows my row; Kids tab is separate', async () => {
     // Community/Sabha is opt-in (hidden by default) - enable it from Profile
     // before it appears in the nav at all.
@@ -194,10 +216,19 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
   })
 
   // Migration 20260810130000: a Sandhya slot can be backdated to yesterday,
-  // punya-only, and must never touch today's own card (streak/day-complete
-  // only ever advance from today's own mark). Arjun (added above, upanayanam
-  // done) is Sandhya-eligible but has no practices yet - add it here.
-  test('family member (Arjun): Sandhyavandhanam yesterday catch-up is punya-only', async () => {
+  // awards full punya (the "punya-only" name from the original migration
+  // predates AGENTS.md's current rule - see "Streak & freeze"), and must
+  // never touch today's own card (today's streak/day-complete only ever
+  // advance from today's own mark). Arjun (added above, upanayanam done) is
+  // Sandhya-eligible but has no practices yet - add it here.
+  //
+  // AI-DEV NOTE: this test previously asserted copy ("Half punya, no streak
+  // effect...") that no longer exists anywhere in the app - a stale
+  // assertion from before AGENTS.md's current "full punya, counts toward the
+  // streak" rule, never caught because this @destructive spec was silently
+  // skipped in CI until PR #132 (2026-08-20). Fixed to match the real,
+  // currently-shipping copy in TodayPage.jsx's YesterdaySandhya component.
+  test('family member (Arjun): Sandhyavandhanam yesterday catch-up awards full punya and counts toward the streak', async () => {
     await page.locator('.ps-chip', { hasText: 'Arjun' }).click()
     await page.getByRole('button', { name: /Add an anushtanam/ }).click()
     await page.getByRole('button', { name: /Sandhyavandhanam/ }).click()
@@ -205,12 +236,12 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await expect(page.getByText('0 of 3 sandhyas done')).toBeVisible()
 
     await page.getByRole('button', { name: 'Missed a sandhya yesterday?' }).click()
-    await expect(page.getByText('Half punya, no streak effect - just credit for doing it.')).toBeVisible()
+    await expect(page.getByText("Full punya. Your first marked sandhya also counts yesterday toward your streak.")).toBeVisible()
     const yesterdayPanel = page.locator('.yesterday-panel')
     await expect(yesterdayPanel.getByRole('button', { name: 'Morning' })).toBeVisible()
 
     await yesterdayPanel.getByRole('button', { name: 'Morning' }).click()
-    await expect(page.getByText(/\+\d+ punya for yesterday's Morning/)).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(/\+\d+ punya/)).toBeVisible({ timeout: 15000 })
     await expect(yesterdayPanel.getByRole('button', { name: 'Morning' })).toBeDisabled()
 
     // The backdated mark must not touch today's own card - still 0 of 3.
@@ -225,6 +256,18 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await page.getByLabel('Display name').fill('E2E Sreeni Renamed')
     await page.getByRole('button', { name: 'Save changes' }).click()
     await expect(page.getByRole('button', { name: 'Saved' })).toBeVisible({ timeout: 15000 })
+  })
+
+  // Intent 2.10 (2026-08-20): a 2nd way to get the same referral link out,
+  // alongside the pre-existing WhatsApp share button.
+  test('copy referral link (Profile): writes the real link to the clipboard, then reverts its own label', async () => {
+    await page.getByRole('button', { name: 'Copy link' }).click()
+    await expect(page.getByRole('button', { name: /Copied/ })).toBeVisible()
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText())
+    expect(clipboardText).toMatch(/\/r\/\S+/)
+    // Reverts to "Copy link" on its own after the 2s confirmation window,
+    // rather than sticking on "Copied" forever.
+    await expect(page.getByRole('button', { name: 'Copy link' })).toBeVisible({ timeout: 4000 })
   })
 
   test('leaderboard visibility opt-in persists', async () => {

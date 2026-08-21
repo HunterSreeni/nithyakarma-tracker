@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flame, Check, Gift } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { friendlyError } from '../utils/friendlyError'
 import NotificationSettings from './NotificationSettings'
 import { tierProgress, tierClass, tierFor } from '../utils/tiers'
 import { shareUrl } from '../utils/share'
 import { streakState } from '../utils/streak'
 import { track } from '../utils/analytics'
 import { APP_VERSION } from '../version'
+import CopyLinkButton from './CopyLinkButton'
 
 export default function ProfilePage() {
   const { session, profile, familyMembers, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount, signOut } = useAuth()
@@ -69,7 +71,7 @@ export default function ProfilePage() {
     try {
       await updateProfile({ display_name: name.trim() })
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (err) { setError(err.message) }
+    } catch (err) { setError(friendlyError(err)) }
   }
 
   const inviteWhatsApp = () => {
@@ -148,7 +150,10 @@ export default function ProfilePage() {
           Every member who joins with your link gives you both 1 month ad-free
           and a streak freeze. Your code: <strong>{profile.referral_code}</strong>
         </div>
-        <button className="btn-ref" onClick={inviteWhatsApp}>Share invite on WhatsApp</button>
+        <div className="ref-btn-row">
+          <button className="btn-ref" onClick={inviteWhatsApp}>Share invite on WhatsApp</button>
+          <CopyLinkButton referralCode={profile.referral_code} variant="outline" />
+        </div>
       </div>
 
       <div className="card">
@@ -200,7 +205,7 @@ export default function ProfilePage() {
         </div>
         <form onSubmit={async e => {
           e.preventDefault()
-          try { await deleteAccount() } catch (err) { setError(err.message) }
+          try { await deleteAccount() } catch (err) { setError(friendlyError(err)) }
         }}>
           <input className="field-input" style={{ marginTop: '0.7rem' }} value={confirmDelete}
             onChange={e => setConfirmDelete(e.target.value)} placeholder={email} />
@@ -238,7 +243,7 @@ function AddFamilyForm({ onAdd, onDone }) {
       await onAdd({ name: name.trim(), gender, upanayanamDone: upanayanam, balaSabhaOptIn: balaSabha })
       onDone()
     } catch (err) {
-      setError(err.message); setBusy(false)
+      setError(friendlyError(err)); setBusy(false)
     }
   }
 
