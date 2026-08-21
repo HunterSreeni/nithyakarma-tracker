@@ -356,6 +356,22 @@ Sandhya-exclusive in the RPC).
 | A log with no slot is rejected; re-marking an already-done slot is rejected (unique same-day slot) | Integration(§23) | ✅ |
 | History shows a Rudram-specific slot-count suffix, not the sandhya "(N/3 sandhyas)" one | Unit (`HistoryPage.test.jsx`) | ✅ |
 
+### Samidhadhanam morning/evening slots (Intent 2.9, 2026-08-20)
+Same any-1-of-N pattern as Sri Rudram, split into 2 independent options
+(morning/evening, `is_samidhadhanam` flag, `submit_practice_log` generalized
+again to `is_sandhyavandhanam or is_sri_rudram or is_samidhadhanam`) instead
+of 3 - either slot alone completes the practice for the day, not both. No
+Gayatri-count prompt (marks directly, shares Rudram's click handler) and no
+yesterday-backdate (Sandhya-exclusive in the RPC, same as Rudram).
+| Case | Layer | Status |
+|---|---|---|
+| Both slot buttons shown, `cadenceLabel` reads "any 1 today" like Rudram | Unit (`TodayPage.test.jsx`, `cadence.test.js`) | ✅ |
+| Clicking a slot marks directly - no count prompt | Unit (`TodayPage.test.jsx`) | ✅ |
+| Either 1 of 2 slots completes the practice for the day, no "Mark Done" button shown | Unit (`TodayPage.test.jsx`) | ✅ |
+| An already-marked slot shown done and disabled, the other stays open | Unit (`TodayPage.test.jsx`) + E2E(W, `journey.spec.js`) | ✅ |
+| A log with no slot is rejected; re-marking an already-done slot is rejected (unique same-day slot) | Integration(§24) | ✅ |
+| Marking morning then evening: streak advances once (no double-advance), punya stacks (+10 for both), day_complete true | Integration(§24) | ✅ run against production via Supabase MCP 2026-08-20, rolled back |
+
 ### History
 | Case | Layer | Status |
 |---|---|---|
@@ -419,6 +435,8 @@ messaging.
 | `monthly_purnima`'s lower priority (-1) loses to `avani_avittam`'s (0) on the one day/year they coincide (Purnima + Shravana nakshatra); generic Purnima still fires on an ordinary Purnima | Deno (`observanceMatch.test.ts`) | ✅ |
 | Dismiss persists per-day via localStorage, resets the next day (or once the tithi changes) | Unit | ✅ |
 | Also drives `send-reminders` push automatically (same table, `bestMatch()` already generic) - no edge function change needed | Deno (`observanceMatch.test.ts`) | ✅ |
+| **Intent 2.8 (2026-08-20): a same-day tharpanam + observance render as 2 independent cards (own title/subtitle/dismiss), not one card with the 2nd squeezed into "Also today: ..."; each dismisses independently** | Unit (`ObservanceBanner.test.jsx`) | ✅ |
+| E2E coverage of the 2-card render itself | - | ⬜ deliberately not e2e - needs a real calendar day where a tharpanam and an observance coincide, which is rare and would make the spec date-dependent/flaky; the unit test drives `bannerMatches()` directly against synthetic same-day rows instead |
 
 ### Panchangam
 | Case | Layer | Status |
@@ -480,6 +498,7 @@ messaging.
 | Delete flow: type-email-to-confirm gate, returns to auth | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Referral reward copy is static, doesn't reflect the server-side 5/24h cap | - | ⬜ |
 | Referrals list paints from a localStorage cache (keyed by owner) on reopen instead of a spinner, revalidates in the background; manual Retry always bypasses the cache | Unit(`referralsCache.test.js`) | ✅ (2026-08-11) |
+| **Intent 2.10 (2026-08-20): "Copy link" button next to WhatsApp share, on both Profile and Referrals - writes the real referral URL to the clipboard, shows "Copied" for 2s, then reverts; clipboard failure is a silent no-op (WhatsApp stays the primary path)** | Unit (`CopyLinkButton.test.jsx`) + E2E(W, `journey.spec.js`) | ✅ |
 
 ### Streaks & freezes
 | Case | Layer | Status |
@@ -550,6 +569,21 @@ messaging.
   request..."`) that `loggingBehavior: 'none'` (2026-07-19, a deliberate security
   fix) now suppresses by design - the script reported FAIL on a fully working build.
   Replaced with a boot screenshot for manual confirmation.
+- ~~`journey.spec.js`'s Arjun yesterday-catch-up test asserted copy that no longer
+  exists~~ - **fixed 2026-08-21**: expected `"Half punya, no streak effect - just
+  credit for doing it."` and `/\+\d+ punya for yesterday's Morning/`, neither of
+  which exists anywhere in the app - stale from before AGENTS.md's current "full
+  punya, counts toward the streak" rule. Never caught because this `@destructive`
+  spec only runs as a manual pre-release gate, not in CI. Found during a full
+  page-by-page audit, not a live run; fixed to match the real `TodayPage.jsx` copy.
+- **Raw `err.message` shown to users on 8 catch sites** (`TodayPage.jsx` x4,
+  `ProfilePage.jsx` x3, `Onboarding.jsx` x1) instead of `friendlyError.js`'s
+  plain-language copy, despite that util's own header comment claiming "users
+  never see a raw error string" - found 2026-08-21, fixed by routing all 8
+  through `friendlyError()`. `AuthPage.jsx`/`ResetPassword.jsx` were deliberately
+  left alone: their `error.message` comes from Supabase GoTrue and is already
+  user-appropriate ("Invalid login credentials"), so wrapping it would replace
+  useful detail with a generic message - a regression, not a fix.
 
 **New bug found + fixed 2026-07-23 (during a live full-suite run):**
 1. **Every sign-in of an already-onboarded user re-showed the "Turn on reminders?"
