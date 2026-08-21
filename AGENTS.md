@@ -2,6 +2,16 @@
 
 Do not change the product rules below - across every section of this file - unless Sreeni explicitly asks for that exact behavior change. Refactors, cleanup, inferred fixes, dependency work, and adjacent features are not authorization to alter them. Any explicitly authorized change must include updated SQL integration assertions, frontend mirror/component tests where they exist, this note, and (for SQL) a migration that preserves clean replay - never edit an already-applied migration to change production behavior (comment-only edits, like the AI-DEV notes themselves, are fine).
 
+## AI-DEV NOTE comment convention
+
+Mark non-obvious code with a comment starting `AI-DEV NOTE:`, right above the line(s) it explains. Add one whenever:
+
+- the logic encodes a business rule that isn't self-evident from reading the code alone (a specific date, a workaround for a named bug, a semantics decision like "any 1 of N completes it")
+- the surface is already listed as protected in this file, or becomes protected by the change you're making
+- a future edit could plausibly "fix" the behavior back to something that looks more obviously correct but is actually wrong
+
+Keep the note short and state the *reason*, not just the rule - the code already shows the rule. Update an existing note in place when its rule changes rather than stacking a second one beside it. This is the same convention already used throughout `app/src/` and `app/supabase/` (e.g. `app/src/utils/cadence.js`, `app/src/components/TodayPage.jsx`) - keep using it for any new protected or easily-misread logic.
+
 ## Streak & freeze
 
 - One local calendar day adds at most one overall streak day. Any one scheduled, `affects_streak=true` practice with a counting log completes that day.
