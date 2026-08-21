@@ -70,7 +70,7 @@ describe('ObservanceBanner', () => {
     expect(screen.queryByText('Amavasya Tharpanam')).not.toBeInTheDocument()
   })
 
-  it('mentions a separate secondary occasion when its title is not already represented', async () => {
+  it('renders a same-day tharpanam and observance as two separate cards, not merged text', async () => {
     h.days = [baseDay]
     h.rules = [
       rule({ key: 'special_tharpanam', title: 'Special Tharpanam', priority: 5 }),
@@ -78,7 +78,11 @@ describe('ObservanceBanner', () => {
         message: 'Temple Festival is observed today.', priority: 1 }),
     ]
     renderBanner()
-    expect(await screen.findByText(/Also today: Temple Festival is observed today/)).toBeInTheDocument()
+    expect(await screen.findByText('Special Tharpanam')).toBeInTheDocument()
+    expect(screen.getByText('Temple Festival')).toBeInTheDocument()
+    expect(screen.getByText('Temple Festival is observed today.')).toBeInTheDocument()
+    expect(screen.queryByText(/Also today/)).not.toBeInTheDocument()
+    expect(screen.getAllByLabelText('Dismiss')).toHaveLength(2)
   })
 
   it('dismisses only this observance on this date', async () => {
@@ -93,5 +97,21 @@ describe('ObservanceBanner', () => {
     const second = renderBanner()
     await waitFor(() => expect(second.container).toBeEmptyDOMElement())
     expect(localStorage.getItem('nk_dismissed_observance_2026-08-12_monthly_amavasya')).toBe('1')
+  })
+
+  it('dismisses each of two same-day cards independently', async () => {
+    h.days = [baseDay]
+    h.rules = [
+      rule({ key: 'special_tharpanam', title: 'Special Tharpanam', priority: 5 }),
+      rule({ key: 'festival', category: 'observance', title: 'Temple Festival',
+        message: 'Temple Festival is observed today.', priority: 1 }),
+    ]
+    renderBanner()
+    await screen.findByText('Special Tharpanam')
+    fireEvent.click(screen.getAllByLabelText('Dismiss')[0])
+    expect(screen.queryByText('Special Tharpanam')).not.toBeInTheDocument()
+    expect(screen.getByText('Temple Festival')).toBeInTheDocument()
+    expect(localStorage.getItem('nk_dismissed_observance_2026-08-12_special_tharpanam')).toBe('1')
+    expect(localStorage.getItem('nk_dismissed_observance_2026-08-12_festival')).toBeNull()
   })
 })

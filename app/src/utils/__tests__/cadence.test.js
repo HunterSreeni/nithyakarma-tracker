@@ -50,6 +50,10 @@ describe('cadenceLabel', () => {
     expect(cadenceLabel({ cadence: 'daily', weekday: 5 })).toBe('daily · traditionally Fridays')
   })
 
+  it('Samidhadhanam shares Sri Rudram\'s any-1-of-N label (Intent 2.9)', () => {
+    expect(cadenceLabel({ cadence: 'daily', is_samidhadhanam: true })).toBe('any 1 today')
+  })
+
   it('sandhya keeps its own label with no weekday hint (weekday is always null for it)', () => {
     expect(cadenceLabel({ cadence: 'daily', is_sandhyavandhanam: true, weekday: null })).toBe('1 sandhya today')
   })

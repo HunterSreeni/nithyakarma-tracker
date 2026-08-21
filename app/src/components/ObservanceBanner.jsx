@@ -26,16 +26,14 @@ function bannerMatches(rows, rules, date) {
   })
 }
 
-function secondaryText(primary, secondary) {
-  if (!secondary) return ''
-  const primaryCopy = `${primary.title} ${primary.message}`.toLocaleLowerCase()
-  if (primaryCopy.includes(secondary.title.toLocaleLowerCase())) return ''
-  return ` Also today: ${secondary.message}`
-}
-
+// Intent 2.8 (2026-08-20): a tharpanam occasion and an observance occasion on
+// the same day are two separate, independently-dismissible banner cards -
+// not one card with the 2nd occasion squeezed into the 1st's subtitle
+// ("Also today: ..."). bannerMatches already caps at one match per category
+// (tharpanam + observance), so this never renders more than 2 cards.
 export default function ObservanceBanner() {
   const date = localDateString()
-  const [dismissedKey, setDismissedKey] = useState(null)
+  const [dismissedKeys, setDismissedKeys] = useState(() => new Set())
   const { data: matches = [] } = useQuery({
     queryKey: ['observance-banner', date],
     queryFn: async () => {
@@ -50,27 +48,32 @@ export default function ObservanceBanner() {
     },
   })
 
-  const primary = matches[0]
-  if (!primary) return null
-  const storageKey = `${DISMISS_PREFIX}${date}_${primary.key}`
-  let storedDismissal = false
-  try { storedDismissal = localStorage.getItem(storageKey) === '1' } catch { /* private mode */ }
-  if (storedDismissal || dismissedKey === storageKey) return null
-
-  const dismiss = () => {
-    try { localStorage.setItem(storageKey, '1') } catch { /* private mode */ }
-    setDismissedKey(storageKey)
+  const isDismissed = (key) => {
+    if (dismissedKeys.has(key)) return true
+    try { return localStorage.getItem(`${DISMISS_PREFIX}${date}_${key}`) === '1' } catch { return false } // private mode
   }
 
+  const dismiss = (key) => {
+    try { localStorage.setItem(`${DISMISS_PREFIX}${date}_${key}`, '1') } catch { /* private mode */ }
+    setDismissedKeys(prev => new Set(prev).add(key))
+  }
+
+  const visible = matches.filter((match) => !isDismissed(match.key))
+  if (visible.length === 0) return null
+
   return (
-    <div className="monthly-special monthly-special-static" data-observance-key={primary.key}>
-      <div>
-        <div className="ms-title">{primary.title}</div>
-        <div className="ms-subtitle">{primary.message}{secondaryText(primary, matches[1])}</div>
-      </div>
-      <button type="button" className="ms-dismiss" aria-label="Dismiss" onClick={dismiss}>
-        <X size={16} strokeWidth={2.5} />
-      </button>
-    </div>
+    <>
+      {visible.map((match) => (
+        <div key={match.key} className="monthly-special monthly-special-static" data-observance-key={match.key}>
+          <div>
+            <div className="ms-title">{match.title}</div>
+            <div className="ms-subtitle">{match.message}</div>
+          </div>
+          <button type="button" className="ms-dismiss" aria-label="Dismiss" onClick={() => dismiss(match.key)}>
+            <X size={16} strokeWidth={2.5} />
+          </button>
+        </div>
+      ))}
+    </>
   )
 }
