@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CalendarCheck, Flame, Trophy } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { friendlyError } from '../utils/friendlyError'
 
 export default function Onboarding() {
   const { createProfile, session } = useAuth()
@@ -28,7 +29,7 @@ export default function Onboarding() {
     try {
       await createProfile({ displayName: name.trim(), gender, isMarried, panchangamTradition, referralCode: referral.trim() || null })
     } catch (err) {
-      setError(err.message)
+      setError(friendlyError(err))
       setBusy(false)
     }
   }

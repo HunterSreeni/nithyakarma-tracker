@@ -22,6 +22,7 @@ import { showInterstitial } from '../utils/ads'
 import { isMilestone, maybeRequestReview } from '../utils/review'
 import { lazyWithRetry } from '../utils/lazyWithRetry'
 import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
+import { friendlyError } from '../utils/friendlyError'
 
 // Deferred - pulls in driver.js, which only the first-run tour ever needs.
 const GuidedTour = lazyWithRetry(() => import('./GuidedTour'))
@@ -96,7 +97,7 @@ export default function TodayPage() {
         }
       }
     } catch (err) {
-      setError(err.message)
+      setError(friendlyError(err))
     } finally {
       setBusyId(null)
     }
@@ -369,7 +370,7 @@ function YesterdaySandhya({ item }) {
       setNote(`+${data.punya_awarded} punya${streak}${refund}`)
       await refresh() // punya/streak/freeze in the topbar and card
     } catch (err) {
-      setSaveError(err.message)
+      setSaveError(friendlyError(err))
     } finally {
       setBusySlot(null)
     }
@@ -385,7 +386,7 @@ function YesterdaySandhya({ item }) {
         <div className="yesterday-panel">
           {yesterdayQuery.isPending && <div className="yesterday-note">Checking yesterday...</div>}
           {yesterdayQuery.error && (
-            <ErrorBanner message={yesterdayQuery.error.message} onRetry={() => yesterdayQuery.refetch()} />
+            <ErrorBanner message={friendlyError(yesterdayQuery.error)} onRetry={() => yesterdayQuery.refetch()} />
           )}
           {yesterdayQuery.isSuccess && slotsDone.size >= 3 && (
             <div className="yesterday-note">All 3 of yesterday's sandhyas are already marked.</div>
@@ -471,7 +472,7 @@ function AddPracticeDropdown({ existing, onAdd }) {
       await onAdd(p.id)
       setOpen(false); setSearch('')
     } catch (err) {
-      setError(err.message)
+      setError(friendlyError(err))
     }
   }
 
