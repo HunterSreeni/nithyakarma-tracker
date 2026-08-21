@@ -29,14 +29,17 @@ function Chakra(props) {
     </svg>
   )
 }
-function Trident(props) {
+// Replaces the earlier Trident mark (2026-08-20, docs/DESIGN-GUIDE-V1.md) -
+// the trident's 4 open, diverging lines read visually lighter than every
+// other mark in this file, breaking rhythm in a row of practice icons. A
+// single Rudraksha bead (outer circle + its natural "mukhi" facet lines)
+// keeps the same closed, grounded silhouette as Lotus/Mace/Sunrise.
+function Rudraksha(props) {
   return (
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M12 21V6" />
-      <path d="M12 6V2" />
-      <path d="M12 6 7 2" />
-      <path d="M12 6l5-4" />
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 4v3M12 17v3M4 12h3M17 12h3M6.3 6.3l2.1 2.1M15.6 15.6l2.1 2.1M17.7 6.3l-2.1 2.1M8.4 15.6l-2.1 2.1" />
     </svg>
   )
 }
@@ -72,7 +75,7 @@ export const PRACTICE_ICONS = {
   'narayaneeyam': BookOpen,
   'bhagavad-gita': Chakra,
   'aditya-hrudayam': Sun,
-  'sri-rudram': Trident,
+  'sri-rudram': Rudraksha,
   'shiva-panchakshari': JapaMala,
   'devi-mahatmyam': Sword,
   'soundarya-lahari': Waves,

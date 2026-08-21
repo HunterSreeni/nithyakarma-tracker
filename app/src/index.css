@@ -90,10 +90,13 @@
   --ink: var(--neutral-900); --border: var(--neutral-100);
 
   /* Semantic - kept visually distinct from the saffron accent */
-  --success: #16a34a; --danger: #b91c1c;
-  --gold: #d4a017; --silver: #9aa0a8; --bronze: #b0763b;
+  --success: #117a38; --danger: #b91c1c;
+  --gold: #946f10; --silver: #6f7781; --bronze: #9d6935;
   /* Accessible tokens (WCAG AA): white text on --action = 5.2:1; --text-2 on
-     paper/white >= 4.8:1. Use --action for CTAs and saffron text on light. */
+     paper/white >= 4.8:1. Use --action for CTAs and saffron text on light.
+     --success/--gold/--silver/--bronze darkened 20 Aug 2026 (docs/DESIGN-GUIDE-V1.md) -
+     the old values failed 4.5:1 on their real backgrounds (checks/leaderboard
+     ranks); locked in by contrast.test.js. */
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -340,7 +343,11 @@ a.verse-card { text-decoration: none; color: inherit; }
 .seg.on { background: #fff; color: var(--ink); box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
 .hall-banner { background: linear-gradient(135deg, var(--saffron-900), var(--saffron-700)); border-radius: 16px; color: #fff; padding: 1rem 1.1rem; display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.1rem; }
 .hall-avatar { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--gold); background: linear-gradient(135deg, var(--saffron-400), var(--saffron-600)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem; flex-shrink: 0; }
-.hall-label { display: flex; align-items: center; gap: 4px; font-family: 'Sora', sans-serif; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+/* color: #fff, not var(--gold) - gold can't clear AA on this dark gradient at
+   any lightness that also works for --gold's other use (leaderboard rank
+   text on white), so this matches .hall-name/.hall-stat instead. See
+   docs/DESIGN-GUIDE-V1.md. */
+.hall-label { display: flex; align-items: center; gap: 4px; font-family: 'Sora', sans-serif; font-size: 0.58rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; }
 .hall-name { font-weight: 700; font-size: 0.95rem; margin-top: 2px; }
 .hall-stat { font-size: 0.68rem; color: #fff; margin-top: 2px; font-weight: 300; }
 .lb-row { background: #fff; border-radius: 13px; padding: 0.7rem 0.9rem; margin-bottom: 0.55rem; display: flex; align-items: center; gap: 0.8rem; box-shadow: 0 1px 8px rgba(0,0,0,0.04); }
