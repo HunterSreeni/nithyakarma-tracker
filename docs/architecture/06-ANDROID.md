@@ -150,8 +150,13 @@ copied `dist/`, so a source edit alone changes nothing on device.
 
 ### Driving the emulator on this machine
 
-There is no display server, so UI automation is done with screenshot-and-tap over adb.
-Three things reliably intercept blind taps and must be handled first:
+A display server is available (`DISPLAY=:0`) and an agent can launch an AVD
+directly (`emulator -list-avds`, `emulator -avd <name>`) - see the "Android
+tooling" section of `docs/TEST-PLAN.md` for the full, current rule (updated
+2026-08-21; this note used to say no display server was available, which was
+stale). The WebView is still `NAF="true"` regardless, so UI automation is
+screenshot-and-tap over adb, not `uiautomator`. Three things reliably
+intercept blind taps and must be handled first:
 
 1. The OS notification permission dialog (Android 13+)
 2. The driver.js guided tour on first run

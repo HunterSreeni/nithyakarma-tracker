@@ -49,17 +49,20 @@ a different screen.
 
 ---
 
-## Android tooling (this dev machine, verified 2026-07-14)
+## Android tooling (this dev machine, updated 2026-08-21)
 
-- **Android Studio** runs on Sreeni's desktop session (GUI) - it is not
-  filesystem-visible from an agent's sandboxed shell, so an agent can't launch
-  it directly. What an agent *can* do: connect to whatever emulator/device is
-  already running via `adb`, which talks to a local `adb` server over
-  `localhost:5037` regardless of which process started the emulator.
+- **An agent can launch the emulator itself.** Android Studio's own GUI is
+  still not reachable from an agent's sandboxed shell, but this machine has a
+  display server (`DISPLAY=:0`) and `emulator -list-avds` / `emulator -avd
+  <name>` work directly from the shell - no need to wait for Sreeni to start
+  one from Android Studio first (superseded 2026-08-21; the old "an agent
+  can't launch it directly" note was itself stale - see memory
+  `android-tooling-setup`). `adb` talks to a local server over
+  `localhost:5037` regardless of which process started the emulator or device.
 - **SDK location**: `~/Android/Sdk` (`$ANDROID_HOME` / `$ANDROID_SDK_ROOT`).
   - `adb`: `~/Android/Sdk/platform-tools/adb`
   - `emulator`: `~/Android/Sdk/emulator/emulator`
-  - AVDs: `~/.android/avd/`
+  - AVDs: `~/.android/avd/` (list with `emulator -list-avds`)
 - **Build + install a fresh debug build** (from `app/`):
   ```
   npm run build && npx cap sync android
@@ -68,9 +71,9 @@ a different screen.
   adb install app/build/outputs/apk/debug/app-debug.apk
   adb shell am start -n org.nithyakarma.app/.MainActivity
   ```
-- **Driving the UI from an agent (no display server available)**: the WebView is
-  `NAF="true"` ("not accessibility friendly") - `uiautomator` sees nothing, so
-  interaction is screenshot-then-tap:
+- **Driving the UI from an agent**: the WebView is `NAF="true"` ("not
+  accessibility friendly") - `uiautomator` sees nothing even though a display
+  server is available, so interaction is still screenshot-then-tap:
   ```
   adb exec-out screencap -p > screen.png   # inspect, pick a target pixel
   adb shell input tap <x> <y>              # native-resolution coordinates
@@ -81,6 +84,15 @@ a different screen.
   Android 13+ OS notification-permission dialog, the driver.js guided tour on first
   run, and a live AdMob test interstitial (seed `ad_free_until` into the future to
   remove the third hazard).
+- **Signing in on the emulator (2026-08-21 exception to the web "manual
+  sign-in only" rule)**: the emulator's on-screen keyboard has a known bug
+  that makes tapping keys unreliable, so credential entry on Android goes
+  through `adb shell input text "..."` / `input keyevent` instead of relying
+  on the on-screen keyboard - an agent may do this directly for the app's own
+  email/password sign-in on the emulator. This does NOT extend to the web
+  app: the web sign-in form is still hands-off for an agent (Turnstile-gated,
+  see memory `manual-login-only`) - the two are unrelated blockers with
+  unrelated exceptions.
 - **Logs**: `adb logcat -d -t <N> | grep -iE "nithyakarma|capacitor|error"`.
 - **Manual pre-release gate**: reseed the relevant throwaway account via its
   `seed-*.sql` (Supabase MCP) before each run.
