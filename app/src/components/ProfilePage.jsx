@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flame, Check, Gift } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { friendlyError } from '../utils/friendlyError'
 import NotificationSettings from './NotificationSettings'
 import { tierProgress, tierClass, tierFor } from '../utils/tiers'
 import { shareUrl } from '../utils/share'
@@ -69,7 +70,7 @@ export default function ProfilePage() {
     try {
       await updateProfile({ display_name: name.trim() })
       setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch (err) { setError(err.message) }
+    } catch (err) { setError(friendlyError(err)) }
   }
 
   const inviteWhatsApp = () => {
@@ -200,7 +201,7 @@ export default function ProfilePage() {
         </div>
         <form onSubmit={async e => {
           e.preventDefault()
-          try { await deleteAccount() } catch (err) { setError(err.message) }
+          try { await deleteAccount() } catch (err) { setError(friendlyError(err)) }
         }}>
           <input className="field-input" style={{ marginTop: '0.7rem' }} value={confirmDelete}
             onChange={e => setConfirmDelete(e.target.value)} placeholder={email} />
@@ -238,7 +239,7 @@ function AddFamilyForm({ onAdd, onDone }) {
       await onAdd({ name: name.trim(), gender, upanayanamDone: upanayanam, balaSabhaOptIn: balaSabha })
       onDone()
     } catch (err) {
-      setError(err.message); setBusy(false)
+      setError(friendlyError(err)); setBusy(false)
     }
   }
 
