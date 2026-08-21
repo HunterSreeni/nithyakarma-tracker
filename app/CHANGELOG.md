@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.32.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.9...app-v0.32.0) (2026-08-21)
+
+
+### Features
+
+* v1 UI/UX pass (WCAG colors, Rudraksha icon, copy referral link, two observance banners, Samidhadhanam slots) ([427c47f](https://github.com/HunterSreeni/nithyakarma-tracker/commit/427c47f263ce7675689f2390ff1a516883f63588))
+
+
+### Bug Fixes
+
+* route Postgres/RPC errors through friendlyError instead of raw messages ([bfe4387](https://github.com/HunterSreeni/nithyakarma-tracker/commit/bfe4387f0b6f993fc3f9f310ceaeedba20b395b8))
+
 ## [0.31.9](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.8...app-v0.31.9) (2026-08-20)
 
 
