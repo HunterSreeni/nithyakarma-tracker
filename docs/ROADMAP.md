@@ -9,7 +9,7 @@ needs its own design + test pass when picked up.
 > `docs/architecture/09-STATUS-LEDGER.md` records what is actually built versus planned.
 > Start there rather than scanning the codebase.
 
-> ### Release status: LIVE on Google Play production (first real-user release)
+> ### Release status: LIVE on Google Play production - v1.0.0 milestone shipped
 >
 > **19 Aug 2026:** the closed-testing build (`0.31.7`) was promoted to the Production
 > track, approved by Google, and is now Active - 177 countries/regions worldwide.
@@ -21,6 +21,12 @@ needs its own design + test pass when picked up.
 > live the same day, Global Rating ID `e66863d6-9c92-86a6-8290-3f7dbfc189d6`. iOS is
 > a later phase (Phase 3), not started.
 >
+> **21 Aug 2026: `v1.0.0` shipped** (Intents 2.8/2.9/2.10 + a WCAG AA color pass,
+> deliberately released as `1.0.0` rather than the semver-default `0.32.0` to mark
+> the milestone - see `docs/architecture/09-STATUS-LEDGER.md`, "v1.0.0 release
+> additions"). A signed release AAB was built and handed off for Play Console
+> upload the same day.
+>
 > Play Console flagged 3 recommended (non-blocking) actions on this release: edge-to-
 > edge deprecated APIs, R8/mapping optimization (tracked as Intent R5, deferred - see
 > `docs/UPGRADE-PLAN.md`), see status ledger for the edge-to-edge investigation.
@@ -31,9 +37,11 @@ needs its own design + test pass when picked up.
 
 ## Domain and public identity
 
-**`nithyakarma.org` was registered on 2026-07-19.** Nothing is pointed at it yet.
+**`nithyakarma.org` was registered on 2026-07-19 and has been fully live since 23 July
+2026** - both the marketing site and the app resolve on their branded domains. Kept
+below as a historical record of the migration; nothing here is still pending.
 
-Planned layout:
+Layout (live since 23 July 2026):
 
 | Host | Serves | Status |
 |---|---|---|
@@ -69,8 +77,16 @@ Migration checklist:
   to `support@nithyakarma.org`~~ - done 2026-07-20
 - ~~Update `APP_URL` in `supabase/functions/_shared/push.ts`~~ - done 2026-07-23, now
   `https://app.nithyakarma.org`; `send-reminders` and `send-test-notification` redeployed
-- Update the Play Store listing URLs - **not applicable yet**, no Play Store listing
-  exists (see "Release status" callout)
+- Update the Play Store listing URLs - done, the app is live in Play Store production
+  (see "Release status" callout)
+- ~~Set `VITE_APP_URL` correctly for every build surface~~ - found broken 21 Aug 2026:
+  the local `app/.env` used for Android release builds (no CI sets this var) still had
+  the old misspelled `https://nithykarma.netlify.app`, so the **live Play Store app's
+  referral share links pointed at the wrong domain**. Netlify's web build was
+  unaffected (no `VITE_APP_URL` set there at all, correctly falls back to
+  `window.location.origin`). Fixed in `.env`, confirmed in the rebuilt bundle, shipped
+  in the `1.0.0` AAB - see `docs/architecture/09-STATUS-LEDGER.md`, "v1.0.0 release
+  additions"
 
 ### support@nithyakarma.org - done 2026-07-20
 

@@ -7,7 +7,9 @@ documents.
 Audited 18 July 2026 against app version `0.15.4`. Revised 19 July 2026 after a full
 device and web test pass (see "19 July verification pass" below). Revised again
 20 July 2026 - see "20 July additions" below for the marketing site, support email
-cutover, and the B13 streak-freeze fix.
+cutover, and the B13 streak-freeze fix. Revised again 21 August 2026 - see "v1.0.0
+release additions" below; the app icon was found real (not placeholder) during this
+pass, closing the launch blocker this file previously flagged.
 
 Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 
@@ -17,7 +19,7 @@ Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 
 | Intent | Status | Evidence |
 |---|---|---|
-| 0.1 Real launcher/adaptive icon | ⬜ **Open** | `mipmap-*/ic_launcher.png` is still the **stock Capacitor blue-X placeholder** - files dated 19 June 2026, predating the project (created 7 July). Visually confirmed |
+| 0.1 Real launcher/adaptive icon | ✅ **Done** | `mipmap-*/ic_launcher.png` is a real branded Om + flame adaptive icon (background + foreground layers), files dated 24 July 2026. This row previously said "stock Capacitor blue-X placeholder" - stale, corrected 21 Aug 2026 after visually re-confirming the current PNG |
 | 0.2 Production AdMob | ✅ **Done** | Real app ID in `AndroidManifest.xml:16` (`ca-app-pub-2677287550445019~...`) and real interstitial unit in `utils/ads.js`, `isTesting` gated on `import.meta.env.DEV`. G content rating + Dating/Gambling/Alcohol/etc. blocked in the AdMob console (23 July 2026) |
 | 0.3 Password reset | ✅ Done | `components/ResetPassword.jsx`, `/reset` route in `App.jsx:56`, tests present |
 | 0.4 Accessibility pass | ✅ Done | `utils/contrast.js`, `components/__tests__/a11y.test.jsx` with contrast assertions |
@@ -25,11 +27,13 @@ Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 | 0.6 Onboarding value-prop | ✅ Done | `Onboarding.jsx:12` `useState('intro')`, intro step at `:34`, advances to form |
 | 0.7 Password policy | 🟡 Partial | Client `minLength={8}` at `AuthPage.jsx:81`. **HIBP still disabled** server-side - Supabase Pro feature, noted won't-fix |
 
-> ### ⚠️ One launch blocker left: the app icon
+> ### ✅ No launch blockers remaining (closed 21 Aug 2026)
 >
-> AdMob is done (23 July 2026). **The app icon is still the default placeholder** -
-> shipping a blue-X launcher icon to Play is a visible quality problem and hurts
-> install conversion badly.
+> This callout previously flagged the app icon as the one remaining launch blocker.
+> That was already stale by the time it mattered: the app shipped to Google Play
+> production on 19 Aug 2026 with the real Om + flame icon, and v1.0.0 (this session's
+> milestone) is now live. Left here only as a historical marker - see "v1.0.0 release
+> additions" below for what shipped in this pass.
 
 ---
 
@@ -81,6 +85,9 @@ Legend: ✅ Done · 🟡 Partial · ⬜ Open · ❌ Blocked
 | 2.5 Tier + referral perk ladder | ⬜ Open | Freezes only (from 1.1). No ad-free-day or discount ladder |
 | 2.6 Ad-free upgrade (₹99/yr) | ⬜ Open | No Play Billing. `ad_free_until` column exists and is referral-driven, ready to plug into |
 | 2.7 Today panchangam box | ✅ Done | `PanchangamBox.jsx`, `usePanchangam.js`, `panchangam_days` (365 rows), `generate-panchangam.cjs`. Native-script month names shipped (`502dd3e`) |
+| 2.8 Two observance banners | ✅ Done | `ObservanceBanner.jsx` renders each match (tharpanam + observance) as its own dismissible card instead of squeezing the 2nd into the 1st's subtitle. Shipped v1.0.0, 21 Aug 2026 |
+| 2.9 Samidhadhanam morning/evening slots | ✅ Done | `is_samidhadhanam` flag, `SAMIDHA_SLOTS` in `cadence.js`, migration `20260820100000_samidhadhanam_slots.sql`, integration assertions §24. Shipped v1.0.0, 21 Aug 2026 |
+| 2.10 Copy referral link | ✅ Done | `CopyLinkButton.jsx` on Profile + Referrals, alongside the existing WhatsApp share. Shipped v1.0.0, 21 Aug 2026 |
 
 ### Roadmap (not yet Intents)
 
@@ -461,6 +468,47 @@ texts above, this one needed no Storage upload - fully live already.
 3. **0.7** - client half done; HIBP is the remaining gap
 4. **2.2** - haptics and animation shipped, sound outstanding
 5. **B6, S5, S7, S8** - all fixed, currently still listed as open
+
+## v1.0.0 release additions (21 Aug 2026)
+
+The app was previously live on Play Store production as `0.31.9` (19 Aug 2026, see
+`docs/ROADMAP.md`). This pass shipped Intents 2.8/2.9/2.10 above plus a WCAG AA color
+pass, then deliberately released as `1.0.0` via release-please's `Release-As:` footer
+to mark the milestone (semver default would have called it `0.32.0`, since `feat:`
+commits bump minor pre-1.0).
+
+- **WCAG AA color fixes**: `--success`/`--gold`/`--silver`/`--bronze` tokens darkened
+  to clear 4.5:1 contrast on their real backgrounds; `.hall-label` switched from
+  `var(--gold)` to `#fff`; Sri Rudram's Trident icon replaced with a Rudraksha-bead
+  mark (closed silhouette, matches the rest of `practiceIcons.jsx`); the topbar
+  wordmark's "karma" half recolored to `--saffron-400` (was 3.02:1 against the dark
+  topbar, now 6.92:1).
+- **friendlyError consistency fix**: 8 catch sites (`TodayPage.jsx` x4,
+  `ProfilePage.jsx` x3, `Onboarding.jsx` x1) were showing raw Postgres/RPC error
+  strings instead of `friendlyError.js`'s plain-language copy, despite that util's
+  own header comment claiming otherwise. `AuthPage.jsx`/`ResetPassword.jsx`
+  deliberately left alone - their errors come from Supabase GoTrue and are already
+  user-appropriate ("Invalid login credentials").
+- **Bug found + fixed: wrong referral-link domain shipped in the live Android app.**
+  `app/.env`'s `VITE_APP_URL` was `https://nithykarma.netlify.app` (the misspelled
+  legacy origin - see `docs/ROADMAP.md`) instead of `https://app.nithyakarma.org`.
+  Since Android release builds are local (no CI sets this var) and the web app's
+  Netlify build has no `VITE_APP_URL` set at all (confirmed via the live bundle -
+  it correctly falls back to `window.location.origin`), **only the Android app was
+  affected** - confirmed live on-device: the real Play Store app's Copy Link button
+  was producing `nithykarma.netlify.app/r/...` links. Fixed in `.env`, rebuilt, and
+  the signed `1.0.0` AAB (built 21 Aug 2026) carries the corrected domain -
+  confirmed by grepping the compiled bundle before signing. Supabase Auth's Site URL
+  and Netlify's env vars were both checked and are already correct; only the local
+  `.env` used for Android builds was wrong.
+- Verified on a real Android emulator (Pixel 7, API 36): sign-in, WCAG wordmark
+  contrast, Samidhadhanam either-or slot marking against the live database (punya
+  +5, streak advanced once, no double-count), copy-link, celebration modal.
+- New e2e coverage in `journey.spec.js` for Samidhadhanam slots and copy-link, plus
+  a fix to a stale pre-existing assertion in the same spec (asserted copy - "Half
+  punya, no streak effect..." - that no longer exists anywhere in the app, stale
+  from before the current "full punya, counts toward the streak" rule; never caught
+  because this `@destructive` spec is manual-only, excluded from CI).
 
 ## Related
 
