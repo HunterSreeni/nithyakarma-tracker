@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.32.0...app-v1.0.0) (2026-08-21)
+
+
+### Miscellaneous Chores
+
+* release 1.0.0 for the v1 milestone ([7326380](https://github.com/HunterSreeni/nithyakarma-tracker/commit/732638029ea90f69e5f4af818ff145d2093514bb))
+
 ## [0.32.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.31.9...app-v0.32.0) (2026-08-21)
 
 
