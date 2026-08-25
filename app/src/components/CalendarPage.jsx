@@ -17,7 +17,7 @@ import {
   TAMIL_NAKSHATRA_SCRIPT, MALAYALAM_NAKSHATRA_SCRIPT,
   TAMIL_SAMVATSARA_SCRIPT, TAMIL_KALAM_SCRIPT, MALAYALAM_KALAM_SCRIPT,
   TAMIL_WEEKDAY_SCRIPT, MALAYALAM_WEEKDAY_SCRIPT,
-  TAMIL_WEEKDAY_SHORT, MALAYALAM_WEEKDAY_SHORT,
+  TAMIL_WEEKDAY_SHORT,
   tamilThithi, malayalamThithi, kollavarshamLabel,
 } from '../utils/panchangamScript'
 
@@ -54,7 +54,9 @@ const SCRIPT = {
   malayalam: {
     month: MALAYALAM_MONTH_SCRIPT, nakshatra: MALAYALAM_NAKSHATRA_SCRIPT,
     kalam: MALAYALAM_KALAM_SCRIPT, weekday: MALAYALAM_WEEKDAY_SCRIPT,
-    weekdayShort: MALAYALAM_WEEKDAY_SHORT, thithi: malayalamThithi,
+    // Full names on purpose - Malayalam was never seen truncating, so it is
+    // not being abbreviated on a guess. See panchangamScript.js.
+    weekdayShort: MALAYALAM_WEEKDAY_SCRIPT, thithi: malayalamThithi,
   },
 }
 

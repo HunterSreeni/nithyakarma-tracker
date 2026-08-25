@@ -156,6 +156,17 @@ describe('CalendarPage month view', () => {
     expect(screen.queryByText('செவ்வாய்')).not.toBeInTheDocument()
   })
 
+  // Tamil only. Malayalam was never observed truncating, so it keeps its full
+  // names rather than being abbreviated on an assumption of symmetry.
+  it('leaves the Malayalam grid head at full length', async () => {
+    h.tradition = 'malayalam'
+    renderPage()
+    await screen.findByText('ചിങ്ങം 7')
+    fireEvent.click(screen.getByRole('button', { name: 'Month' }))
+    expect(await screen.findByText('ഞായർ')).toBeInTheDocument()
+    expect(screen.getByText('ചൊവ്വ')).toBeInTheDocument()
+  })
+
   it('puts the varsham in brackets so it reads apart from the month name', async () => {
     renderPage()
     await screen.findByText('ஆவணி 7')
