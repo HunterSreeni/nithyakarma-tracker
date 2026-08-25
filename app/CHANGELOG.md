@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.0.0...app-v1.1.0) (2026-08-25)
+
+
+### Features
+
+* replace the Referrals tab with a native panchangam calendar ([7a9f509](https://github.com/HunterSreeni/nithyakarma-tracker/commit/7a9f5091abdda420fcb1d8d5bb45d5ff0364009c))
+* replace the Referrals tab with a native panchangam calendar ([04c1cb1](https://github.com/HunterSreeni/nithyakarma-tracker/commit/04c1cb1e79cff8dee6075fc7dc6635bec1c68720))
+
+
+### Bug Fixes
+
+* reuse one seeded session across e2e instead of minting per test ([ead32c6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ead32c64dfd5e654b3da00b0356c285e79e55a93))
+* reuse one seeded session across e2e instead of minting per test ([70c90b6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/70c90b682c28eabbcc49c3f0f294b7137219e8fc))
+
 ## [1.0.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v0.32.0...app-v1.0.0) (2026-08-21)
 
 
