@@ -1134,3 +1134,45 @@ problems, one practical and one that matters more:
   here: it only clears 5:1 on pure white. Hierarchy is carried by size and
   weight, state by fill. The gradient hero is the single exception, in white.
 - **Design mock:** `design-prototypes/calendar-page-mock.html`.
+
+### Intent 2.12 - Brahmarishi endgame: prestige cycles + a terminal badge (planned)
+
+- **Problem:** `tierProgress()` returns `next: null, pct: 100` above 2500 punya
+  (`tiers.js:23`), so the Profile bar pins at 100% forever with nothing left to
+  reach, and `.tier-brahmarishi` (`index.css:366`) is one more flat amber pill,
+  visually no heavier than Shishya. The word "Brahmarishi" also appears three
+  times in one card (badge, right label, hint).
+- **Urgency: low, and measured.** As of 25 Aug 2026 the highest account holds
+  **196 punya**, nobody is at Rishi (1000) let alone Brahmarishi, and the earn
+  rate is **10 punya per active day** on average (19 at p90, 36 best ever).
+  2500 is roughly **250 days of unbroken practice**. Nothing is disrupted by
+  choosing freely here, and nothing is on fire.
+- **Decision - prestige cycles, cosmetic only.** Brahmarishi stays the final
+  tier and gains repeating levels: **500 punya per level**, flat, so
+  Brahmarishi II at 3000, III at 3500 and so on. 500 is ~26 days for a
+  committed user and ~50 at the average rate, which ticks about 3x more often
+  than the widest real band (Rishi to Brahmarishi is 1500). Flat rather than
+  growing so it stays predictable and never becomes unreachable.
+- **Client-only, deliberately.** Add `prestigeFor(punya)` to `tiers.js`
+  returning `{ level, nextAt, pct, toNext }`. Do **not** touch `TIERS`,
+  `tierFor` or the freeze bands: those are protected surfaces mirroring
+  `public.tier_for()` / `freeze_cap_for()`, and AGENTS.md warns that changing
+  one without the other breaks the "tier crossing tops up freezes" rule. The
+  AI-DEV note gains a line saying prestige is presentational and intentionally
+  **not** mirrored server-side, so nobody later "fixes" the asymmetry by
+  migrating `tier_for()`. Freeze cap stays 5.
+- **The badge.** `.tier-brahmarishi` stops being a flat pill and gets a
+  terminal treatment (gold gradient, ring, mark, numeral past level I), so the
+  highest tier reads as an achievement on the profile. Verify with
+  `contrastRatio()` - a gradient pill is exactly where contrast quietly fails.
+- **Numerals:** Roman to X, then `Lv 11` and up, so it never renders
+  `Brahmarishi XXIV`.
+- **Copy:** drop the redundant third "Brahmarishi" from the hint line.
+- **Open sub-decision:** whether crossing a prestige level fires
+  `TierUpModal`. It is currently driven by the server's `tier_up` flag, so a
+  client-derived level would need client-side detection on punya change, and
+  that risks a double-fire at exactly 2500 where the server tier-up and level I
+  coincide. Options: no celebration, a quieter distinct one, or reuse the modal
+  with a guard.
+- **Perks:** explicitly out of scope. Revisit against Intent 2.5's reward
+  ladder once real users actually approach 2500.
