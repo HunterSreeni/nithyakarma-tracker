@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.1.0...app-v1.1.1) (2026-08-25)
+
+
+### Bug Fixes
+
+* keep the Malayalam weekday headings at full length ([5b2fc60](https://github.com/HunterSreeni/nithyakarma-tracker/commit/5b2fc60fed690a9efcda70bd53f4054bec111ba8))
+* stop Tamil weekday names truncating and crowding in the calendar ([34f53e6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/34f53e67475d48e40cebb2f845a1104bbb853b33))
+* stop Tamil weekday names truncating and crowding in the calendar ([dfedb6d](https://github.com/HunterSreeni/nithyakarma-tracker/commit/dfedb6d83d21b1cb2c99ddea595cffdde58f079f))
+
 ## [1.1.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.0.0...app-v1.1.0) (2026-08-25)
 
 
