@@ -45,10 +45,9 @@ test.describe('Calendar page', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Panchangam' })).toBeVisible()
   })
 
-  // The ReferralsPage component and referralsCache are still on disk (dead, no
-  // route, no importers). This proves the redirect is what actually serves
-  // /referrals, so old share links and push payloads keep working whether or
-  // not those orphan files ever get deleted.
+  // ReferralsPage and referralsCache are gone entirely now, so /referrals is
+  // served by the redirect alone. Keep this: old share links and push payloads
+  // still point at /referrals and must not 404.
   test('/referrals redirects to the Profile invite card', async ({ page }) => {
     await page.goto('/referrals')
     await expect(page).toHaveURL(/\/profile$/, { timeout: 15000 })
