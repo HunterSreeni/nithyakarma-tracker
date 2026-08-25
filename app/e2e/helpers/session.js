@@ -24,9 +24,42 @@ export const SEEDING_CONFIGURED = Boolean(SUPABASE_URL && ANON_KEY && SERVICE_RO
 //
 // AuthPage's own sign-in behaviour (error display, retry, captcha gating) is
 // covered by src/components/__tests__/AuthPage.test.jsx.
-export async function seedSession(page) {
+//
+// ONE session per process, not one per test. Every call used to mint a brand
+// new magiclink, which was fine while two specs seeded once each. calendar.spec
+// .js seeds in a beforeEach, taking the suite from 2 mints to 13 inside ~40s,
+// and CI then failed partway with "Email link is invalid or has expired".
+// Supabase keeps a single outstanding magiclink token per user and de-duplicates
+// repeat generateLink calls inside a short resend window, so a rapid burst can
+// hand back a token that an earlier verifyOtp already consumed. A session is
+// valid for an hour and the whole suite finishes in well under a minute, so
+// minting once and reusing it is both correct and faster.
+let cached = null
+
+// `fresh: true` mints a throwaway session and leaves the shared one alone. Use
+// it from any spec that ends the session it was given - the app's signOut()
+// takes no scope argument, so it is supabase-js's default 'global', which
+// revokes every refresh token for the account and would otherwise poison the
+// cache for the specs that run afterwards.
+export async function seedSession(page, { fresh = false } = {}) {
   if (!SEEDING_CONFIGURED) throw new Error('seedSession() called without VITE_SUPABASE_URL / VITE_SUPABASE_KEY / SUPABASE_SERVICE_ROLE_KEY / E2E_UI_EMAIL')
 
+  const session = !fresh && cached ? cached : await mintSession()
+  if (!fresh) cached = session
+
+  // supabase-js's own storage contract (v2.110.0): the key is derived from the
+  // project ref and the value is the plain JSON session - see
+  // supabase-js SupabaseClient (sb-<ref>-auth-token) and auth-js
+  // helpers.setItemAsync (JSON.stringify, no wrapper).
+  const storageKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`
+  await page.addInitScript(
+    ({ key, value }) => window.localStorage.setItem(key, value),
+    { key: storageKey, value: JSON.stringify(session) },
+  )
+  return session
+}
+
+async function mintSession() {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
@@ -46,14 +79,5 @@ export async function seedSession(page) {
   if (verifyError) throw new Error(`verifyOtp failed: ${verifyError.message}`)
   if (!verified.session) throw new Error('verifyOtp returned no session')
 
-  // supabase-js's own storage contract (v2.110.0): the key is derived from the
-  // project ref and the value is the plain JSON session - see
-  // supabase-js SupabaseClient (sb-<ref>-auth-token) and auth-js
-  // helpers.setItemAsync (JSON.stringify, no wrapper).
-  const storageKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`
-  await page.addInitScript(
-    ({ key, value }) => window.localStorage.setItem(key, value),
-    { key: storageKey, value: JSON.stringify(verified.session) },
-  )
   return verified.session
 }

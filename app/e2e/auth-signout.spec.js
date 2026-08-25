@@ -21,7 +21,10 @@ test.describe('Sign out', () => {
       'CI must provide SUPABASE_SERVICE_ROLE_KEY and E2E_UI_EMAIL for session seeding',
     ).toBe(true)
 
-    await seedSession(page)
+    // Fresh, not the shared session: this test signs out, and signOut() is
+    // global-scope, so reusing the cached session here would revoke it for
+    // every spec that runs after this one.
+    await seedSession(page, { fresh: true })
     await page.goto('/')
     await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible({ timeout: 15000 })
 
