@@ -17,6 +17,7 @@ import {
   TAMIL_NAKSHATRA_SCRIPT, MALAYALAM_NAKSHATRA_SCRIPT,
   TAMIL_SAMVATSARA_SCRIPT, TAMIL_KALAM_SCRIPT, MALAYALAM_KALAM_SCRIPT,
   TAMIL_WEEKDAY_SCRIPT, MALAYALAM_WEEKDAY_SCRIPT,
+  TAMIL_WEEKDAY_SHORT,
   tamilThithi, malayalamThithi, kollavarshamLabel,
 } from '../utils/panchangamScript'
 
@@ -47,11 +48,15 @@ const VIEWS = [
 const SCRIPT = {
   tamil: {
     month: TAMIL_MONTH_SCRIPT, nakshatra: TAMIL_NAKSHATRA_SCRIPT,
-    kalam: TAMIL_KALAM_SCRIPT, weekday: TAMIL_WEEKDAY_SCRIPT, thithi: tamilThithi,
+    kalam: TAMIL_KALAM_SCRIPT, weekday: TAMIL_WEEKDAY_SCRIPT,
+    weekdayShort: TAMIL_WEEKDAY_SHORT, thithi: tamilThithi,
   },
   malayalam: {
     month: MALAYALAM_MONTH_SCRIPT, nakshatra: MALAYALAM_NAKSHATRA_SCRIPT,
-    kalam: MALAYALAM_KALAM_SCRIPT, weekday: MALAYALAM_WEEKDAY_SCRIPT, thithi: malayalamThithi,
+    kalam: MALAYALAM_KALAM_SCRIPT, weekday: MALAYALAM_WEEKDAY_SCRIPT,
+    // Full names on purpose - Malayalam was never seen truncating, so it is
+    // not being abbreviated on a guess. See panchangamScript.js.
+    weekdayShort: MALAYALAM_WEEKDAY_SCRIPT, thithi: malayalamThithi,
   },
 }
 
@@ -379,15 +384,16 @@ function MonthView({ tradition, script, today, months, observancesFor, selected,
 
   return (
     <>
-      <CalHeader native={year ? `${nativeMonth} ${year}` : nativeMonth}
+      <CalHeader native={year ? `${nativeMonth} (${year})` : nativeMonth}
         roman={`${month.name} - ${gregShort(month.startDate)} to ${gregShort(addDays(month.startDate, month.dayCount - 1))}`}
         onStep={(n) => onSelect(months[index + n].startDate)}
         canPrev={index > 0} canNext={index < months.length - 1}
         view={view} onSwitchView={onSwitchView} />
 
       <div className="cal-grid-head">
-        {script.weekday.map((day, i) => (
-          <div className={`cal-gh ${i === 0 ? 'sun' : ''}`} key={day}>{day}</div>
+        {script.weekdayShort.map((day, i) => (
+          <div className={`cal-gh ${i === 0 ? 'sun' : ''}`} key={day}
+            aria-label={script.weekday[i]}>{day}</div>
         ))}
       </div>
       <div className="cal-grid">

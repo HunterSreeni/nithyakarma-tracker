@@ -81,6 +81,14 @@ const TAMIL_PAKSHA_SCRIPT = { Shukla: 'வளர்பிறை', Krishna: 'த�
 export const TAMIL_WEEKDAY_SCRIPT = ['ஞாயிறு', 'திங்கள்', 'செவ்வாய்', 'புதன்', 'வியாழன்', 'வெள்ளி', 'சனி']
 export const MALAYALAM_WEEKDAY_SCRIPT = ['ഞായർ', 'തിങ്കൾ', 'ചൊവ്വ', 'ബുധൻ', 'വ്യാഴം', 'വെള്ളി', 'ശനി']
 
+// Short forms for the month grid's column headings, where each of the seven
+// columns gets ~44px on a phone. Tamil only, and deliberately so: the full
+// Tamil names were confirmed truncating on device (ஞாயி... / செவ்... /
+// வியா... / வெள்...), Malayalam was never observed doing it and is left at
+// full length until it is. Week view keeps full names in both scripts; it has
+// a whole row per day.
+export const TAMIL_WEEKDAY_SHORT = ['ஞா', 'தி', 'செ', 'பு', 'வி', 'வெ', 'ச']
+
 export const TAMIL_KALAM_SCRIPT = {
   rahu: 'ராகு காலம்',
   yamagandam: 'எமகண்டம்',

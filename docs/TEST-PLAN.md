@@ -532,7 +532,34 @@ messaging.
 | Grid cells carry a real accessible name (`Aavani 11, 27 Aug`), not the run-on `1127` two adjacent numbers produce | Unit(`a11y.test.jsx` + `CalendarPage.test.jsx`) | ✅ |
 | Every calendar text colour clears **5:1** on all four grounds it lands on, and `--action` is never used as a text colour here | Unit(`contrast.test.js`) | ✅ |
 | Tradition switch on Profile is reflected on the Calendar page | - | ⬜ covered per-tradition in unit tests, not as a live switch |
-| On-device check of Tamil/Malayalam script rendering in the Android WebView | Manual | ⬜ |
+| On-device check of Tamil/Malayalam script rendering in the Android WebView | Manual | ✅ (2026-08-25, emulator, 1.1.0 release APK) |
+
+**On-device pass, 2026-08-25.** Ran against the real Android WebView because no
+automated layer can catch it: jsdom does not measure text, so a label that
+overflows its column is invisible to every unit and a11y test we have. It found
+three defects that had already shipped to `main`:
+
+| Finding | Script | Outcome |
+|---|---|---|
+| Month grid headings truncated to `ஞாயி…` / `செவ்…` / `வியா…` / `வெள்…` (4 of 7) | Tamil | Fixed - grid head uses short forms, full name kept as `aria-label` |
+| Long weekdays overran the 56px week-row date track and ate the gutter, so the day column touched the thithi | Tamil | Fixed - track widened to 76px + `min-width: 0`; longest thithi still fits one line |
+| Month title ran month and varsham together as one phrase | both | Fixed - now `ஆவணி (பராபவ வருடம்)` |
+| Month grid headings at full length: `ഞായർ തിങ്കൾ ചൊവ്വ ബുധൻ വ്യാഴം വെള്ളി ശനി` | Malayalam | **No defect** - all 7 render complete, no truncation |
+
+The Malayalam row is the reason this table exists. The Tamil fix was first
+applied to both scripts on an assumption of symmetry ("seven columns, ~44px
+each, so both must truncate"). That assumption was wrong: Malayalam is more
+compact horizontally at the same size and never truncated. Verified by
+temporarily switching the e2e account's `panchangam_tradition` to `malayalam`,
+screenshotting the month view, and switching it back. Do not abbreviate
+Malayalam without a screenshot showing it needs it.
+
+> Signing in on-device without credentials: the app's `appUrlOpen` handler
+> (`useAuth.jsx`) accepts `org.nithyakarma.app://auth-callback#access_token=...&refresh_token=...`
+> and calls `setSession`. Mint a session the way `e2e/helpers/session.js` does,
+> then `adb shell am start -a android.intent.action.VIEW -d '<url>'`. No
+> password typed, no captcha involved. Note `adb shell pm clear` wipes the
+> session, so re-seed after one.
 
 **Real-browser coverage (`e2e/calendar.spec.js`, 2026-08-25).** The rows above are all jsdom. These run against the real deployed data in Chromium, so every assertion is *relational* (the label changed, then changed back) rather than a hardcoded date - a spec asserting "Aavani 9" would start failing the day the calendar left Aavani. Session is seeded via `helpers/session.js`, never typed. Non-destructive: this page only reads.
 
