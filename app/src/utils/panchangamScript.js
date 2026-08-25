@@ -74,6 +74,13 @@ const TAMIL_TITHI_SCRIPT = {
 // transliterating shukla/krishna: waxing is valarpirai, waning is theypirai.
 const TAMIL_PAKSHA_SCRIPT = { Shukla: 'வளர்பிறை', Krishna: 'தேய்பிறை' }
 
+// Weekday names for the Calendar page's grid header, Sunday first to match
+// the order the grid lays out. Both traditions name the days after the same
+// seven planets, so unlike the month/nakshatra tables these two really are a
+// translation pair.
+export const TAMIL_WEEKDAY_SCRIPT = ['ஞாயிறு', 'திங்கள்', 'செவ்வாய்', 'புதன்', 'வியாழன்', 'வெள்ளி', 'சனி']
+export const MALAYALAM_WEEKDAY_SCRIPT = ['ഞായർ', 'തിങ്കൾ', 'ചൊവ്വ', 'ബുധൻ', 'വ്യാഴം', 'വെള്ളി', 'ശനി']
+
 export const TAMIL_KALAM_SCRIPT = {
   rahu: 'ராகு காலம்',
   yamagandam: 'எமகண்டம்',

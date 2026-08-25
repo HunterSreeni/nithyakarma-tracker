@@ -12,7 +12,7 @@ const Onboarding = lazyWithRetry(() => import('./components/Onboarding'))
 const NotificationPrompt = lazyWithRetry(() => import('./components/NotificationPrompt'))
 const HistoryPage = lazyWithRetry(() => import('./components/HistoryPage'))
 const SabhaPage = lazyWithRetry(() => import('./components/SabhaPage'))
-const ReferralsPage = lazyWithRetry(() => import('./components/ReferralsPage'))
+const CalendarPage = lazyWithRetry(() => import('./components/CalendarPage'))
 const ProfilePage = lazyWithRetry(() => import('./components/ProfilePage'))
 const TermsPage = lazyWithRetry(() => import('./components/LegalPages').then(m => ({ default: m.TermsPage })))
 const PrivacyPage = lazyWithRetry(() => import('./components/LegalPages').then(m => ({ default: m.PrivacyPage })))
@@ -120,7 +120,11 @@ function Gate() {
           <Route path="/learning/:slug" element={<LearningPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/sabha" element={<SabhaPage />} />
-          <Route path="/referrals" element={<ReferralsPage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          {/* Referrals is no longer a destination - the Profile page's invite
+              card is the whole feature now. Kept as a redirect because share
+              links and older push payloads still point here. */}
+          <Route path="/referrals" element={<Navigate to="/profile" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/ramayana-masam" element={<RamayanaMasamPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

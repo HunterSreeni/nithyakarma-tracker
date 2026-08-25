@@ -1049,6 +1049,51 @@ problems, one practical and one that matters more:
 
 ---
 
+### Intent 2.8 - Two independent observance banners - done, shipped v1.0.0 (21 Aug 2026)
+
+- **Intent:** A same-day tharpanam + observance occasion previously rendered as one
+  banner card with the 2nd occasion squeezed into the 1st's subtitle ("Also today:
+  ..."). Render each as its own independently-dismissible card instead.
+- **Commit type:** `feat:`
+- **Changes:** `ObservanceBanner.jsx` rewritten to track dismissed keys as a `Set` and
+  map over every match (`bannerMatches()` already caps at one match per category, so
+  at most 2 cards ever render) instead of a single primary/secondary pair.
+- **Testing Gate:** `ObservanceBanner.test.jsx` covers the 2-card render and
+  independent dismissal. Deliberately not e2e - needs a real calendar day where a
+  tharpanam and an observance coincide, which would make a spec flaky/date-dependent.
+
+### Intent 2.9 - Samidhadhanam morning/evening slots - done, shipped v1.0.0 (21 Aug 2026)
+
+- **Intent:** Samidhadhanam needed a 2-slot option like Sandhyavandhanam's 3, but
+  either-or (morning **or** evening), not both required - the same any-1-of-N
+  semantics already used by Sri Rudram's 3 slots.
+- **Commit type:** `feat:`
+- **Changes:** new `is_samidhadhanam` flag on `practices`; `submit_practice_log`
+  generalized to `is_sandhyavandhanam or is_sri_rudram or is_samidhadhanam`; new
+  `SAMIDHA_SLOTS` in `cadence.js`; `TodayPage.jsx` reuses Rudram's direct-mark slot
+  handler (no Gayatri-count prompt, same as Rudram); migration
+  `20260820100000_samidhadhanam_slots.sql`.
+- **Testing Gate:** `TodayPage.test.jsx` (either slot alone completes it, no double
+  mark, no Mark Done button), `cadence.test.js`, integration assertions §24 (run live
+  against production via Supabase MCP, rolled back), e2e coverage in `journey.spec.js`
+  (verified live on a real Android emulator too: punya +5, streak advanced once).
+
+### Intent 2.10 - Copy referral link - done, shipped v1.0.0 (21 Aug 2026)
+
+- **Intent:** A second way to get the referral link out, alongside the existing
+  WhatsApp share button - paste into SMS/email/anywhere WhatsApp isn't the right
+  channel.
+- **Commit type:** `feat:`
+- **Changes:** new `CopyLinkButton.jsx` (writes `shareUrl(referralCode)` to the
+  clipboard, shows "Copied" for 2s then reverts, silent no-op if the Clipboard API is
+  unavailable/denied), placed on both `ProfilePage.jsx` and `ReferralsPage.jsx`.
+- **Testing Gate:** `CopyLinkButton.test.jsx` (copy + revert + both style variants),
+  e2e coverage in `journey.spec.js` (verified live on a real Android emulator too -
+  see the referral-URL bug this surfaced, `docs/architecture/09-STATUS-LEDGER.md`
+  "v1.0.0 release additions").
+
+---
+
 ## Global Definition of Done (applies to every Intent)
 
 1. Code + tests written; the Intent's specific Testing Gate is green locally.
@@ -1057,3 +1102,35 @@ problems, one practical and one that matters more:
 4. Required checks satisfied under branch protection; PR merged to `main`.
 5. release-please rolls the change into the next Release PR; merging it cuts the
    version, changelog, tag, and GitHub Release automatically.
+
+
+### Intent 2.11 - Panchangam calendar page (replaces the Referrals tab)
+
+- **Intent:** the "bigger calendar view" Intent 2.7 deferred. A dedicated
+  Calendar tab with day / week / month views, driven by the user's own
+  tradition (`profile.panchangam_tradition`), replacing Referrals in the
+  bottom nav.
+- **The unit is the native month, not the Gregorian one.** The month view runs
+  Aavani 1 to 31 (17 Aug to 16 Sep 2026), the big number in each cell is the
+  Tamil/Malayalam day and the Gregorian date sits under it. A native month
+  spans two Gregorian months, so the fetch is a date range, quantised into
+  fixed buckets (`nativeCalendar.windowFor`) so stepping within a month is one
+  fetch rather than one per arrow press.
+- **Referrals is no longer a destination.** The Profile page's invite card was
+  already the whole feature; `ReferralsPage` and its `referralsCache` are
+  deleted and `/referrals` redirects to `/profile` so old share links and push
+  payloads do not 404.
+- **Observances reuse `_shared/observanceMatch.ts`**, the same matcher the
+  reminder edge function and the Today banner use, so the calendar cannot
+  drift from what the notifications fire on.
+- **Missing panchangam is a normal state, not an error.** Days with no row
+  render as empty dashed cells with a count, and the stepper is disabled at
+  the edge of the loaded data with a "not loaded yet" explanation - never a
+  dead button and never a spinner.
+- **Colour:** every text on the page is `--saffron-900` (9.37:1 on white,
+  8.83:1 on the saffron-50 tints, 8.26:1 on paper, 7.66:1 on the cream
+  switcher), above the 5:1 bar this page was designed to and the 4.5:1
+  `DESIGN-GUIDE-V1.md` sets. `--action` fills and rings but never sets text
+  here: it only clears 5:1 on pure white. Hierarchy is carried by size and
+  weight, state by fill. The gradient hero is the single exception, in white.
+- **Design mock:** `design-prototypes/calendar-page-mock.html`.

@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 import { track } from '../utils/analytics'
 import { clearTodayCache } from '../utils/todayCache'
 import { clearHistoryCache } from '../utils/historyCache'
-import { clearReferralsCache } from '../utils/referralsCache'
 import { deviceTimezone } from '../utils/timezone'
 import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
 import { useDataLifecycle } from './useDataLifecycle'
@@ -146,7 +145,7 @@ export function AuthProvider({ children }) {
       setSessionValidated(true)
       if (!nextSession) {
         setProfile(null); setFamilyMembers([]); setSelectedMember(null)
-        clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache()
+        clearProfileCache(); clearTodayCache(); clearHistoryCache()
         setLoading(false)
       }
     })
@@ -160,7 +159,7 @@ export function AuthProvider({ children }) {
       setSessionValidated(true)
       if (!data.session) {
         setProfile(null); setFamilyMembers([]); setSelectedMember(null)
-        clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache()
+        clearProfileCache(); clearTodayCache(); clearHistoryCache()
       }
     }).catch(() => {
       if (!mounted) return
@@ -221,7 +220,7 @@ export function AuthProvider({ children }) {
   // Clear our own cache eagerly rather than waiting on onAuthStateChange's
   // SIGNED_OUT branch - avoids a window where a fast subsequent reload (or a
   // different user signing in on a shared device) could still read stale data.
-  const signOut = () => { clearProfileCache(); clearTodayCache(); clearHistoryCache(); clearReferralsCache(); return supabase.auth.signOut() }
+  const signOut = () => { clearProfileCache(); clearTodayCache(); clearHistoryCache(); return supabase.auth.signOut() }
 
   // Recovery: email a reset link that returns to /reset, then set the new password.
   const resetPassword = (email, captchaToken) =>

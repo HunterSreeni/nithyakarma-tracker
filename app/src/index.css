@@ -404,7 +404,7 @@ a.verse-card { text-decoration: none; color: inherit; }
 .ref-title { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.88rem; }
 .ref-sub { font-size: 0.72rem; color: #fff; margin-top: 3px; line-height: 1.45; font-weight: 300; }
 .btn-ref { margin-top: 0.7rem; background: #25D366; border: none; color: #fff; border-radius: 100px; padding: 9px 18px; font-weight: 700; font-size: 0.68rem; }
-.ref-btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.ref-btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 2px; }
 .ref-btn-row .btn-ref, .ref-btn-row .btn-ref-outline { margin-top: 0; }
 .btn-ref-outline { display: inline-flex; align-items: center; gap: 5px; margin-top: 0.7rem; background: none; border: 1.5px solid rgba(255,255,255,0.4); color: #fff; border-radius: 100px; padding: 8px 16px; font-weight: 700; font-size: 0.68rem; }
 .danger-zone { border: 1.5px solid #f3caca; background: #fdf6f6; border-radius: 14px; padding: 0.9rem 1rem; margin-top: 0.9rem; }
@@ -507,3 +507,99 @@ a.verse-card { text-decoration: none; color: inherit; }
 .empty-note { text-align: center; color: var(--text-2); font-size: 0.78rem; padding: 2rem 1rem; font-weight: 300; }
 .spinner-wrap { display: flex; justify-content: center; padding: 3rem; color: var(--text-2); font-size: 0.8rem; }
 .spinner-wrap.stuck { flex-direction: column; align-items: center; gap: 0.8rem; }
+
+/* Calendar page (Intent 2.11). Every text here is --saffron-900: 9.37:1 on a
+   white card, 8.83:1 on the saffron-50 tints, 8.26:1 on paper, 7.66:1 on the
+   cream view switcher - all above the 5:1 bar this page was designed to, and
+   above the 4.5:1 docs/DESIGN-GUIDE-V1.md sets. --action is NOT used as text
+   anywhere here: it clears 5:1 on pure white only (4.56:1 on paper, 4.88:1 on
+   the saffron-50 kalam chip), so it fills and rings instead. The one exception
+   to the single text color is the gradient hero, where white is the only
+   pairing that works across the 950 -> 700 stops.
+   With one text color, hierarchy is carried by size and weight, and state by
+   fill: the active view tab is a white pill, today is a ringed cell. */
+.cal-page-h { font-size: 1.1rem; margin-bottom: 0.7rem; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--saffron-900); }
+.cal-title { min-width: 0; }
+.cal-native { font-size: 1.2rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+.cal-roman { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 2px; }
+.cal-stepper { display: flex; gap: 0.3rem; }
+.cal-step { width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid var(--cream); background: #fff; color: var(--saffron-900); display: flex; align-items: center; justify-content: center; }
+/* Opacity is used on this one control only. A disabled control is exempt from
+   the contrast minimum, and without it a dead arrow looks live. */
+.cal-step:disabled { opacity: 0.55; background: var(--cream); border-color: var(--warm); }
+.cal-viewseg { display: flex; gap: 0.25rem; background: var(--cream); border-radius: 100px; padding: 3px; margin: 0.75rem 0 0.9rem; }
+.cal-viewseg button { flex: 1; font-size: 0.8rem; font-weight: 700; border: none; background: none; color: var(--saffron-900); border-radius: 100px; padding: 0.55rem; min-height: 44px; }
+.cal-viewseg button[aria-pressed="true"] { background: #fff; box-shadow: 0 1px 3px rgba(67,20,7,0.16); }
+
+.cal-card { color: var(--saffron-900); }
+.cal-card-h { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase; margin-bottom: 0.55rem; }
+
+.cal-hero { background: linear-gradient(150deg, var(--saffron-950), var(--saffron-900) 52%, var(--saffron-700)); color: #fff; border-radius: 16px; padding: 1rem 1.05rem; margin-top: 0.2rem; }
+.cal-hero-day { display: flex; align-items: baseline; gap: 0.55rem; }
+.cal-hero-num { font-size: 2.6rem; font-weight: 700; line-height: 0.95; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.cal-hero-month { font-size: 1.15rem; font-weight: 500; }
+.cal-hero-year { font-size: 0.8rem; margin-top: 0.35rem; }
+.cal-hero-greg { font-size: 0.8rem; margin-top: 0.1rem; }
+
+.cal-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 0.7rem; padding: 0.42rem 0; border-top: 1px solid var(--cream); }
+.cal-kv:first-of-type { border-top: none; padding-top: 0; }
+.cal-kv-k { font-size: 0.8rem; flex-shrink: 0; }
+.cal-kv-v { font-size: 1rem; font-weight: 500; text-align: right; }
+.cal-kv-v small { display: block; font-size: 0.74rem; font-weight: 500; }
+
+.cal-kalam { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 0.6rem; padding: 0.48rem 0; border-top: 1px solid var(--cream); }
+.cal-kalam:first-of-type { border-top: none; padding-top: 0; }
+.cal-kalam-native { font-size: 1rem; font-weight: 500; }
+.cal-kalam-name { font-size: 0.76rem; font-weight: 500; grid-column: 1; }
+.cal-kalam-time { grid-row: 1 / span 2; align-self: center; font-size: 0.88rem; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--saffron-50); border-radius: 7px; padding: 0.24rem 0.5rem; }
+.cal-ist { font-size: 0.74rem; font-weight: 500; margin-top: 0.5rem; }
+
+.cal-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.cal-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.86rem; font-weight: 500; border-radius: 100px; padding: 0.3rem 0.7rem; border: 1.5px solid var(--saffron-200); background: var(--saffron-50); }
+.cal-chip.tharpanam { border-color: var(--warm); background: var(--paper); }
+.cal-chip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+.cal-chip.tharpanam .cal-chip-dot { background: var(--neutral-700); }
+
+.cal-notloaded { border: 1.5px dashed var(--warm); background: var(--paper); border-radius: 14px; padding: 0.85rem 0.9rem; margin-top: 0.7rem; color: var(--saffron-900); }
+.cal-nl-title { font-size: 0.9rem; font-weight: 700; }
+.cal-nl-sub { font-size: 0.82rem; font-weight: 500; margin-top: 0.25rem; line-height: 1.5; }
+
+.cal-wk-row { display: grid; grid-template-columns: 56px 1fr; gap: 0.7rem; align-items: center; background: #fff; border: 1.5px solid var(--cream); border-radius: 12px; padding: 0.6rem; margin-top: 0.4rem; color: var(--saffron-900); }
+.cal-wk-row.today { border-color: var(--saffron-600); background: var(--saffron-50); }
+.cal-wk-row.empty { background: var(--paper); border-style: dashed; border-color: var(--warm); }
+.cal-wk-date { text-align: center; }
+.cal-wk-wd { font-size: 0.74rem; font-weight: 500; }
+.cal-wk-nd { font-size: 1.3rem; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.cal-wk-greg { font-size: 0.72rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.cal-wk-body { min-width: 0; }
+.cal-wk-thithi { font-size: 0.96rem; font-weight: 500; }
+.cal-wk-nak { font-size: 0.84rem; font-weight: 500; }
+.cal-wk-none { font-size: 0.84rem; font-weight: 500; }
+.cal-wk-obs { font-size: 0.76rem; font-weight: 700; background: var(--saffron-100); border-radius: 6px; padding: 0.16rem 0.42rem; margin-top: 0.25rem; display: inline-block; }
+.cal-wk-obs.tharpanam { background: var(--paper); box-shadow: inset 2px 0 0 var(--neutral-700); padding-left: 0.55rem; }
+
+.cal-grid-head, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-grid-head { margin-bottom: 4px; }
+.cal-gh { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--saffron-900); padding: 0.2rem 0; overflow: hidden; text-overflow: ellipsis; }
+.cal-cell { aspect-ratio: 1/1.2; border-radius: 9px; background: #fff; border: 1.5px solid var(--cream); padding: 3px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; color: var(--saffron-900); }
+.cal-cell.blank { background: none; border: none; }
+.cal-cell.empty { background: var(--paper); border-style: dashed; border-color: var(--warm); }
+.cal-cell-nd { font-size: 1.05rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.cal-cell.empty .cal-cell-nd { font-weight: 500; }
+.cal-cell-gd { font-size: 0.7rem; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.cal-cell-marks { display: flex; gap: 2px; height: 6px; align-items: center; }
+.cal-m { width: 5px; height: 5px; border-radius: 50%; display: block; flex-shrink: 0; }
+.cal-m.obs { background: var(--gold); }
+.cal-m.thar { background: var(--neutral-700); }
+.cal-cell.today { border-color: var(--action); background: var(--saffron-50); box-shadow: inset 0 0 0 1.5px var(--action); }
+.cal-cell.sel { border-color: var(--saffron-600); background: var(--saffron-50); }
+
+.cal-legend { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; margin: 0.7rem 0 0; }
+.cal-lg { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 500; color: var(--saffron-900); }
+
+.cal-obs-row { display: grid; grid-template-columns: 42px 1fr; gap: 0.6rem; align-items: baseline; padding: 0.5rem 0; border-top: 1px solid var(--cream); }
+.cal-obs-row:first-of-type { border-top: none; padding-top: 0; }
+.cal-obs-day { font-size: 0.84rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cal-obs-title { font-size: 0.94rem; font-weight: 500; }
+.cal-obs-sub { font-size: 0.78rem; font-weight: 500; }

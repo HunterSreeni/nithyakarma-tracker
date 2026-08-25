@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { shareUrl } from '../utils/share'
 
-// Sits next to the WhatsApp share button on ReferralsPage and ProfilePage -
+// Sits next to the WhatsApp share button on ProfilePage -
 // same link, just a second way to get it out (paste into SMS, email, etc.
 // instead of only WhatsApp). `variant` picks the button styling to match
 // whichever background it's placed on ('outline' for the dark .referral-card

@@ -1,0 +1,697 @@
+<title>Panchangam Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Noto+Sans+Malayalam:wght@400;500;700&family=Noto+Sans+Tamil:wght@400;500;700&display=swap">
+
+<style>
+/* Palette is the app's own index.css token set, unchanged. Every text/
+   background pair was checked with the repo's own contrastRatio() against
+   docs/DESIGN-GUIDE-V1.md, and this revision raises the bar from the guide's
+   4.5:1 to 5:1 on every pair, using only colors already in the app.
+   - Secondary text: --neutral-600/--text-2 (4.65:1 on the darkest ground)
+     -> --neutral-700, 8.25:1 to 10.13:1 everywhere it lands.
+   - Every calendar view sets ALL its text in --saffron-900 (--cal-ink),
+     7.66:1 to 9.37:1 on the four grounds it lands on. --action fills
+     buttons and rings only, never sets text: it clears 5:1 on pure white
+     alone (4.56:1 on paper, 4.88:1 on the saffron-50 kalam chip).
+   - Eyebrow on the page ground: --saffron-700 (4.22:1) -> --saffron-800.
+   - Text on the saffron-950 -> 700 gradient: --saffron-200 fails at the 700
+     stop (3.83:1) -> #fff, which is 5.18:1 at that stop where
+     --saffron-50 reaches only 4.88:1. No opacity on any text. */
+:root {
+  --saffron-50:#FFF7ED; --saffron-100:#FFEDD5; --saffron-200:#FED7AA;
+  --saffron-300:#FDBA74; --saffron-400:#FB923C; --saffron-500:#FF9933;
+  --saffron-600:#F37C02; --saffron-700:#C2410C; --saffron-800:#9A3412;
+  --saffron-900:#7C2D12; --saffron-950:#431407;
+  --action:#C2410C;
+  --paper:#f5f0e8; --card:#ffffff; --cream:#ede8dc; --warm:#d4c9b0;
+  --ink:#0d0d0d; --text-2:#6f6558;
+  --success:#117a38; --gold:#946f10; --deep:#4a4033;
+  --canvas:#efe7d9; --rule:#ddd2bd; --panel:#fbf8f2;
+  --accent-text:#9A3412;
+  /* Every piece of secondary text now uses --neutral-700 rather than
+     --neutral-600/--text-2: 8.25:1 on the darkest ground here vs 4.65:1, so
+     nothing on the page sits under the 5:1 bar. Accent text inside the phone
+     uses --saffron-900 rather than --action, which only clears 5:1 on pure
+     white (4.56:1 on paper, 4.88:1 on the saffron-50 chip). */
+  --fine:#4a4033;
+  --accent-ink:#7C2D12;
+  /* Single text color for every calendar view, the dark saffron already used
+     on the observance chips. 9.37:1 on a white card, 8.26:1 on the paper
+     screen, 7.66:1 on the cream view switcher. The gradient hero keeps white
+     text, which is the only pairing that works on that ground. */
+  --cal-ink:#7C2D12;
+  --shadow:0 10px 30px rgba(67,20,7,0.10);
+  --ui:'DM Sans',system-ui,sans-serif;
+  --ta:'Noto Sans Tamil','DM Sans',sans-serif;
+  --ml:'Noto Sans Malayalam','DM Sans',sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas:#171208; --rule:#3a2e1c; --panel:#211a0e;
+    --ink:#f3ece0; --text-2:#bcae94; --accent-text:#FDBA74;
+    --fine:#d8cbb2; --accent-ink:#FDBA74;
+    --shadow:0 10px 34px rgba(0,0,0,0.5);
+  }
+}
+:root[data-theme="dark"] {
+  --canvas:#171208; --rule:#3a2e1c; --panel:#211a0e;
+  --ink:#f3ece0; --text-2:#bcae94; --accent-text:#FDBA74;
+    --fine:#d8cbb2; --accent-ink:#FDBA74;
+  --shadow:0 10px 34px rgba(0,0,0,0.5);
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--ui); background:var(--canvas); color:var(--ink); line-height:1.5; -webkit-font-smoothing:antialiased; }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition-duration:0.01ms !important; animation-duration:0.01ms !important; } }
+:focus-visible { outline:2.5px solid var(--saffron-600); outline-offset:2px; }
+
+.wrap { max-width:1180px; margin:0 auto; padding:2.6rem 1.4rem 4rem; }
+
+/* page head */
+.eyebrow { font-size:0.7rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent-text); display:flex; align-items:center; gap:0.6rem; }
+.eyebrow::after { content:""; flex:1; height:1px; background:var(--rule); }
+h1.page { font-size:clamp(1.9rem,4.5vw,2.9rem); font-weight:700; letter-spacing:-0.03em; text-wrap:balance; margin-top:0.5rem; }
+.page-sub { color:var(--fine); max-width:62ch; margin-top:0.6rem; font-weight:400; font-size:0.97rem; }
+.page-sub b { font-weight:500; color:var(--ink); }
+
+.split { display:grid; grid-template-columns:minmax(0,390px) minmax(0,1fr); gap:2.6rem; margin-top:2.4rem; align-items:start; }
+@media (max-width: 900px) { .split { grid-template-columns:1fr; gap:2rem; } }
+
+/* switcher */
+.seg-label { font-size:0.68rem; font-weight:700; letter-spacing:0.13em; text-transform:uppercase; color:var(--fine); margin-bottom:0.4rem; }
+.seg { display:flex; gap:0.35rem; background:var(--panel); border:1px solid var(--rule); border-radius:100px; padding:0.25rem; margin-bottom:1rem; }
+.seg button { flex:1; font-family:inherit; font-size:0.8rem; font-weight:700; color:var(--fine); background:none; border:none; border-radius:100px; padding:0.5rem 0.4rem; cursor:pointer; transition:background 0.15s, color 0.15s; }
+.seg button[aria-pressed="true"] { background:var(--action); color:#fff; }
+
+/* phone */
+.phone { width:390px; max-width:100%; border-radius:34px; background:var(--saffron-950); padding:9px; box-shadow:var(--shadow); }
+.screen { border-radius:26px; overflow:hidden; background:var(--paper); height:768px; display:flex; flex-direction:column; color:var(--ink); }
+.topbar { background:var(--saffron-950); height:48px; display:flex; align-items:center; justify-content:space-between; padding:0 0.9rem; flex-shrink:0; }
+.wordmark { color:#fff; font-weight:700; font-size:0.84rem; letter-spacing:-0.01em; }
+.wordmark span { color:var(--saffron-300); }
+.pill { display:flex; align-items:center; gap:4px; background:rgba(255,153,51,0.16); border:1px solid rgba(255,153,51,0.4); border-radius:100px; padding:2px 9px; font-weight:700; font-size:0.72rem; color:var(--saffron-300); }
+.scroll { flex:1; overflow-y:auto; padding:0.9rem 0.9rem 1.2rem; color:var(--cal-ink); }
+.bottomnav { height:60px; background:var(--card); border-top:1.5px solid var(--cream); display:flex; flex-shrink:0; }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:0.62rem; font-weight:500; color:var(--fine); }
+.nav-item.active { color:var(--action); font-weight:700; }
+.nav-item .glyph { width:19px; height:19px; display:block; }
+.nav-item .glyph svg { width:100%; height:100%; }
+
+/* in-app calendar */
+.cal-head { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
+.cal-title { min-width:0; }
+.cal-native { font-size:1.34rem; font-weight:700; line-height:1.15; letter-spacing:-0.01em; }
+.cal-roman { font-size:0.78rem; font-weight:500; color:var(--cal-ink); letter-spacing:0.05em; text-transform:uppercase; margin-top:2px; }
+.stepper { display:flex; gap:0.3rem; }
+.step { width:34px; height:34px; border-radius:10px; border:1.5px solid var(--cream); background:var(--card); color:var(--cal-ink); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.step:disabled { color:var(--cal-ink); opacity:0.55; background:var(--cream); border-color:var(--warm); cursor:default; }
+.step svg { width:15px; height:15px; }
+
+.viewseg { display:flex; gap:0.25rem; background:var(--cream); border-radius:100px; padding:3px; margin:0.75rem 0 0.9rem; }
+.viewseg button { flex:1; font-family:inherit; font-size:0.82rem; font-weight:700; border:none; background:none; color:var(--cal-ink); border-radius:100px; padding:0.42rem; cursor:pointer; }
+.viewseg button[aria-pressed="true"] { background:var(--card); color:var(--cal-ink); box-shadow:0 1px 3px rgba(67,20,7,0.16); }
+
+.card { background:var(--card); border:1.5px solid var(--cream); border-radius:14px; padding:0.85rem 0.9rem; margin-bottom:0.7rem; }
+.card-h { font-size:0.74rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--cal-ink); margin-bottom:0.55rem; }
+
+/* day view hero */
+.hero { background:linear-gradient(150deg,var(--saffron-950),var(--saffron-900) 52%,var(--saffron-700)); color:#fff; border-radius:16px; padding:1rem 1.05rem; margin-bottom:0.75rem; }
+.hero-day { display:flex; align-items:baseline; gap:0.55rem; }
+.hero-num { font-size:2.7rem; font-weight:700; line-height:0.95; letter-spacing:-0.04em; font-variant-numeric:tabular-nums; }
+.hero-month { font-size:1.18rem; font-weight:500; }
+.hero-year { font-size:0.8rem; color:#fff; margin-top:0.35rem; font-weight:400; }
+.hero-greg { font-size:0.82rem; color:#fff; margin-top:0.1rem; font-weight:400; }
+
+.kv { display:flex; align-items:baseline; justify-content:space-between; gap:0.7rem; padding:0.4rem 0; border-top:1px solid var(--cream); }
+.kv:first-of-type { border-top:none; padding-top:0; }
+.kv-k { font-size:0.82rem; color:var(--cal-ink); flex-shrink:0; }
+.kv-v { font-size:1rem; font-weight:500; text-align:right; }
+.kv-v small { display:block; font-size:0.76rem; color:var(--cal-ink); font-weight:400; letter-spacing:0.01em; }
+
+.kalam { display:grid; grid-template-columns:1fr auto; gap:0.15rem 0.6rem; padding:0.45rem 0; border-top:1px solid var(--cream); }
+.kalam:first-of-type { border-top:none; padding-top:0; }
+.kalam .kn { font-size:1rem; font-weight:500; }
+.kalam .ke { font-size:0.78rem; color:var(--cal-ink); grid-column:1; }
+.kalam .kt { grid-row:1 / span 2; align-self:center; font-size:0.9rem; font-weight:700; font-variant-numeric:tabular-nums; color:var(--cal-ink); background:var(--saffron-50); border-radius:7px; padding:0.24rem 0.5rem; }
+.ist { font-size:0.76rem; color:var(--cal-ink); margin-top:0.5rem; }
+
+/* observance chips */
+.chips { display:flex; flex-wrap:wrap; gap:0.35rem; }
+.chip { display:inline-flex; align-items:center; gap:5px; font-size:0.88rem; font-weight:500; border-radius:100px; padding:0.3rem 0.65rem; border:1.5px solid var(--saffron-200); background:var(--saffron-50); color:var(--saffron-900); }
+.chip.tharpanam { border-color:var(--warm); background:var(--paper); color:var(--cal-ink); }
+.chip .dot { width:7px; height:7px; border-radius:50%; background:var(--gold); flex-shrink:0; }
+.chip.tharpanam .dot { background:var(--deep); }
+.chip small { font-size:0.74rem; color:var(--cal-ink); font-weight:400; }
+
+/* not-loaded states */
+.notloaded { border:1.5px dashed var(--warm); background:var(--paper); border-radius:14px; padding:0.85rem 0.9rem; margin-bottom:0.7rem; }
+.nl-t { font-size:0.92rem; font-weight:700; color:var(--cal-ink); }
+.nl-s { font-size:0.84rem; color:var(--cal-ink); margin-top:0.25rem; line-height:1.5; }
+
+/* week view */
+.wk-row { display:grid; grid-template-columns:56px 1fr; gap:0.7rem; align-items:center; background:var(--card); border:1.5px solid var(--cream); border-radius:12px; padding:0.6rem; margin-bottom:0.4rem; }
+.wk-row.today { border-color:var(--saffron-600); background:var(--saffron-50); }
+.wk-row.empty { background:var(--paper); border-style:dashed; border-color:var(--warm); }
+.wk-date { text-align:center; }
+.wk-wd { font-size:0.76rem; color:var(--cal-ink); font-weight:500; }
+.wk-nd { font-size:1.35rem; font-weight:700; line-height:1.15; font-variant-numeric:tabular-nums; }
+.wk-greg { font-size:0.74rem; color:var(--cal-ink); font-variant-numeric:tabular-nums; }
+.wk-body { min-width:0; }
+.wk-tithi { font-size:0.98rem; font-weight:500; }
+.wk-nak { font-size:0.86rem; color:var(--cal-ink); }
+.wk-none { font-size:0.86rem; color:var(--cal-ink); }
+.wk-obs { font-size:0.78rem; font-weight:700; color:var(--saffron-900); background:var(--saffron-100); border-radius:6px; padding:0.16rem 0.42rem; margin-top:0.25rem; display:inline-block; }
+.wk-obs.tharpanam { color:var(--cal-ink); background:var(--paper); box-shadow:inset 2px 0 0 var(--deep); padding-left:0.55rem; }
+
+/* month grid */
+.grid-head, .grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+.grid-head { margin-bottom:4px; }
+.gh { text-align:center; font-size:0.76rem; font-weight:700; color:var(--cal-ink); padding:0.2rem 0; }
+.gh.sun { color:var(--cal-ink); }
+.cell { aspect-ratio:1/1.2; border-radius:9px; background:var(--card); border:1.5px solid var(--cream); padding:3px 2px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:pointer; font-family:inherit; color:inherit; }
+.cell.blank { background:none; border:none; cursor:default; }
+.cell.empty { background:var(--paper); border-style:dashed; border-color:var(--warm); cursor:default; }
+.cell .nd { font-size:1.08rem; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+.cell.empty .nd { color:var(--cal-ink); font-weight:500; }
+.cell .gd { font-size:0.72rem; color:var(--cal-ink); font-variant-numeric:tabular-nums; line-height:1.1; }
+.cell .marks { display:flex; gap:2px; height:6px; align-items:center; }
+.cell .m { width:5px; height:5px; border-radius:50%; }
+.m.obs { background:var(--gold); }
+.m.thar { background:var(--deep); }
+.cell.today { border-color:var(--action); background:var(--saffron-50); box-shadow:inset 0 0 0 1.5px var(--action); }
+.cell.today .nd { color:var(--cal-ink); }
+.cell.sel { border-color:var(--saffron-600); background:var(--saffron-50); }
+
+.legend { display:flex; flex-wrap:wrap; gap:0.2rem 0.9rem; margin:0.7rem 0 0.8rem; }
+.lg { display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--cal-ink); }
+.lg i { width:7px; height:7px; border-radius:50%; display:block; flex-shrink:0; }
+
+.olist { display:flex; flex-direction:column; }
+.oitem { display:grid; grid-template-columns:42px 1fr; gap:0.6rem; align-items:baseline; padding:0.48rem 0; border-top:1px solid var(--cream); }
+.oitem:first-child { border-top:none; padding-top:0; }
+.oday { font-size:0.84rem; font-weight:700; color:var(--cal-ink); font-variant-numeric:tabular-nums; }
+.otitle { font-size:0.96rem; font-weight:500; }
+.osub { font-size:0.8rem; color:var(--cal-ink); }
+
+.ta { font-family:var(--ta); }
+.ml { font-family:var(--ml); }
+
+/* spec column */
+.spec { display:flex; flex-direction:column; gap:1.7rem; }
+.spec section { border-top:2px solid var(--ink); padding-top:0.9rem; }
+.spec h2 { font-size:1.06rem; font-weight:700; letter-spacing:-0.015em; }
+.spec h2 .n { font-size:0.7rem; color:var(--accent-text); font-weight:700; letter-spacing:0.1em; display:block; margin-bottom:0.22rem; }
+.spec p { font-size:0.9rem; color:var(--fine); margin-top:0.55rem; max-width:64ch; }
+.spec p b, .spec li b { font-weight:500; color:var(--ink); }
+.spec ul { margin-top:0.6rem; padding-left:1.1rem; display:flex; flex-direction:column; gap:0.4rem; }
+.spec li { font-size:0.9rem; color:var(--fine); max-width:64ch; }
+.spec li::marker { color:var(--accent-text); }
+.tbl { width:100%; border-collapse:collapse; margin-top:0.7rem; font-size:0.86rem; }
+.tbl th { text-align:left; font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--fine); font-weight:700; padding:0 0.7rem 0.35rem 0; border-bottom:1px solid var(--rule); }
+.tbl td { padding:0.5rem 0.7rem 0.5rem 0; border-bottom:1px solid var(--rule); vertical-align:top; color:var(--fine); }
+.tbl td:first-child { color:var(--ink); font-weight:500; white-space:nowrap; }
+.tblwrap { overflow-x:auto; }
+.flag { border-left:3px solid var(--saffron-600); background:var(--panel); border-radius:0 8px 8px 0; padding:0.75rem 0.95rem; margin-top:0.85rem; }
+.flag b { font-size:0.74rem; letter-spacing:0.07em; text-transform:uppercase; color:var(--accent-text); }
+.flag p { margin-top:0.25rem; font-size:0.87rem; }
+.gapdemo { display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.85rem; }
+.refcard { flex:1 1 250px; background:linear-gradient(160deg,var(--saffron-950),var(--saffron-900) 55%,var(--saffron-700)); border-radius:14px; color:#fff; padding:0.9rem 0.95rem; }
+.refcard .rt { font-weight:700; font-size:0.86rem; }
+.refcard .rs { font-size:0.74rem; line-height:1.45; margin-top:3px; color:#fff; }
+.refcard .rr { display:flex; gap:0.45rem; flex-wrap:wrap; }
+.refcard.after .rr { margin-top:2px; }
+.refcard .b1 { background:#0f7a3d; border:none; color:#fff; border-radius:100px; padding:8px 14px; font-weight:700; font-size:0.7rem; font-family:inherit; }
+.refcard .b2 { background:none; border:1.5px solid rgba(255,255,255,0.55); color:#fff; border-radius:100px; padding:7px 13px; font-weight:700; font-size:0.7rem; font-family:inherit; }
+.reflabel { font-size:0.7rem; letter-spacing:0.13em; text-transform:uppercase; color:#fff; font-weight:700; margin-bottom:0.4rem; }
+.a11y { list-style:none; padding:0; }
+.a11y li { display:grid; grid-template-columns:auto 1fr; gap:0.55rem; align-items:baseline; }
+.a11y .r { font-variant-numeric:tabular-nums; font-weight:700; color:var(--success); font-size:0.8rem; white-space:nowrap; }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Nithyakarma / design mock, revision 2</div>
+  <h1 class="page">Panchangam Calendar</h1>
+  <p class="page-sub">A proposal to replace the <b>Referrals</b> tab with a calendar that runs on the user's own tradition: the Tamil or Malayalam month is the calendar, and the Gregorian date is the footnote. Switch the phone below between traditions and between day, week and month. Every date, tithi, nakshatra, kalam time and observance shown is real data read from <b>panchangam_days</b>. Step back a month, or forward past the last loaded date, to see how missing panchangam data behaves.</p>
+
+  <div class="split">
+    <div>
+      <div class="seg-label">Tradition (profile.panchangam_tradition)</div>
+      <div class="seg" role="group" aria-label="Tradition">
+        <button id="t-ta" aria-pressed="true">Tamil</button>
+        <button id="t-ml" aria-pressed="false">Malayalam</button>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="topbar">
+            <div class="wordmark">nithya<span>karma</span></div>
+            <div class="pill">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2s5 4.5 5 9a5 5 0 0 1-10 0c0-1.5.6-2.8 1.4-3.9C9 9.5 12 8 12 2z"/></svg>
+              14
+            </div>
+          </div>
+          <div class="scroll" id="screen"></div>
+          <nav class="bottomnav">
+            <div class="nav-item"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Today</div>
+            <div class="nav-item"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></span>Learning</div>
+            <div class="nav-item active"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.6" fill="currentColor" stroke="none"/></svg></span>Calendar</div>
+            <div class="nav-item"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5V6a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 1.5z"/><path d="M8 8h7"/></svg></span>History</div>
+            <div class="nav-item"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg></span>Profile</div>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <section>
+        <h2><span class="n">REVISION 4</span>One color for the whole calendar</h2>
+        <p>Every view now sets its text in the dark saffron already used on the observance chips, <b>--saffron-900</b>. Day, week and month, the calendar numbers, the tithi and nakshatra names, the kalam times, the view switcher, the weekday heads, the legend and the observance list all read in the one color. The only exception is the gradient hero on the day view, where white is the only thing that works on that ground.</p>
+        <ul class="a11y">
+          <li><span class="r">9.37</span><span><b>On a white card.</b> The Panchangam rows, the kalam list, the week rows and the observance list.</span></li>
+          <li><span class="r">8.26</span><span><b>On the paper screen.</b> The weekday heads, the legend and the not-loaded cells.</span></li>
+          <li><span class="r">8.83</span><span><b>On the saffron-50 tint.</b> The kalam time chips, the observance chips and today's cell.</span></li>
+          <li><span class="r">7.66</span><span><b>On the cream switcher.</b> The day, week and month tabs.</span></li>
+        </ul>
+        <p>With one text color, hierarchy comes from size and weight instead of tone, so the type scale had to carry it: the native script sits a full step above the Latin around it, and the secondary lines dropped to 500 weight rather than a lighter color. State that used to lean on color now leans on fill: the active view tab is a white pill, today is a ringed cell, and the disabled stepper is the one place opacity is used, since a disabled control is exempt from the contrast minimum.</p>
+        </section>
+
+      <section>
+        <h2><span class="n">YOUR CALL, APPLIED</span>No completion dot</h2>
+        <p>The green "all practices done" dot is gone from the month grid, and the practice ring is gone from the week rows. The calendar is a panchangam and nothing else. The grid now carries two marks only: gold for an observance, dark for a tharpanam day.</p>
+      </section>
+
+      <section>
+        <h2><span class="n">YOUR CALL, APPLIED</span>Show what is loaded, refuse the rest</h2>
+        <p>Both behaviours, as asked. Step back to Aadi / Karkidakam: the days with rows render normally, the days without render as flat dashed cells, and a note under the grid says how many are missing. Step forward past Aavani / Chingam: the stepper is visibly disabled, and the same note explains why rather than leaving a dead button.</p>
+        <ul>
+          <li>A missing row is never an error and never a spinner. It is an empty cell, the existing convention in <b>usePanchangam</b>.</li>
+          <li>The disabled stepper keeps its label and a real disabled style, so it reads as "nothing beyond here" rather than as a broken control.</li>
+          <li>Day view on a date with no row shows the same note in place of the panchangam cards. Week view shows a dashed row for each missing day.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><span class="n">WHAT CHANGES</span>Referrals tab out, Calendar tab in</h2>
+        <p>Referrals stops being a destination. The invite block already on the Profile page keeps the whole referral job: code, WhatsApp share, copy link, rewards copy. The freed bottom-nav slot goes to Calendar, which is the tab people open daily.</p>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>File</th><th>Change</th></tr></thead>
+          <tbody>
+            <tr><td>Layout.jsx</td><td>BASE_TABS: drop the <b>/referrals</b> entry, add <b>/calendar</b> with the CalendarDays icon in the same slot</td></tr>
+            <tr><td>App.jsx</td><td>Swap the <b>/referrals</b> route for <b>/calendar</b>. Keep <b>/referrals</b> alive as a redirect to <b>/profile</b> so old share links and push deep links do not 404</td></tr>
+            <tr><td>ReferralsPage.jsx</td><td>Delete, with its test. The empty state and the "invite another" row are already covered by the Profile card</td></tr>
+            <tr><td>ProfilePage.jsx</td><td>No functional change. The referral card stays exactly as it is</td></tr>
+            <tr><td>CalendarPage.jsx</td><td>New. Reads <b>panchangam_days</b> over a native-month range plus <b>panchangam_observances</b>, both already readable by authenticated users</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="n">THE CORE IDEA</span>The month is the native month, not August</h2>
+        <p>A Gregorian grid with Tamil labels sprinkled on it is not a Tamil calendar. So the month view runs <b>Aavani 1 to 31</b> (17 Aug to 16 Sep 2026), the big number in each cell is the Tamil or Malayalam day, and the Gregorian date sits under it in small type. Stepping forward lands on Purattasi, not September.</p>
+        <ul>
+          <li>The year label follows the tradition the way the Today box already does: Tamil gets the samvatsara name (<b class="ta">பராபவ வருடம்</b>), Malayalam gets the era count (<b class="ml">കൊല്ലവർഷം 1202</b>). These are different facts, not a translation pair.</li>
+          <li>Nakshatra and tithi use each tradition's own set, from the existing <b>panchangamScript.js</b> maps. Jyeshtha reads <b class="ta">கேட்டை</b> in Tamil and <b class="ml">തൃക്കേട്ട</b> in Malayalam.</li>
+          <li>One tradition at a time, chosen by the profile setting that already exists on the Profile page. No dual-column display.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><span class="n">THE THREE VIEWS</span>Day, week, month</h2>
+        <ul>
+          <li><b>Day</b> is the Today panchangam box with room to breathe: native date as the hero, tithi, nakshatra and varsham, all three kalams with native names and IST times, and any observance for that date.</li>
+          <li><b>Week</b> is the planning view. Seven rows, native weekday and day number on the left, tithi and nakshatra in the middle, observance badge where there is one.</li>
+          <li><b>Month</b> is the orientation view. Dense native-month grid, gold dot for an observance, dark dot for a tharpanam day. Under the grid, the month's observances as a dated list, which is what most people actually came for.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><span class="n">DATA</span>Nothing new to build server-side</h2>
+        <ul>
+          <li><b>panchangam_days</b> already holds every field the three views need. Today's box fetches one row by date, the calendar fetches a range instead.</li>
+          <li>Observances reuse the existing shared matcher in <b>_shared/observanceMatch.ts</b>, the same one ObservanceBanner already imports, so the calendar cannot drift from what the reminders fire on.</li>
+          <li>Fetching follows the ObservanceBanner pattern rather than the older raw-effect one: react-query with <b>withDeadline</b> and <b>unwrap</b>, so a hung request fails at the deadline instead of spinning forever, and a revisit paints from cache.</li>
+          <li>A native month spans two Gregorian months, so a month fetch is a <b>date between</b> range, not a month equality filter.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><span class="n">SETTINGS PAGE</span>Referral banner button gap</h2>
+        <p>Done and in the working tree. <b>.ref-btn-row</b> in index.css now carries <b>margin-top: 2px</b>, so the WhatsApp and copy-link buttons clear the text block above them instead of sitting flush against it.</p>
+        <div class="gapdemo">
+          <div class="refcard">
+            <div class="reflabel">Before</div>
+            <div class="rt">Invite &amp; earn rewards</div>
+            <div class="rs">Every member who joins with your link gives you both 1 month ad-free and a streak freeze. Your code: <b>SREENI42</b></div>
+            <div class="rr"><button class="b1">Share invite on WhatsApp</button><button class="b2">Copy link</button></div>
+          </div>
+          <div class="refcard after">
+            <div class="reflabel">After</div>
+            <div class="rt">Invite &amp; earn rewards</div>
+            <div class="rs">Every member who joins with your link gives you both 1 month ad-free and a streak freeze. Your code: <b>SREENI42</b></div>
+            <div class="rr"><button class="b1">Share invite on WhatsApp</button><button class="b2">Copy link</button></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="n">STILL OPEN</span>Two smaller ones</h2>
+        <ul>
+          <li>Tapping a month cell: open the day view for that date, or expand a sheet in place? The mock does the former.</li>
+          <li>Keep <b>/referrals</b> redirecting to Profile forever, or drop the redirect after a release or two?</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const TA_MONTH = { Aadi:'ஆடி', Aavani:'ஆவணி', Purattasi:'புரட்டாசி' };
+const ML_MONTH = { Karkidakam:'കർക്കടകം', Chingam:'ചിങ്ങം', Kanni:'കന്നി' };
+const TA_TITHI = { Pratipada:'பிரதமை', Dwitiya:'துவிதியை', Tritiya:'திருதியை', Chaturthi:'சதுர்த்தி', Panchami:'பஞ்சமி', Sashti:'சஷ்டி', Saptami:'சப்தமி', Ashtami:'அஷ்டமி', Navami:'நவமி', Dashami:'தசமி', Ekadashi:'ஏகாதசி', Dwadashi:'துவாதசி', Trayodashi:'திரயோதசி', Chaturdashi:'சதுர்த்தசி', Purnima:'பௌர்ணமி', Amavasya:'அமாவாசை' };
+const ML_TITHI = { Pratipada:'പ്രഥമ', Dwitiya:'ദ്വിതീയ', Tritiya:'തൃതീയ', Chaturthi:'ചതുർത്ഥി', Panchami:'പഞ്ചമി', Sashti:'ഷഷ്ഠി', Saptami:'സപ്തമി', Ashtami:'അഷ്ടമി', Navami:'നവമി', Dashami:'ദശമി', Ekadashi:'ഏകാദശി', Dwadashi:'ദ്വാദശി', Trayodashi:'ത്രയോദശി', Chaturdashi:'ചതുർദശി', Purnima:'പൗർണ്ണമി', Amavasya:'അമാവാസി' };
+const TA_PAKSHA = { Shukla:'வளர்பிறை', Krishna:'தேய்பிறை' };
+const ML_PAKSHA = { Shukla:'ശുക്ലപക്ഷം', Krishna:'കൃഷ്ണപക്ഷം' };
+const TA_NAK = { Ashwini:'அசுவினி', Bharani:'பரணி', Krittika:'கிருத்திகை', Rohini:'ரோகிணி', Mrigashira:'மிருகசீரிடம்', Ardra:'திருவாதிரை', Punarvasu:'புனர்பூசம்', Pushya:'பூசம்', Ashlesha:'ஆயில்யம்', Magha:'மகம்', 'Purva Phalguni':'பூரம்', 'Uttara Phalguni':'உத்திரம்', Hasta:'அஸ்தம்', Chitra:'சித்திரை', Swati:'சுவாதி', Vishakha:'விசாகம்', Anuradha:'அனுஷம்', Jyeshtha:'கேட்டை', Mula:'மூலம்', 'Purva Ashadha':'பூராடம்', 'Uttara Ashadha':'உத்திராடம்', Shravana:'திருவோணம்', Dhanishta:'அவிட்டம்', Shatabhisha:'சதயம்', 'Purva Bhadrapada':'பூரட்டாதி', 'Uttara Bhadrapada':'உத்திரட்டாதி', Revati:'ரேவதி' };
+const ML_NAK = { Ashwini:'അശ്വതി', Bharani:'ഭരണി', Krittika:'കാർത്തിക', Rohini:'രോഹിണി', Mrigashira:'മകയിരം', Ardra:'തിരുവാതിര', Punarvasu:'പുണർതം', Pushya:'പൂയം', Ashlesha:'ആയില്യം', Magha:'മകം', 'Purva Phalguni':'പൂരം', 'Uttara Phalguni':'ഉത്രം', Hasta:'അത്തം', Chitra:'ചിത്തിര', Swati:'ചോതി', Vishakha:'വിശാഖം', Anuradha:'അനിഴം', Jyeshtha:'തൃക്കേട്ട', Mula:'മൂലം', 'Purva Ashadha':'പൂരാടം', 'Uttara Ashadha':'ഉത്രാടം', Shravana:'തിരുവോണം', Dhanishta:'അവിട്ടം', Shatabhisha:'ചതയം', 'Purva Bhadrapada':'പൂരുരുട്ടാതി', 'Uttara Bhadrapada':'ഉത്രട്ടാതി', Revati:'രേവതി' };
+const TA_KALAM = { rahu:'ராகு காலம்', yamagandam:'எமகண்டம்', gulika:'குளிகை காலம்' };
+const ML_KALAM = { rahu:'രാഹുകാലം', yamagandam:'യമകണ്ടകം', gulika:'ഗുളികകാലം' };
+const TA_WD = ['ஞாயி','திங்','செவ்','புத','வியா','வெள்','சனி'];
+const ML_WD = ['ഞായ','തിങ്ക','ചൊവ്വ','ബുധ','വ്യാഴ','വെള്ളി','ശനി'];
+
+// Real rows from panchangam_days: date, tithi, nakshatra, native day,
+// tamil month, malayalam month, rahu, yamagandam, gulika.
+// Aadi / Karkidakam is deliberately partial here (only days 27 to 31 loaded),
+// which is what the month view's missing-data state renders against.
+const RAW = [
+  ['2026-08-12','Amavasya','Ashlesha',27,'Aadi','Karkidakam','12:30-14:04','07:50-09:23','10:57-12:30'],
+  ['2026-08-13','Shukla Pratipada','Magha',28,'Aadi','Karkidakam','14:04-15:37','06:16-07:50','09:23-10:57'],
+  ['2026-08-14','Shukla Dwitiya','Purva Phalguni',29,'Aadi','Karkidakam','10:56-12:30','15:37-17:10','07:50-09:23'],
+  ['2026-08-15','Shukla Tritiya','Uttara Phalguni',30,'Aadi','Karkidakam','09:23-10:56','14:03-15:37','06:16-07:50'],
+  ['2026-08-16','Shukla Chaturthi','Hasta',31,'Aadi','Karkidakam','17:10-18:43','12:30-14:03','15:36-17:10'],
+  ['2026-08-17','Shukla Panchami','Chitra',1,'Aavani','Chingam','07:49-09:23','10:56-12:29','14:03-15:36'],
+  ['2026-08-18','Shukla Sashti','Swati',2,'Aavani','Chingam','15:36-17:09','09:23-10:56','12:29-14:02'],
+  ['2026-08-19','Shukla Saptami','Vishakha',3,'Aavani','Chingam','12:29-14:02','07:49-09:23','10:56-12:29'],
+  ['2026-08-20','Shukla Ashtami','Anuradha',4,'Aavani','Chingam','14:02-15:35','06:16-07:49','09:22-10:56'],
+  ['2026-08-21','Shukla Navami','Jyeshtha',5,'Aavani','Chingam','10:55-12:28','15:34-17:07','07:49-09:22'],
+  ['2026-08-22','Shukla Dashami','Jyeshtha',6,'Aavani','Chingam','09:22-10:55','14:01-15:34','06:16-07:49'],
+  ['2026-08-23','Shukla Ekadashi','Mula',7,'Aavani','Chingam','17:07-18:40','12:28-14:01','15:34-17:07'],
+  ['2026-08-24','Shukla Dwadashi','Purva Ashadha',8,'Aavani','Chingam','07:49-09:22','10:55-12:28','14:00-15:33'],
+  ['2026-08-25','Shukla Trayodashi','Uttara Ashadha',9,'Aavani','Chingam','15:33-17:06','09:22-10:55','12:27-14:00'],
+  ['2026-08-26','Shukla Chaturdashi','Shravana',10,'Aavani','Chingam','12:27-14:00','07:49-09:22','10:54-12:27'],
+  ['2026-08-27','Purnima','Dhanishta',11,'Aavani','Chingam','13:59-15:32','06:16-07:49','09:21-10:54'],
+  ['2026-08-28','Krishna Pratipada','Shatabhisha',12,'Aavani','Chingam','10:54-12:26','15:32-17:04','07:49-09:21'],
+  ['2026-08-29','Krishna Dwitiya','Purva Bhadrapada',13,'Aavani','Chingam','09:21-10:54','13:59-15:31','06:16-07:49'],
+  ['2026-08-30','Krishna Tritiya','Uttara Bhadrapada',14,'Aavani','Chingam','17:03-18:36','12:26-13:58','15:31-17:03'],
+  ['2026-08-31','Krishna Chaturthi','Revati',15,'Aavani','Chingam','07:48-09:21','10:53-12:25','13:58-15:30'],
+  ['2026-09-01','Krishna Panchami','Ashwini',16,'Aavani','Chingam','15:30-17:02','09:20-10:53','12:25-13:57'],
+  ['2026-09-02','Krishna Sashti','Bharani',17,'Aavani','Chingam','12:25-13:57','07:48-09:20','10:53-12:25'],
+  ['2026-09-03','Krishna Saptami','Krittika',18,'Aavani','Chingam','13:57-15:29','06:16-07:48','09:20-10:52'],
+  ['2026-09-04','Krishna Ashtami','Rohini',19,'Aavani','Chingam','10:52-12:24','15:28-17:01','07:48-09:20'],
+  ['2026-09-05','Krishna Navami','Mrigashira',20,'Aavani','Chingam','09:20-10:52','13:56-15:28','06:15-07:48'],
+  ['2026-09-06','Krishna Dashami','Ardra',21,'Aavani','Chingam','16:59-18:31','12:23-13:55','15:27-16:59'],
+  ['2026-09-07','Krishna Ekadashi','Punarvasu',22,'Aavani','Chingam','07:47-09:19','10:51-12:23','13:55-15:27'],
+  ['2026-09-08','Krishna Dwadashi','Pushya',23,'Aavani','Chingam','15:26-16:58','09:19-10:51','12:23-13:55'],
+  ['2026-09-09','Krishna Trayodashi','Ashlesha',24,'Aavani','Chingam','12:22-13:54','07:47-09:19','10:51-12:22'],
+  ['2026-09-10','Amavasya','Magha',25,'Aavani','Chingam','13:54-15:25','06:15-07:47','09:18-10:50'],
+  ['2026-09-11','Shukla Pratipada','Purva Phalguni',26,'Aavani','Chingam','10:50-12:22','15:25-16:57','07:47-09:18'],
+  ['2026-09-12','Shukla Dwitiya','Uttara Phalguni',27,'Aavani','Chingam','09:18-10:50','13:53-15:24','06:15-07:46'],
+  ['2026-09-13','Shukla Tritiya','Hasta',28,'Aavani','Chingam','16:55-18:27','12:21-13:52','15:24-16:55'],
+  ['2026-09-14','Shukla Chaturthi','Chitra',29,'Aavani','Chingam','07:46-09:18','10:49-12:20','13:52-15:23'],
+  ['2026-09-15','Shukla Panchami','Swati',30,'Aavani','Chingam','15:23-16:54','09:17-10:49','12:20-13:51'],
+  ['2026-09-16','Shukla Sashti','Vishakha',31,'Aavani','Chingam','12:20-13:51','07:46-09:17','10:48-12:20'],
+];
+const DAYS = RAW.map(r => ({
+  date:r[0], thithi:r[1], nakshatra:r[2], nd:r[3], tm:r[4], mm:r[5],
+  kalam:{ rahu:r[6], yamagandam:r[7], gulika:r[8] },
+}));
+const BY_DATE = Object.fromEntries(DAYS.map(d => [d.date, d]));
+const FIRST_LOADED = DAYS[0].date, LAST_LOADED = DAYS[DAYS.length - 1].date;
+
+// A native month is a fixed span of Gregorian dates, independent of which of
+// those dates happen to have a panchangam_days row loaded.
+const MONTHS = [
+  { ta:'Aadi', ml:'Karkidakam', start:'2026-07-17', days:31 },
+  { ta:'Aavani', ml:'Chingam', start:'2026-08-17', days:31 },
+];
+
+// Derived by matching panchangam_observances rules against the rows above.
+const OBS = {
+  '2026-08-12':[{cat:'tharpanam', en:'Karkidaka Vaavu', ta:'ஆடி அமாவாசை', ml:'കർക്കടക വാവ്'}],
+  '2026-08-23':[{cat:'obs', en:'Ekadashi', ta:'ஏகாதசி', ml:'ഏകാദശി'}],
+  '2026-08-24':[{cat:'obs', en:'Dwadashi', ta:'துவாதசி', ml:'ദ്വാദശി'}],
+  '2026-08-25':[{cat:'obs', en:'Pradosham', ta:'பிரதோஷம்', ml:'പ്രദോഷം'}],
+  '2026-08-27':[
+    {cat:'obs', en:'Purnima', ta:'பௌர்ணமி', ml:'പൗർണ്ണമി'},
+    {cat:'obs', en:'Avani Avittam', ta:'ஆவணி அவிட்டம்', only:'ta'},
+    {cat:'obs', en:'Onam (Thiruvonam)', ml:'തിരുവോണം', only:'ml'},
+  ],
+  '2026-09-04':[{cat:'obs', en:'Krishna Janmashtami', ta:'ஸ்ரீ கிருஷ்ண ஜயந்தி', ml:'ശ്രീകൃഷ്ണ ജയന്തി'}],
+  '2026-09-07':[{cat:'obs', en:'Ekadashi', ta:'ஏகாதசி', ml:'ഏകാദശി'}],
+  '2026-09-08':[{cat:'obs', en:'Dwadashi', ta:'துவாதசி', ml:'ദ്വാദശി'}],
+  '2026-09-09':[{cat:'obs', en:'Pradosham', ta:'பிரதோஷம்', ml:'പ്രദോഷം'}],
+  '2026-09-10':[{cat:'tharpanam', en:'Amavasya Tharpanam', ta:'அமாவாசை தர்ப்பணம்', ml:'അമാവാസി ബലി'}],
+  '2026-09-14':[{cat:'obs', en:'Vinayaka Chaturthi', ta:'விநாயகர் சதுர்த்தி', ml:'വിനായക ചതുർത്ഥി'}],
+};
+
+// Navigable span is the loaded MONTHS, not the loaded rows: stepping inside a
+// month that is only partly loaded is exactly how the missing-data state is
+// reached, while the ends of the span are where the stepper refuses.
+const SPAN_MIN = MONTHS[0].start;
+const SPAN_MAX = (() => { const m = MONTHS[MONTHS.length - 1]; const d = new Date(m.start + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + m.days - 1); return d.toISOString().slice(0,10); })();
+
+const TODAY = '2026-08-23';
+const KALAM_ORDER = [['rahu','Rahu Kalam'],['yamagandam','Yamagandam'],['gulika','Gulika Kalam']];
+
+let trad = 'ta';
+let view = 'day';
+let selected = TODAY;
+let weekStart = '2026-08-23';
+let monthIndex = 1;
+
+const T = () => trad === 'ta'
+  ? { cls:'ta', month:TA_MONTH, tithi:TA_TITHI, paksha:TA_PAKSHA, nak:TA_NAK, kalam:TA_KALAM, wd:TA_WD,
+      key:'ta', year:'பராபவ வருடம்', yearShort:'பராபவ', yearRoman:'Parabhava Varusham' }
+  : { cls:'ml', month:ML_MONTH, tithi:ML_TITHI, paksha:ML_PAKSHA, nak:ML_NAK, kalam:ML_KALAM, wd:ML_WD,
+      key:'ml', year:'കൊല്ലവർഷം 1202', yearShort:'1202', yearRoman:'Kollavarsham 1202' };
+
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const shift = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); };
+const wdIndex = iso => new Date(iso + 'T00:00:00Z').getUTCDay();
+const gregShort = iso => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { day:'numeric', month:'short', timeZone:'UTC' });
+const gregLong = iso => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric', timeZone:'UTC' });
+const gregDay = iso => Number(iso.slice(8, 10));
+
+function nativeTithi(t) {
+  const m = T();
+  if (m.tithi[t]) return m.tithi[t];
+  const [p, ...rest] = t.split(' ');
+  const name = m.tithi[rest.join(' ')], pk = m.paksha[p];
+  return name && pk ? pk + ' ' + name : t;
+}
+const obsFor = iso => (OBS[iso] || []).filter(o => !o.only || o.only === trad);
+const obsLabel = o => o[trad] || o.en;
+function marksFor(iso) {
+  const o = obsFor(iso), marks = [];
+  if (o.some(x => x.cat === 'obs')) marks.push('obs');
+  if (o.some(x => x.cat === 'tharpanam')) marks.push('thar');
+  return marks;
+}
+
+function notLoadedCard(title, body) {
+  return `<div class="notloaded"><div class="nl-t">${title}</div><div class="nl-s">${body}</div></div>`;
+}
+
+function header(nativeTitle, romanTitle, prevOk, nextOk) {
+  return `<div class="cal-head">
+    <div class="cal-title">
+      <div class="cal-native ${T().cls}">${nativeTitle}</div>
+      <div class="cal-roman">${romanTitle}</div>
+    </div>
+    <div class="stepper">
+      <button class="step" data-step="-1" ${prevOk ? '' : 'disabled'} aria-label="Previous">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5 8 12l7 7"/></svg></button>
+      <button class="step" data-step="1" ${nextOk ? '' : 'disabled'} aria-label="Next">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 5 7 7-7 7"/></svg></button>
+    </div>
+  </div>
+  <div class="viewseg" role="group" aria-label="View">
+    ${['day','week','month'].map(v => `<button data-view="${v}" aria-pressed="${view === v}">${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}
+  </div>`;
+}
+
+function renderDay() {
+  const m = T(), d = BY_DATE[selected];
+  const prevOk = selected > SPAN_MIN, nextOk = selected < SPAN_MAX;
+
+  if (!d) {
+    return header(gregShort(selected), 'Not loaded', prevOk, nextOk) +
+      notLoadedCard('Panchangam not loaded yet',
+        `There is no panchangam row for ${gregLong(selected)}. Loaded dates run from ${gregShort(FIRST_LOADED)} to ${gregShort(LAST_LOADED)} 2026.`);
+  }
+
+  const o = obsFor(selected);
+  const kalams = KALAM_ORDER.map(([k, en]) => `
+    <div class="kalam">
+      <div class="kn ${m.cls}">${m.kalam[k]}</div>
+      <div class="ke">${en}</div>
+      <div class="kt">${d.kalam[k]}</div>
+    </div>`).join('');
+
+  return header(m.month[d[m.key === 'ta' ? 'tm' : 'mm']] + ' ' + d.nd,
+      (m.key === 'ta' ? d.tm : d.mm) + ' ' + d.nd, prevOk, nextOk) + `
+    <div class="hero">
+      <div class="hero-day">
+        <div class="hero-num">${d.nd}</div>
+        <div class="hero-month ${m.cls}">${m.month[m.key === 'ta' ? d.tm : d.mm]}</div>
+      </div>
+      <div class="hero-year ${m.cls}">${m.year}</div>
+      <div class="hero-greg">${gregLong(selected)}</div>
+    </div>
+    ${o.length ? `<div class="card"><div class="card-h">Observances</div><div class="chips">
+      ${o.map(x => `<span class="chip ${x.cat === 'tharpanam' ? 'tharpanam' : ''}"><i class="dot"></i>
+        <span class="${m.cls}">${esc(obsLabel(x))}</span><small>${esc(x.en)}</small></span>`).join('')}
+    </div></div>` : ''}
+    <div class="card">
+      <div class="card-h">Panchangam</div>
+      <div class="kv"><div class="kv-k">Thithi</div><div class="kv-v ${m.cls}">${nativeTithi(d.thithi)}<small>${esc(d.thithi)}</small></div></div>
+      <div class="kv"><div class="kv-k">Nakshatram</div><div class="kv-v ${m.cls}">${m.nak[d.nakshatra]}<small>${esc(d.nakshatra)}</small></div></div>
+      <div class="kv"><div class="kv-k">Varsham</div><div class="kv-v ${m.cls}">${m.year}<small>${m.yearRoman}</small></div></div>
+    </div>
+    <div class="card">
+      <div class="card-h">Kalams to avoid</div>
+      ${kalams}
+      <div class="ist">Times shown in IST</div>
+    </div>`;
+}
+
+function renderWeek() {
+  const m = T();
+  const dates = Array.from({ length: 7 }, (_, i) => shift(weekStart, i));
+  const loaded = dates.filter(x => BY_DATE[x]);
+  const anchor = loaded.length ? BY_DATE[loaded[0]] : null;
+  const title = anchor
+    ? `${m.month[m.key === 'ta' ? anchor.tm : anchor.mm]} ${anchor.nd} - ${BY_DATE[loaded[loaded.length - 1]].nd}`
+    : gregShort(dates[0]);
+  const minWeek = shift(SPAN_MIN, -wdIndex(SPAN_MIN));
+  const maxWeek = shift(SPAN_MAX, -wdIndex(SPAN_MAX));
+  const prevOk = weekStart > minWeek, nextOk = weekStart < maxWeek;
+
+  const rows = dates.map(iso => {
+    const d = BY_DATE[iso], o = obsFor(iso);
+    if (!d) {
+      return `<div class="wk-row empty">
+        <div class="wk-date"><div class="wk-wd ${m.cls}">${m.wd[wdIndex(iso)]}</div>
+          <div class="wk-nd">-</div><div class="wk-greg">${gregShort(iso)}</div></div>
+        <div class="wk-body"><div class="wk-none">Panchangam not loaded yet</div></div>
+      </div>`;
+    }
+    return `<div class="wk-row ${iso === TODAY ? 'today' : ''}">
+      <div class="wk-date">
+        <div class="wk-wd ${m.cls}">${m.wd[wdIndex(iso)]}</div>
+        <div class="wk-nd">${d.nd}</div>
+        <div class="wk-greg">${gregShort(iso)}</div>
+      </div>
+      <div class="wk-body">
+        <div class="wk-tithi ${m.cls}">${nativeTithi(d.thithi)}</div>
+        <div class="wk-nak ${m.cls}">${m.nak[d.nakshatra]}</div>
+        ${o.map(x => `<span class="wk-obs ${x.cat === 'tharpanam' ? 'tharpanam' : ''} ${m.cls}">${esc(obsLabel(x))}</span>`).join(' ')}
+      </div>
+    </div>`;
+  }).join('');
+
+  return header(title, `${gregShort(dates[0])} - ${gregShort(dates[6])} 2026`, prevOk, nextOk) + rows +
+    (loaded.length < 7 ? notLoadedCard('Panchangam not loaded yet',
+      `${7 - loaded.length} of these 7 days have no panchangam row. Loaded dates run from ${gregShort(FIRST_LOADED)} to ${gregShort(LAST_LOADED)} 2026.`) : '');
+}
+
+function renderMonth() {
+  const m = T(), month = MONTHS[monthIndex];
+  const name = month[m.key];
+  const dates = Array.from({ length: month.days }, (_, i) => shift(month.start, i));
+  const missing = dates.filter(iso => !BY_DATE[iso]).length;
+
+  const cells = [];
+  for (let i = 0; i < wdIndex(month.start); i++) cells.push('<div class="cell blank"></div>');
+  dates.forEach((iso, i) => {
+    const nd = i + 1;
+    if (!BY_DATE[iso]) {
+      cells.push(`<div class="cell empty" aria-label="${gregShort(iso)}, panchangam not loaded">
+        <span class="nd">${nd}</span><span class="gd">${gregDay(iso)}</span><span class="marks"></span></div>`);
+      return;
+    }
+    const marks = marksFor(iso);
+    cells.push(`<button class="cell ${iso === TODAY ? 'today' : ''} ${iso === selected && iso !== TODAY ? 'sel' : ''}" data-date="${iso}">
+      <span class="nd">${nd}</span>
+      <span class="gd">${gregDay(iso)}</span>
+      <span class="marks">${marks.map(x => `<i class="m ${x}"></i>`).join('')}</span>
+    </button>`);
+  });
+  while (cells.length % 7 !== 0) cells.push('<div class="cell blank"></div>');
+
+  const list = dates.filter(iso => BY_DATE[iso] && obsFor(iso).length).map(iso => `
+    <div class="oitem">
+      <div class="oday">${BY_DATE[iso].nd}</div>
+      <div>
+        <div class="otitle ${m.cls}">${obsFor(iso).map(o => esc(obsLabel(o))).join(', ')}</div>
+        <div class="osub">${gregShort(iso)} &middot; ${obsFor(iso).map(o => esc(o.en)).join(', ')}</div>
+      </div>
+    </div>`).join('');
+
+  const note = missing
+    ? notLoadedCard('Panchangam not loaded yet',
+        `${missing} of ${month.days} days in ${esc(name)} have no panchangam row, so they show as empty cells. Loaded dates run from ${gregShort(FIRST_LOADED)} to ${gregShort(LAST_LOADED)} 2026.`)
+    : monthIndex === MONTHS.length - 1
+      ? notLoadedCard('End of the loaded panchangam',
+          `${esc(name)} is the last month with data, so the forward step is disabled. The next month becomes available when the panchangam for it is generated and loaded.`)
+      : '';
+
+  return header(m.month[name] + ' ' + m.yearShort,
+      `${esc(name)} &middot; ${gregShort(dates[0])} - ${gregShort(dates[month.days - 1])} 2026`,
+      monthIndex > 0, monthIndex < MONTHS.length - 1) + `
+    <div class="grid-head">${m.wd.map((w, i) => `<div class="gh ${i === 0 ? 'sun' : ''} ${m.cls}">${w}</div>`).join('')}</div>
+    <div class="grid">${cells.join('')}</div>
+    <div class="legend">
+      <span class="lg"><i style="background:var(--gold)"></i>Observance</span>
+      <span class="lg"><i style="background:var(--deep)"></i>Tharpanam</span>
+    </div>
+    ${note}
+    ${list ? `<div class="card"><div class="card-h">${esc(name)} observances</div><div class="olist">${list}</div></div>` : ''}`;
+}
+
+function render() {
+  const el = document.getElementById('screen');
+  el.innerHTML = view === 'day' ? renderDay() : view === 'week' ? renderWeek() : renderMonth();
+  el.scrollTop = 0;
+  el.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
+    view = b.dataset.view;
+    if (view === 'week') weekStart = shift(selected, -wdIndex(selected));
+    if (view === 'month') {
+      const i = MONTHS.findIndex(mo => selected >= mo.start && selected <= shift(mo.start, mo.days - 1));
+      monthIndex = i === -1 ? MONTHS.length - 1 : i;
+    }
+    render();
+  }));
+  el.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => {
+    const n = Number(b.dataset.step);
+    if (view === 'day') selected = shift(selected, n);
+    else if (view === 'week') weekStart = shift(weekStart, n * 7);
+    else monthIndex = Math.min(MONTHS.length - 1, Math.max(0, monthIndex + n));
+    render();
+  }));
+  el.querySelectorAll('[data-date]').forEach(b => b.addEventListener('click', () => {
+    selected = b.dataset.date;
+    view = 'day';
+    render();
+  }));
+}
+
+function syncTrad() {
+  document.getElementById('t-ta').setAttribute('aria-pressed', String(trad === 'ta'));
+  document.getElementById('t-ml').setAttribute('aria-pressed', String(trad === 'ml'));
+  render();
+}
+document.getElementById('t-ta').addEventListener('click', () => { trad = 'ta'; syncTrad(); });
+document.getElementById('t-ml').addEventListener('click', () => { trad = 'ml'; syncTrad(); });
+render();
+</script>
