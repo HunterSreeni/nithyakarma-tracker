@@ -1,5 +1,5 @@
 import { NavLink, Link } from 'react-router-dom'
-import { Home, BookOpen, GraduationCap, Trophy, Gift, CircleUserRound, Flame } from 'lucide-react'
+import { Home, BookOpen, GraduationCap, Trophy, CalendarDays, CircleUserRound, Flame } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { streakState } from '../utils/streak'
 
@@ -8,7 +8,7 @@ const BASE_TABS = [
   { to: '/learning', label: 'Learning', icon: GraduationCap },
   { to: '/history', label: 'History', icon: BookOpen },
   { to: '/sabha', label: 'Sabha', icon: Trophy, community: true },
-  { to: '/referrals', label: 'Referrals', icon: Gift },
+  { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/profile', label: 'Profile', icon: CircleUserRound },
 ]
 

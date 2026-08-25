@@ -1102,3 +1102,35 @@ problems, one practical and one that matters more:
 4. Required checks satisfied under branch protection; PR merged to `main`.
 5. release-please rolls the change into the next Release PR; merging it cuts the
    version, changelog, tag, and GitHub Release automatically.
+
+
+### Intent 2.11 - Panchangam calendar page (replaces the Referrals tab)
+
+- **Intent:** the "bigger calendar view" Intent 2.7 deferred. A dedicated
+  Calendar tab with day / week / month views, driven by the user's own
+  tradition (`profile.panchangam_tradition`), replacing Referrals in the
+  bottom nav.
+- **The unit is the native month, not the Gregorian one.** The month view runs
+  Aavani 1 to 31 (17 Aug to 16 Sep 2026), the big number in each cell is the
+  Tamil/Malayalam day and the Gregorian date sits under it. A native month
+  spans two Gregorian months, so the fetch is a date range, quantised into
+  fixed buckets (`nativeCalendar.windowFor`) so stepping within a month is one
+  fetch rather than one per arrow press.
+- **Referrals is no longer a destination.** The Profile page's invite card was
+  already the whole feature; `ReferralsPage` and its `referralsCache` are
+  deleted and `/referrals` redirects to `/profile` so old share links and push
+  payloads do not 404.
+- **Observances reuse `_shared/observanceMatch.ts`**, the same matcher the
+  reminder edge function and the Today banner use, so the calendar cannot
+  drift from what the notifications fire on.
+- **Missing panchangam is a normal state, not an error.** Days with no row
+  render as empty dashed cells with a count, and the stepper is disabled at
+  the edge of the loaded data with a "not loaded yet" explanation - never a
+  dead button and never a spinner.
+- **Colour:** every text on the page is `--saffron-900` (9.37:1 on white,
+  8.83:1 on the saffron-50 tints, 8.26:1 on paper, 7.66:1 on the cream
+  switcher), above the 5:1 bar this page was designed to and the 4.5:1
+  `DESIGN-GUIDE-V1.md` sets. `--action` fills and rings but never sets text
+  here: it only clears 5:1 on pure white. Hierarchy is carried by size and
+  weight, state by fill. The gradient hero is the single exception, in white.
+- **Design mock:** `design-prototypes/calendar-page-mock.html`.

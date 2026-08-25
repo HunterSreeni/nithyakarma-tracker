@@ -23,6 +23,7 @@ describe('WCAG AA contrast of accessibility tokens', () => {
   const silver = token('--silver')
   const bronze = token('--bronze')
 
+
   it('computes known ratios correctly', () => {
     expect(contrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 0)
   })
@@ -56,6 +57,47 @@ describe('WCAG AA contrast of accessibility tokens', () => {
   it('--success passes AA on paper and on the light-green done-chip background', () => {
     expect(contrastRatio(success, paper)).toBeGreaterThanOrEqual(4.5)
     expect(contrastRatio(success, '#d9f2e1')).toBeGreaterThanOrEqual(4.5)
+  })
+
+  // Calendar page (Intent 2.11). Every text on it is --saffron-900 on one of
+  // four grounds, and the page was designed to a 5:1 bar rather than the
+  // 4.5:1 minimum, so these lock in the stricter number.
+  describe('calendar page single text color', () => {
+    const saffron50 = token('--saffron-50')
+    const saffron100 = token('--saffron-100')
+    const cream = '#ede8dc' // --cream resolves to --neutral-100
+    const CAL_GROUNDS = {
+      'white cards': '#ffffff',
+      'the paper page ground': paper,
+      'the saffron-50 chips and today cell': saffron50,
+      'the saffron-100 observance badge': saffron100,
+      'the cream view switcher': cream,
+    }
+
+    for (const [where, ground] of Object.entries(CAL_GROUNDS)) {
+      it(`--saffron-900 clears 5:1 on ${where}`, () => {
+        expect(contrastRatio(saffron900, ground)).toBeGreaterThanOrEqual(5)
+      })
+    }
+
+    // The gradient hero is the one place the calendar does not use
+    // --saffron-900, because nothing dark works across those stops.
+    it('white hero text clears AA at every stop of the calendar gradient', () => {
+      expect(contrastRatio('#ffffff', saffron950)).toBeGreaterThanOrEqual(4.5)
+      expect(contrastRatio('#ffffff', saffron900)).toBeGreaterThanOrEqual(4.5)
+      expect(contrastRatio('#ffffff', saffron700)).toBeGreaterThanOrEqual(4.5)
+    })
+
+    // --action reaches 5:1 on pure white only (4.56:1 on paper, 4.88:1 on
+    // saffron-50), so it fills and rings on this page but never sets text.
+    // This is the regression gate for someone reaching for it as a text color.
+    it('never uses --action as a text color in the calendar block', () => {
+      const block = css.slice(css.indexOf('/* Calendar page (Intent 2.11)'))
+      // Lookbehind keeps border-color/background-color out of it - the ring
+      // on today's cell is a legitimate --action use.
+      const textRules = block.match(/^\.cal-[^{]*\{[^}]*(?<!-)color:\s*var\(--action\)/gm) ?? []
+      expect(textRules).toEqual([])
+    })
   })
 
   it('--gold/--silver/--bronze pass AA as leaderboard rank text on white', () => {

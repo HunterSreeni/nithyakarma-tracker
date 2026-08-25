@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { render, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import axe from 'axe-core'
 
@@ -87,6 +87,84 @@ describe('accessibility (axe-core, WCAG 2.1 AA subset)', () => {
     const { default: TodayPage } = await import('../TodayPage')
     const { container } = render(<MemoryRouter><Layout><TodayPage /></Layout></MemoryRouter>)
     expect(await seriousViolations(container)).toEqual([])
+  })
+
+  // Calendar page (Intent 2.11). Rendered inside Layout, the way it really is,
+  // so the nav/main landmarks are real rather than mocked away - and once per
+  // view, because the three views share almost no markup.
+  const renderCalendar = async () => {
+    vi.resetModules()
+    vi.doMock('../../hooks/useAuth', () => ({
+      useAuth: () => ({
+        profile: { display_name: 'Test User', panchangam_tradition: 'tamil', current_streak: 0 },
+        signOut: vi.fn(),
+      }),
+    }))
+    const days = Array.from({ length: 31 }, (_, i) => ({
+      date: i < 15
+        ? `2026-08-${String(17 + i).padStart(2, '0')}`
+        : `2026-09-${String(i - 14).padStart(2, '0')}`,
+      thithi: 'Shukla Ekadashi', nakshatra: 'Mula',
+      tamil_month: 'Aavani', tamil_day: i + 1,
+      malayalam_month: 'Chingam', malayalam_day: i + 1,
+      varsham_name: 'Parabhava', kollavarsham_year: 1202,
+      rahu_kalam_start: '17:07', rahu_kalam_end: '18:40',
+      yamagandam_start: '12:28', yamagandam_end: '14:01',
+      gulika_kalam_start: '15:34', gulika_kalam_end: '17:07',
+    }))
+    vi.doMock('../../lib/supabase', () => ({
+      supabase: {
+        from: (table) => ({
+          select: () => table === 'panchangam_days'
+            ? { gte: () => ({ lte: () => ({ order: () => Promise.resolve({ data: days, error: null }) }) }) }
+            : Promise.resolve({ data: [], error: null }),
+        }),
+      },
+    }))
+    const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query')
+    const { default: Layout } = await import('../Layout')
+    const { default: CalendarPage } = await import('../CalendarPage')
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    return render(
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <Layout><CalendarPage /></Layout>
+        </QueryClientProvider>
+      </MemoryRouter>,
+    )
+  }
+
+  it('CalendarPage day view inside Layout', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-08-23T08:00:00+05:30'))
+    const { container, findByText } = await renderCalendar()
+    await findByText('ஆவணி 7')
+    expect(await seriousViolations(container)).toEqual([])
+    vi.useRealTimers()
+  })
+
+  it('CalendarPage week view inside Layout', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-08-23T08:00:00+05:30'))
+    const { container, findByText, getByRole } = await renderCalendar()
+    await findByText('ஆவணி 7')
+    fireEvent.click(getByRole('button', { name: 'Week' }))
+    await findByText('ஞாயிறு')
+    expect(await seriousViolations(container)).toEqual([])
+    vi.useRealTimers()
+  })
+
+  // The grid is the risky one: 31 tappable cells whose visible text is just
+  // two numbers, which without an aria-label read out as one run-on number.
+  it('CalendarPage month view inside Layout', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-08-23T08:00:00+05:30'))
+    const { container, findByText, getByRole, findByRole } = await renderCalendar()
+    await findByText('ஆவணி 7')
+    fireEvent.click(getByRole('button', { name: 'Month' }))
+    expect(await findByRole('button', { name: 'Aavani 1, 17 Aug' })).toBeInTheDocument()
+    expect(await seriousViolations(container)).toEqual([])
+    vi.useRealTimers()
   })
 
   it('CelebrationModal', async () => {

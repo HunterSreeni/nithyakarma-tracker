@@ -509,8 +509,46 @@ messaging.
 | `delete_account` RPC removes auth user (not just profile), `anon` cannot execute it | Integration(§7) | ✅ |
 | Delete flow: type-email-to-confirm gate, returns to auth | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Referral reward copy is static, doesn't reflect the server-side 5/24h cap | - | ⬜ |
-| Referrals list paints from a localStorage cache (keyed by owner) on reopen instead of a spinner, revalidates in the background; manual Retry always bypasses the cache | Unit(`referralsCache.test.js`) | ✅ (2026-08-11) |
-| **Intent 2.10 (2026-08-20): "Copy link" button next to WhatsApp share, on both Profile and Referrals - writes the real referral URL to the clipboard, shows "Copied" for 2s, then reverts; clipboard failure is a silent no-op (WhatsApp stays the primary path)** | Unit (`CopyLinkButton.test.jsx`) + E2E(W, `journey.spec.js`) | ✅ |
+| ~~Referrals list paints from a localStorage cache~~ | - | ➖ **removed 2026-08-23 (Intent 2.11)** - the Referrals page and `referralsCache` are deleted; the Profile invite card is the whole feature |
+| `/referrals` redirects to `/profile` so existing share links and push payloads do not 404 | - | ⬜ no route-level test yet |
+| **Intent 2.10 (2026-08-20): "Copy link" button next to WhatsApp share, on Profile - writes the real referral URL to the clipboard, shows "Copied" for 2s, then reverts; clipboard failure is a silent no-op (WhatsApp stays the primary path)** | Unit (`CopyLinkButton.test.jsx`) + E2E(W, `journey.spec.js`) | ✅ |
+
+### Calendar page (Intent 2.11, 2026-08-23)
+| Case | Layer | Status |
+|---|---|---|
+| Opens on today in the profile's tradition: native month, tithi, nakshatra and varsham in the right script | Unit(`CalendarPage.test.jsx`) | ✅ |
+| Malayalam profile gets Kollavarsham, never the samvatsara name (they are different facts, not a translation pair) | Unit(`CalendarPage.test.jsx`) | ✅ |
+| All three kalams render with native names + IST times | Unit(`CalendarPage.test.jsx`) | ✅ |
+| Observances come from the shared `observanceMatch.ts` matcher, so the calendar cannot drift from the reminders | Unit(`CalendarPage.test.jsx`) | ✅ |
+| Month view renders the NATIVE month (Aavani 1-31 = 17 Aug to 16 Sep), not the Gregorian one | Unit(`CalendarPage.test.jsx`) | ✅ |
+| Week view lists 7 days with native weekday, tithi and nakshatra | Unit(`CalendarPage.test.jsx`) | ✅ |
+| A gap inside a month shows "Panchangam not loaded yet", never an error or a spinner | Unit(`CalendarPage.test.jsx`) | ✅ |
+| The stepper refuses to leave the loaded span and is visibly disabled, with the reason shown | Unit(`CalendarPage.test.jsx`) | ✅ |
+| Unloaded days are counted and rendered as empty cells rather than shrinking the grid | Unit(`CalendarPage.test.jsx`) | ✅ |
+| Tapping a month cell opens that date's day view | Unit(`CalendarPage.test.jsx`) | ✅ |
+| Native-month grouping: boundary split, start projected back from the first loaded day, dayCount measured against the next month | Unit(`nativeCalendar.test.js`) | ✅ |
+| Fetch window is quantised into buckets so stepping within a month is one fetch, not one per arrow press | Unit(`nativeCalendar.test.js`) | ✅ |
+| axe-core (WCAG 2.1 AA subset) clean on all three views, rendered inside the real Layout | Unit(`a11y.test.jsx`) | ✅ |
+| Grid cells carry a real accessible name (`Aavani 11, 27 Aug`), not the run-on `1127` two adjacent numbers produce | Unit(`a11y.test.jsx` + `CalendarPage.test.jsx`) | ✅ |
+| Every calendar text colour clears **5:1** on all four grounds it lands on, and `--action` is never used as a text colour here | Unit(`contrast.test.js`) | ✅ |
+| Tradition switch on Profile is reflected on the Calendar page | - | ⬜ covered per-tradition in unit tests, not as a live switch |
+| On-device check of Tamil/Malayalam script rendering in the Android WebView | Manual | ⬜ |
+
+**Real-browser coverage (`e2e/calendar.spec.js`, 2026-08-25).** The rows above are all jsdom. These run against the real deployed data in Chromium, so every assertion is *relational* (the label changed, then changed back) rather than a hardcoded date - a spec asserting "Aavani 9" would start failing the day the calendar left Aavani. Session is seeded via `helpers/session.js`, never typed. Non-destructive: this page only reads.
+
+| Case | Layer | Status |
+|---|---|---|
+| Calendar tab replaces Referrals in the nav and opens `/calendar`; no Referrals link remains | E2E(`calendar.spec.js`) | ✅ |
+| `/referrals` redirects to the Profile invite card - proven while `ReferralsPage.jsx` + `referralsCache.js` are **still on disk**, so the redirect is what serves the URL, not the orphan files | E2E(`calendar.spec.js`) | ✅ |
+| Day/Week/Month segment switches views, and exactly one button reports `aria-pressed="true"` | E2E(`calendar.spec.js`) | ✅ |
+| Both steppers move forward then back symmetrically in **each** of the three views (day/week/month share one `CalHeader`) | E2E(`calendar.spec.js`) | ✅ |
+| A month grid cell opens that exact day in the day view, and the segment follows to Day | E2E(`calendar.spec.js`) | ✅ |
+| Month stepper stops at **both** ends of the loaded span, disabled, with a `.cal-notloaded` explanation | E2E(`calendar.spec.js`) | ✅ |
+| A disabled stepper force-clicked does not move the calendar (dead, not just dimmed) | E2E(`calendar.spec.js`) | ✅ |
+| Every button in every view has a non-empty accessible name; sweep asserts it matched ≥5 buttons so it cannot pass vacuously | E2E(`calendar.spec.js`) | ✅ |
+| Switching views and stepping raises no uncaught exceptions or app console errors (Cloudflare RUM beacon CORS noise on localhost is filtered) | E2E(`calendar.spec.js`) | ✅ |
+
+> **Running e2e locally:** use `VITE_TURNSTILE_SITE_KEY="" npx playwright test --grep-invert "@destructive|@manual"`. A plain `npx playwright test` picks up the real Turnstile key from `app/.env`, which never resolves for a Playwright-driven browser (`--headed` does not help - it is the driver fingerprint, not headlessness), and 3 `auth-negative` specs then fail on a stuck "Verifying..." button. CI omits the key deliberately - see the comment in `ci.yml`.
 
 ### Streaks & freezes
 | Case | Layer | Status |
