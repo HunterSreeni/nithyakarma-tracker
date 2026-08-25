@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.1.1...app-v1.1.2) (2026-08-25)
+
+
+### Bug Fixes
+
+* **test:** stop the tradition-revert test racing its own assertion ([d57065f](https://github.com/HunterSreeni/nithyakarma-tracker/commit/d57065f90ca0ec21e2e4284be8adc4feea70bb3f))
+
 ## [1.1.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.1.0...app-v1.1.1) (2026-08-25)
 
 
