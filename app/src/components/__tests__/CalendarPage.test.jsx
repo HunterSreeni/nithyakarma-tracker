@@ -141,6 +141,28 @@ describe('CalendarPage week view', () => {
 })
 
 describe('CalendarPage month view', () => {
+  // The full names truncated to "ஞாயி..." on a phone: seven columns share the
+  // screen, so each gets ~44px. The grid head must use the short forms, while
+  // the week view (a whole row per day) keeps the full ones.
+  it('heads the grid with short weekdays, keeping the full name accessible', async () => {
+    renderPage()
+    await screen.findByText('ஆவணி 7')
+    fireEvent.click(screen.getByRole('button', { name: 'Month' }))
+
+    const sunday = await screen.findByLabelText('ஞாயிறு')
+    expect(sunday).toHaveTextContent('ஞா')
+    expect(screen.getByLabelText('செவ்வாய்')).toHaveTextContent('செ')
+    // The long forms must not appear as visible column headings.
+    expect(screen.queryByText('செவ்வாய்')).not.toBeInTheDocument()
+  })
+
+  it('puts the varsham in brackets so it reads apart from the month name', async () => {
+    renderPage()
+    await screen.findByText('ஆவணி 7')
+    fireEvent.click(screen.getByRole('button', { name: 'Month' }))
+    expect(await screen.findByText('ஆவணி (பராபவ வருடம்)')).toBeInTheDocument()
+  })
+
   it('renders the native month, not the Gregorian one', async () => {
     renderPage()
     await screen.findByText('ஆவணி 7')

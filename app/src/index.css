@@ -565,10 +565,13 @@ a.verse-card { text-decoration: none; color: inherit; }
 .cal-nl-title { font-size: 0.9rem; font-weight: 700; }
 .cal-nl-sub { font-size: 0.82rem; font-weight: 500; margin-top: 0.25rem; line-height: 1.5; }
 
-.cal-wk-row { display: grid; grid-template-columns: 56px 1fr; gap: 0.7rem; align-items: center; background: #fff; border: 1.5px solid var(--cream); border-radius: 12px; padding: 0.6rem; margin-top: 0.4rem; color: var(--saffron-900); }
+/* 76px, not 56px: the longest Tamil weekdays (செவ்வாய், வியாழன்) overran a
+   56px track on device and ate the gutter, so the day column visually touched
+   the thithi. Sized for the widest name in either script. */
+.cal-wk-row { display: grid; grid-template-columns: 76px 1fr; gap: 0.7rem; align-items: center; background: #fff; border: 1.5px solid var(--cream); border-radius: 12px; padding: 0.6rem; margin-top: 0.4rem; color: var(--saffron-900); }
 .cal-wk-row.today { border-color: var(--saffron-600); background: var(--saffron-50); }
 .cal-wk-row.empty { background: var(--paper); border-style: dashed; border-color: var(--warm); }
-.cal-wk-date { text-align: center; }
+.cal-wk-date { text-align: center; min-width: 0; }
 .cal-wk-wd { font-size: 0.74rem; font-weight: 500; }
 .cal-wk-nd { font-size: 1.3rem; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .cal-wk-greg { font-size: 0.72rem; font-weight: 500; font-variant-numeric: tabular-nums; }
