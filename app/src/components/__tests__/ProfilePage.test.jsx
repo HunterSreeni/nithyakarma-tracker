@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 const h = vi.hoisted(() => ({
@@ -54,7 +54,13 @@ describe('ProfilePage panchangam tradition preference', () => {
     h.updateProfile = vi.fn(() => Promise.reject(new Error('network error')))
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Malayalam' }))
-    expect(await screen.findByRole('button', { name: 'Tamil' })).toHaveClass('on')
+    // waitFor, not findByRole: the Tamil button exists from first render, so
+    // findByRole resolves on the first tick and asserts the class before
+    // setTraditionPref's catch has reverted it (ProfilePage.jsx sets the new
+    // value synchronously, then reverts a microtask later). That window is
+    // wide enough to lose on a loaded CI runner. Poll the class, not the node.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Tamil' })).toHaveClass('on'))
     expect(screen.getByRole('button', { name: 'Malayalam' }).className).not.toContain('on')
   })
 })
