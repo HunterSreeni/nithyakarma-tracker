@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.1.2...app-v1.1.3) (2026-09-02)
+
+
+### Bug Fixes
+
+* grant service_role SELECT on family_members ([9857be7](https://github.com/HunterSreeni/nithyakarma-tracker/commit/9857be7ac45420fbc3821d43cec3fa88b50ed9a6))
+* grant service_role SELECT on panchangam_observances ([f72ed0f](https://github.com/HunterSreeni/nithyakarma-tracker/commit/f72ed0f82c915b953fe792a7ebdd8b388b6ec646))
+
 ## [1.1.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.1.1...app-v1.1.2) (2026-08-25)
 
 
