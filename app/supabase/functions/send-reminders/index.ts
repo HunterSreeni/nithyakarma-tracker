@@ -14,10 +14,10 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { loadConfig, sendFCM, sendWebPush } from "../_shared/push.ts";
 import { addDays, bestAdvanceMatch, bestMatch, type ObservanceRule } from "../_shared/observanceMatch.ts";
-import { dayComplete } from "../_shared/dayComplete.ts";
 import { freezeNudge } from "../_shared/freezeNudge.ts";
 import { streakEventMessage } from "../_shared/streakEventMessage.ts";
 import { slotFor } from "../_shared/reminderWindow.ts";
+import { shouldSendReminder } from "../_shared/reminderGate.ts";
 
 const ADVANCE_DAYS = 3;
 
@@ -296,36 +296,20 @@ Deno.serve(async (req: Request) => {
       continue;
     }
 
-    // AI-DEV NOTE: removed (archived) practices are kept as rows so their logs
-    // still count - an archived practice logged earlier today still completed
-    // the day in submit_practice_log's aggregate, so dayComplete sees ALL rows.
-    // But a user whose practices are all removed has nothing to be nudged
-    // about, and Sandhya slot pushes follow only an active Sandhya row.
-    const mine = (ups ?? []).filter((u: any) => u.owner_id === uid);
-    const active = mine.filter((u: any) => !u.archived_at);
+    // AI-DEV NOTE: who gets which reminder (archived rows, day completion,
+    // male + active Sandhya, once per slot) lives in _shared/reminderGate.ts,
+    // where it is unit-tested. Keep this call site thin.
+    const mine: any[] = (ups ?? []).filter((u: any) => u.owner_id === uid);
+    if (!shouldSendReminder(slot, mine, logsByUp, profileById.get(uid)?.gender, date)) continue;
     let title = TITLES[slot];
     let body = BODIES[slot];
 
     if (slot === "nudge" || slot === "nudge_morning") {
-      // Mirrors cadence.js's dayComplete / the SQL bool_or day-completion
-      // aggregate: ANY ONE affects_streak, scheduled practice logged today
-      // (any 1 of 3 sandhya slots included) already secures the streak, so
-      // the nudge must stay silent - not require every practice logged.
-      if (!active.length) continue;
-      const items = mine.map((u: any) => ({ practice: u.practice, logs: logsByUp.get(u.id) ?? [] }));
-      if (dayComplete(items, date)) continue;
       // Say what is actually at stake when a freeze is in play, instead of the
       // generic "your streak is waiting". Both windows are judged against the
       // user's own local date, which is what makes this the right place for it.
       const freezeMsg = freezeNudge(slot, profileById.get(uid), date);
       if (freezeMsg) { title = freezeMsg.title; body = freezeMsg.body; }
-    } else {
-      // sandhya slot reminders only for male users tracking sandhyavandhanam
-      if (profileById.get(uid)?.gender !== "male") continue;
-      const sandhya = active.find((u: any) => u.practice.is_sandhyavandhanam);
-      if (!sandhya) continue;
-      const dayLogs = (logsByUp.get(sandhya.id) ?? []).filter((l: any) => l.log_date === date);
-      if (dayLogs.some((l: any) => l.slot === slot)) continue; // already done
     }
 
     sent += await deliver(uid, date, slot, title, body);
