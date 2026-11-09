@@ -29,20 +29,33 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [testResult, setTestResult] = useState('')
+  // AI-DEV NOTE: a failed preference read must not look like "notifications
+  // off" - that showed an unchecked toggle for users who had them on. Keep the
+  // toggle disabled and offer a retry instead.
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const native = Capacitor.isNativePlatform()
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
+    setLoading(true); setLoadFailed(false)
     supabase.from('notification_preferences')
       .select('enabled, tharpanam_enabled, observances_enabled').eq('user_id', user.id).maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error: loadError }) => {
+        if (loadError) throw loadError
         setEnabled(data?.enabled ?? false)
         setTharpanamEnabled(data?.tharpanam_enabled ?? false)
         setObservancesEnabled(data?.observances_enabled ?? false)
         setLoading(false)
       })
-      .catch(() => setLoading(false))
-  }, [user])
+      .catch((err) => {
+        setLoadFailed(true)
+        setError(friendlyError(err))
+        setLoading(false)
+      })
+  }, [user, loadAttempt])
+
+  const retryLoad = useCallback(() => { setError(''); setLoadAttempt(n => n + 1) }, [])
 
   // Keep local reminders scheduled on native when enabled
   useEffect(() => {
@@ -198,7 +211,7 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
   }, [user])
 
   return {
-    enabled, tharpanamEnabled, observancesEnabled, loading, error, testResult,
+    enabled, tharpanamEnabled, observancesEnabled, loading, loadFailed, retryLoad, error, testResult,
     supported: native || isPushSupported(),
     toggle, toggleTharpanam, toggleObservances, sendTestNotification,
   }
