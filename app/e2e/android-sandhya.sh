@@ -33,7 +33,9 @@ PKG="org.nithyakarma.app"
 APK="$APP_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
 SCRATCH="$(mktemp -d)"
 EMAIL="android-sandhya-throwaway@nithyakarma.test"
-PASSWORD="AndroidSandhya2026xyz"
+# Never commit the password: export ANDROID_E2E_PASSWORD (the same value you
+# pasted into the seed's v_password) before running.
+PASSWORD="${ANDROID_E2E_PASSWORD:?export ANDROID_E2E_PASSWORD first (see the seed file)}"
 cd "$APP_DIR"
 
 tap() { adb shell input tap "$1" "$2"; }

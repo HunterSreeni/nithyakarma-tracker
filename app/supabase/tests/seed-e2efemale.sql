@@ -17,7 +17,7 @@ begin
     email_change_token_current, reauthentication_token, phone_change, phone_change_token
   ) values (
     '00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
-    'e2efemale@nithyakarma.test', crypt('E2eFemale#2026', gen_salt('bf')),
+    'e2efemale@nithyakarma.test', crypt(gen_random_uuid()::text, gen_salt('bf')),
     now(), now(), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
     '', '', '', '', '', '', '', ''
   );
