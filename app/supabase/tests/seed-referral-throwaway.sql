@@ -7,7 +7,11 @@
 -- after an interrupted run.
 do $$
 declare v_id uuid := gen_random_uuid();
+declare v_password text := 'REPLACE_ME';
 begin
+  -- AI-DEV NOTE: never commit a real password here. Paste your local
+  -- E2E_REFERRAL_THROWAWAY_PASSWORD value into v_password before running, and do not save it.
+  if v_password = 'REPLACE_ME' then raise exception 'Set v_password to your local E2E_REFERRAL_THROWAWAY_PASSWORD first'; end if;
   delete from auth.users where email = 'referral-throwaway@nithyakarma.test';
 
   insert into auth.users (
@@ -17,7 +21,7 @@ begin
     email_change_token_current, reauthentication_token, phone_change, phone_change_token
   ) values (
     '00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
-    'referral-throwaway@nithyakarma.test', crypt('ReferralThrowaway#2026', gen_salt('bf')),
+    'referral-throwaway@nithyakarma.test', crypt(v_password, gen_salt('bf')),
     now(), now(), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
     '', '', '', '', '', '', '', ''
   );
