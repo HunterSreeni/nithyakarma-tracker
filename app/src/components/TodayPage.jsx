@@ -225,20 +225,27 @@ export default function TodayPage() {
 // actionable screen instead of a blank list.
 const SUGGESTED_SLUGS = ['narayaneeyam', 'lalitha-sahasranamam', 'devi-mahatmyam']
 
+// AI-DEV NOTE: a failed fetch must show an error with Retry, never an empty
+// list - for a new user with nothing tracked yet, "empty" left Today blank.
 function SuggestedPractices({ onAdd }) {
-  const [suggestions, setSuggestions] = useState([])
   const [busy, setBusy] = useState(null)
-
-  useEffect(() => {
-    supabase.from('practices').select('*').in('slug', SUGGESTED_SLUGS).eq('active', true).order('id')
-      .then(({ data }) => setSuggestions(data ?? []))
-  }, [])
+  const suggestionsQuery = useQuery({
+    queryKey: ['practices', 'suggested'],
+    queryFn: async () => unwrap(await withDeadline(
+      supabase.from('practices').select('*').in('slug', SUGGESTED_SLUGS).eq('active', true).order('id'),
+      'Suggested practices',
+    )) ?? [],
+  }, queryClient)
+  const suggestions = suggestionsQuery.data ?? []
 
   const add = async (id) => {
     setBusy(id)
     try { await onAdd(id) } finally { setBusy(null) }
   }
 
+  if (suggestionsQuery.error) {
+    return <ErrorBanner message={friendlyError(suggestionsQuery.error)} onRetry={() => suggestionsQuery.refetch()} />
+  }
   if (!suggestions.length) return null
   return (
     <>
@@ -446,25 +453,26 @@ function YesterdaySandhya({ item }) {
 function AddPracticeDropdown({ existing, onAdd }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [catalog, setCatalog] = useState([])
-  const [catalogLoaded, setCatalogLoaded] = useState(false)
   const [error, setError] = useState(null)
   const { profile, selectedMember } = useAuth()
   const dropdownRef = useRef(null)
   useFocusTrap(dropdownRef, open)
 
-  // On first open, not on mount: `catalog` is only ever read inside the
+  // On first open, not on mount: the catalog is only ever read inside the
   // `open &&` block below, so fetching the whole practices table on every
   // Today render just put a full table read on the reopen critical path for a
-  // dropdown most users never touch. Tracked with a loaded flag rather than
-  // `catalog.length`, so the in-flight state is distinguishable from a genuine
-  // empty result - otherwise the first open renders "No matches" for the whole
-  // round trip, which reads as "there is nothing to add".
-  useEffect(() => {
-    if (!open || catalogLoaded) return
-    supabase.from('practices').select('*').eq('active', true).order('id')
-      .then(({ data }) => { setCatalog(data ?? []); setCatalogLoaded(true) })
-  }, [open, catalogLoaded])
+  // dropdown most users never touch. Pending, failed and genuinely empty are
+  // distinct states - "No matches" during the round trip or after a failed
+  // fetch reads as "there is nothing to add".
+  const catalogQuery = useQuery({
+    queryKey: ['practices', 'catalog'],
+    enabled: open,
+    queryFn: async () => unwrap(await withDeadline(
+      supabase.from('practices').select('*').eq('active', true).order('id'),
+      'Practice catalog',
+    )) ?? [],
+  }, queryClient)
+  const catalog = catalogQuery.data ?? []
 
   useEffect(() => {
     if (!open) return
@@ -522,9 +530,11 @@ function AddPracticeDropdown({ existing, onAdd }) {
               </button>
             )
           })}
-          {!catalogLoaded
-            ? <div className="dd-item muted">Loading...</div>
-            : visible.length === 0 && <div className="dd-item muted">No matches</div>}
+          {catalogQuery.error
+            ? <ErrorBanner message={friendlyError(catalogQuery.error)} onRetry={() => catalogQuery.refetch()} />
+            : catalogQuery.isPending
+              ? <div className="dd-item muted">Loading...</div>
+              : visible.length === 0 && <div className="dd-item muted">No matches</div>}
         </div>
       )}
       {error && <div className="auth-error" role="alert">{error}</div>}

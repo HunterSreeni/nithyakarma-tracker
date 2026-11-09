@@ -22,7 +22,7 @@ const h = vi.hoisted(() => ({
   submit: vi.fn(), showInterstitial: vi.fn().mockResolvedValue(false),
   profile: { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 },
   selectedMember: null,
-  refresh: vi.fn(), rpc: vi.fn(), yesterdayLogs: [],
+  refresh: vi.fn(), rpc: vi.fn(), yesterdayLogs: [], catalogError: null,
 }))
 vi.mock('../../hooks/useToday', () => ({
   useToday: () => ({ items: h.items, loading: false, submit: h.submit, addPractice: h.addPractice, removePractice: h.removePractice }),
@@ -44,7 +44,7 @@ vi.mock('../../lib/supabase', () => {
   const chain = (table) => {
     const c = {
       select: () => c, eq: () => c, in: () => c,
-      order: () => Promise.resolve({ data: h.catalog }),
+      order: () => Promise.resolve(h.catalogError ? { data: null, error: h.catalogError } : { data: h.catalog, error: null }),
       then: (resolve) => resolve({ data: table === 'practice_logs' ? h.yesterdayLogs : h.catalog }),
     }
     return c
@@ -75,7 +75,7 @@ const samidhaItem = (slots) => ({
 
 beforeEach(() => {
   queryClient.clear()
-  h.items = []; h.catalog = []; h.yesterdayLogs = []
+  h.items = []; h.catalog = []; h.yesterdayLogs = []; h.catalogError = null
   h.addPractice.mockClear(); h.removePractice.mockReset(); h.submit.mockReset(); h.showInterstitial.mockClear()
   h.refresh.mockClear(); h.rpc.mockReset()
   h.profile = { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 }
@@ -681,5 +681,28 @@ describe('TodayPage - removing an anushtanam', () => {
     render(<TodayPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Remove Narayaneeyam' }))
     expect(await screen.findByRole('alert')).toBeInTheDocument()
+  })
+})
+
+// F4 (state machine audit): a failed practices fetch is an error with Retry,
+// never an empty list (a blank Today for a new user, or "No matches").
+describe('TodayPage - practices fetch failures are not empty lists', () => {
+  it('shows Retry instead of a blank day when the suggestions fetch fails, and recovers', async () => {
+    h.items = []; h.catalogError = { message: 'Failed to fetch' }
+    render(<TodayPage />)
+    const retry = await screen.findByRole('button', { name: 'Retry' })
+    expect(screen.queryByText('Suggested to start')).not.toBeInTheDocument()
+    h.catalogError = null
+    h.catalog = [{ id: 2, slug: 'narayaneeyam', name: 'Narayaneeyam', cadence: 'daily' }]
+    fireEvent.click(retry)
+    expect(await screen.findByText('Suggested to start')).toBeInTheDocument()
+  })
+
+  it('the add-practice list shows an error with Retry, not "No matches", when the catalog fetch fails', async () => {
+    h.items = [sandhyaItem([])]; h.catalogError = { message: 'Failed to fetch' }
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Add an anushtanam to track...'))
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeInTheDocument()
+    expect(screen.queryByText('No matches')).not.toBeInTheDocument()
   })
 })

@@ -29,7 +29,7 @@ vi.mock('../../utils/notifications', () => ({
   cancelAllReminders: vi.fn().mockResolvedValue(undefined),
 }))
 
-const h = vi.hoisted(() => ({ prefEnabled: false, tharpanamEnabled: false, observancesEnabled: false }))
+const h = vi.hoisted(() => ({ prefEnabled: false, tharpanamEnabled: false, observancesEnabled: false, prefError: null }))
 const upsertPref = vi.fn().mockResolvedValue({ error: null })
 const updatePref = vi.fn().mockResolvedValue({ error: null })
 const deleteSub = vi.fn().mockResolvedValue({ error: null })
@@ -41,7 +41,7 @@ vi.mock('../../lib/supabase', () => ({
         return {
           select: () => ({
             eq: () => ({
-              maybeSingle: () => Promise.resolve({
+              maybeSingle: () => Promise.resolve(h.prefError ? { data: null, error: h.prefError } : {
                 data: {
                   enabled: h.prefEnabled,
                   tharpanam_enabled: h.tharpanamEnabled,
@@ -76,6 +76,7 @@ beforeEach(() => {
   h.prefEnabled = false
   h.tharpanamEnabled = false
   h.observancesEnabled = false
+  h.prefError = null
   window.Notification = { permission: 'granted', requestPermission: vi.fn().mockResolvedValue('granted') }
 })
 
@@ -279,5 +280,22 @@ describe('sendTestNotification', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
     await act(() => result.current.sendTestNotification())
     expect(result.current.error).not.toBe('')
+  })
+})
+
+// F4 (state machine audit): a failed preference read must not look like
+// "notifications off" - it flags loadFailed and can be retried.
+describe('useNotifications preference load failure', () => {
+  it('flags loadFailed with an error instead of reporting notifications as off, and retry recovers', async () => {
+    h.prefError = { message: 'Failed to fetch' }
+    const { result } = renderHook(() => useNotifications(user))
+    await waitFor(() => expect(result.current.loadFailed).toBe(true))
+    expect(result.current.error).toBeTruthy()
+    h.prefError = null
+    h.prefEnabled = true
+    act(() => { result.current.retryLoad() })
+    await waitFor(() => expect(result.current.enabled).toBe(true))
+    expect(result.current.loadFailed).toBe(false)
+    expect(result.current.error).toBe('')
   })
 })

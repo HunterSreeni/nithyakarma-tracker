@@ -74,6 +74,14 @@ export function AuthProvider({ children }) {
   // null = self, otherwise a family_members row (parent tracks the child)
   const [selectedMember, setSelectedMember] = useState(null)
   const [loading, setLoading] = useState(!cached)
+  // AI-DEV NOTE: `profile === null` alone cannot tell "not fetched yet" from
+  // "this account has no profile". Gate must show Onboarding ONLY on 'absent':
+  // on 'unknown'/'loading' an existing user saw the onboarding intro flash on
+  // every fresh sign-in, and on a failed fetch they were stranded on it (its
+  // submit then hit a duplicate-key error). 'error' gets a Retry screen.
+  // States: unknown -> loading -> present | absent | error. A cached/loaded
+  // profile stays 'present' through background refreshes, even failed ones.
+  const [profileStatus, setProfileStatus] = useState(cached?.profile ? 'present' : 'unknown')
   const [sessionValidated, setSessionValidated] = useState(false)
   const dataLifecycle = useDataLifecycle()
   // Set only by createProfile() completing - the one true "onboarding just
@@ -106,20 +114,27 @@ export function AuthProvider({ children }) {
   // without Sreeni's explicit instruction; see AGENTS.md.
   const loadProfile = useCallback(async (session) => {
     const uid = session.user.id
-    const result = await queryClient.fetchQuery({
-      queryKey: ['profile', uid],
-      staleTime: 0,
-      queryFn: async () => {
-        const [profileResult, familyResult] = await withDeadline(Promise.all([
-          supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
-          supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
-        ]), 'Profile refresh')
-        return {
-          profile: unwrap(profileResult) ?? null,
-          familyMembers: unwrap(familyResult) ?? [],
-        }
-      },
-    })
+    setProfileStatus(s => s === 'present' ? s : 'loading')
+    let result
+    try {
+      result = await queryClient.fetchQuery({
+        queryKey: ['profile', uid],
+        staleTime: 0,
+        queryFn: async () => {
+          const [profileResult, familyResult] = await withDeadline(Promise.all([
+            supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
+            supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
+          ]), 'Profile refresh')
+          return {
+            profile: unwrap(profileResult) ?? null,
+            familyMembers: unwrap(familyResult) ?? [],
+          }
+        },
+      })
+    } catch (err) {
+      setProfileStatus(s => s === 'present' ? s : 'error')
+      throw err
+    }
     let profile = result.profile
     const familyMembers = result.familyMembers
     // Keep profiles.timezone tracking the device. It drives decay_stale_streaks'
@@ -137,6 +152,7 @@ export function AuthProvider({ children }) {
       } catch { /* a background write must never break the load path */ }
     }
     setProfile(profile)
+    setProfileStatus(profile ? 'present' : 'absent')
     setFamilyMembers(familyMembers)
     // selectedMember is a row snapshot taken when the chip was tapped
     // (ProfileSwitcher), so it goes stale the moment that child's streak /
@@ -161,7 +177,7 @@ export function AuthProvider({ children }) {
       setSession(nextSession)
       setSessionValidated(true)
       if (!nextSession) {
-        setProfile(null); setFamilyMembers([]); setSelectedMember(null)
+        setProfile(null); setFamilyMembers([]); setSelectedMember(null); setProfileStatus('unknown')
         clearAllCaches()
         setLoading(false)
       }
@@ -175,7 +191,7 @@ export function AuthProvider({ children }) {
       setSession(data.session)
       setSessionValidated(true)
       if (!data.session) {
-        setProfile(null); setFamilyMembers([]); setSelectedMember(null)
+        setProfile(null); setFamilyMembers([]); setSelectedMember(null); setProfileStatus('unknown')
         clearAllCaches()
       }
     }).catch(() => {
@@ -261,6 +277,21 @@ export function AuthProvider({ children }) {
     })
   const updatePassword = (password) => supabase.auth.updateUser({ password })
 
+  // AI-DEV NOTE: onboarding runs several writes in a row, so a retry after a
+  // partial failure must be safe. Sandhyavandhanam is (re)ensured, never
+  // silently skipped: a duplicate means it is already there; any other
+  // failure is surfaced so the user can retry instead of being left without it.
+  const ensureSandhya = async (familyMemberId) => {
+    const sandhya = unwrap(await supabase.from('practices')
+      .select('id').eq('is_sandhyavandhanam', true).single())
+    const { error } = await supabase.from('user_practices').insert({
+      owner_id: session.user.id, family_member_id: familyMemberId, practice_id: sandhya.id,
+    })
+    // The only unique key this insert can hit besides its random id is
+    // (owner, member, practice) - so 23505 means Sandhya is already tracked.
+    if (error && error.code !== '23505') throw error
+  }
+
   // Onboarding: create the profile row (RLS: id must equal auth.uid()).
   const createProfile = async ({ displayName, gender, isMarried, panchangamTradition, referralCode }) => {
     const { error } = await supabase.from('profiles').insert({
@@ -268,7 +299,14 @@ export function AuthProvider({ children }) {
       is_married: gender === 'male' ? !!isMarried : false,
       panchangam_tradition: panchangamTradition ?? 'tamil',
     })
-    if (error) throw error
+    if (error) {
+      // A retry after a partial failure: the row is keyed by this user's own id,
+      // so a unique violation means our earlier attempt already created it -
+      // confirm it is really there, then finish the remaining steps.
+      if (error.code !== '23505') throw error
+      const existing = unwrap(await supabase.from('profiles').select('id').eq('id', session.user.id).maybeSingle())
+      if (!existing) throw error
+    }
     if (referralCode) {
       // AI-DEV NOTE: Protected referral call site. See AGENTS.md "Referrals" -
       // apply_referral owns the reward/rate-limit logic server-side; do not
@@ -282,15 +320,7 @@ export function AuthProvider({ children }) {
       }
     }
     // Sandhyavandhanam is the constant practice for male users
-    if (gender === 'male') {
-      const { data: sandhya } = await supabase.from('practices')
-        .select('id').eq('is_sandhyavandhanam', true).single()
-      if (sandhya) {
-        await supabase.from('user_practices').insert({
-          owner_id: session.user.id, practice_id: sandhya.id,
-        })
-      }
-    }
+    if (gender === 'male') await ensureSandhya(null)
     track('onboarding_complete', { gender, referred: !!referralCode })
     await loadProfile(session)
     setJustOnboarded(true)
@@ -314,18 +344,31 @@ export function AuthProvider({ children }) {
       bala_sabha_opt_in: balaSabhaOptIn,
     }).select().single()
     if (error) throw error
-    // Boys with upanayanam done get Sandhyavandhanam automatically
+    // AI-DEV NOTE: the child row exists from here on and re-submitting would
+    // add a second child, so EVERY later failure is reported as a partial
+    // success (callers close the form) - never as a plain retryable error.
+    const partialFailure = async (message) => {
+      invalidateLeaderboard()
+      await loadProfile(session).catch(() => {})
+      const partial = new Error(message)
+      partial.userFacing = true
+      partial.partial = true
+      throw partial
+    }
+    // Boys with upanayanam done get Sandhyavandhanam automatically.
     if (gender === 'male' && upanayanamDone) {
-      const { data: sandhya } = await supabase.from('practices')
-        .select('id').eq('is_sandhyavandhanam', true).single()
-      if (sandhya) {
-        await supabase.from('user_practices').insert({
-          owner_id: session.user.id, family_member_id: data.id, practice_id: sandhya.id,
-        })
+      try {
+        await ensureSandhya(data.id)
+      } catch {
+        await partialFailure(`${name} was added, but Sandhyavandhanam could not be added. Add it from Today.`)
       }
     }
     invalidateLeaderboard()
-    await loadProfile(session)
+    try {
+      await loadProfile(session)
+    } catch {
+      await partialFailure(`${name} was added, but the list could not refresh. Reopen Profile to see them.`)
+    }
     return data
   }
 
@@ -347,7 +390,7 @@ export function AuthProvider({ children }) {
   }
 
   const value = {
-    session, profile, familyMembers, selectedMember, setSelectedMember, loading,
+    session, profile, profileStatus, familyMembers, selectedMember, setSelectedMember, loading,
     signInGoogle, signInEmail, signUpEmail, signOut, resetPassword, updatePassword,
     createProfile, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount,
     // called by TodayPage after every mark (incl. yesterday Sandhya)

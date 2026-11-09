@@ -17,6 +17,7 @@ export default function ProfilePage() {
   const [name, setName] = useState(profile.display_name)
   const [saved, setSaved] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [familyNotice, setFamilyNotice] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState('')
   const [error, setError] = useState(null)
   const [optIn, setOptIn] = useState(profile.leaderboard_opt_in)
@@ -140,8 +141,9 @@ export default function ProfilePage() {
           </div>
         ))}
         {showAdd
-          ? <AddFamilyForm onDone={() => setShowAdd(false)} onAdd={addFamilyMember} />
-          : <button className="btn-secondary" onClick={() => setShowAdd(true)}>+ Add family member</button>}
+          ? <AddFamilyForm onDone={(message) => { setShowAdd(false); setFamilyNotice(message ?? null) }} onAdd={addFamilyMember} />
+          : <button className="btn-secondary" onClick={() => { setFamilyNotice(null); setShowAdd(true) }}>+ Add family member</button>}
+        {familyNotice && <div className="auth-error" role="alert">{familyNotice}</div>}
       </div>
 
       <div className="referral-card">
@@ -243,6 +245,9 @@ function AddFamilyForm({ onAdd, onDone }) {
       await onAdd({ name: name.trim(), gender, upanayanamDone: upanayanam, balaSabhaOptIn: balaSabha })
       onDone()
     } catch (err) {
+      // The child was created but a follow-up step failed: close the form so a
+      // second submit cannot add the same child twice, and report it on the page.
+      if (err?.partial) { onDone(friendlyError(err)); return }
       setError(friendlyError(err)); setBusy(false)
     }
   }
@@ -269,7 +274,7 @@ function AddFamilyForm({ onAdd, onDone }) {
       {error && <div className="auth-error" role="alert">{error}</div>}
       <div style={{ display: 'flex', gap: '0.6rem' }}>
         <button type="submit" className="btn-primary" disabled={busy}>Add</button>
-        <button type="button" className="btn-secondary" onClick={onDone}>Cancel</button>
+        <button type="button" className="btn-secondary" onClick={() => onDone()}>Cancel</button>
       </div>
     </form>
   )

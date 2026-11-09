@@ -30,7 +30,7 @@ const KandamPage = lazyWithRetry(() => import('./components/KandamPage'))
 const DeviMahatmyamPage = lazyWithRetry(() => import('./components/DeviMahatmyamPage'))
 
 function Gate() {
-  const { session, profile, loading, dataStatus, justOnboarded, clearJustOnboarded } = useAuth()
+  const { session, profile, profileStatus, refresh, loading, dataStatus, justOnboarded, clearJustOnboarded } = useAuth()
   const { pathname } = useLocation()
   // Cheap watchdog for the one loading state that fully blanks the app: if
   // something upstream still manages to hang despite the guards in useAuth,
@@ -98,6 +98,26 @@ function Gate() {
   // Reachable during the recovery session so it isn't skipped into the app.
   if (pathname === '/reset') return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><ResetPassword /></Suspense>
   if (!session) return <AuthPage />
+  // AI-DEV NOTE: Onboarding only when the server confirmed there is no
+  // profile - see profileStatus in useAuth. Never on a pending or failed fetch.
+  if (!profile && profileStatus === 'error') {
+    return (
+      <div className="spinner-wrap stuck" role="alert">
+        <div>Couldn't load your profile. Check your connection and try again.</div>
+        <button type="button" className="btn-auth" onClick={() => { refresh()?.catch(() => {}) }}>Retry</button>
+      </div>
+    )
+  }
+  if (!profile && profileStatus !== 'absent') {
+    if (dataStatus === 'offline') {
+      return (
+        <div className="spinner-wrap stuck">
+          <div>You're offline. Reconnect to continue.</div>
+        </div>
+      )
+    }
+    return <div className="spinner-wrap">Loading...</div>
+  }
   if (!profile) return <Suspense fallback={<div className="spinner-wrap">Loading...</div>}><Onboarding /></Suspense>
   if (showNotifPrompt) {
     return (
