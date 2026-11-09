@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.2.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.1.3...app-v1.2.0) (2026-11-09)
+
+
+### Features
+
+* **today:** remove an anushtanam (soft archive) ([3a3c5a8](https://github.com/HunterSreeni/nithyakarma-tracker/commit/3a3c5a8ddb5108fe5acc73b39d26ecee3f0d8d3b))
+* **today:** remove an anushtanam (soft archive) and restore it on re-add ([02560e3](https://github.com/HunterSreeni/nithyakarma-tracker/commit/02560e3e91f0183e1dceaf0487beae61b8483550))
+
+
+### Bug Fixes
+
+* phase 3 hardening (reward columns, referral re-farm, Sabha cache, archived logs) ([f77862b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/f77862b14742ebc3e564ac54a575ebe4ca82eff9))
+* **push:** hand a shared device to the latest account and release it on sign-out ([8d3aef2](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8d3aef286a73ff3c6d2e517d86d9c4bd4d2daf82))
+* **push:** one push endpoint per account on shared devices ([3f903d0](https://github.com/HunterSreeni/nithyakarma-tracker/commit/3f903d0fdf42e08eb60c234ce28b3edc2627c38a))
+* **push:** pin web-push to 3.6.7 in edge functions ([54665c8](https://github.com/HunterSreeni/nithyakarma-tracker/commit/54665c82cdcaea53addfcfca72a1a9abc72c992c))
+* **sabha:** per-account leaderboard cache, cleared on sign-out ([54c8b5f](https://github.com/HunterSreeni/nithyakarma-tracker/commit/54c8b5fce5880e34a728298b33bb39baf2693bcf))
+* **security:** block profile self-delete to stop referral re-farming ([da39291](https://github.com/HunterSreeni/nithyakarma-tracker/commit/da3929153a3c6d3b692aad292f2939fd09261830))
+* **security:** make reward and streak columns server-only ([c712177](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c7121777f9ff91cfff0c4d9a6570880839ef9a36))
+* **streak:** reject new logs on a removed anushtanam ([8307d0a](https://github.com/HunterSreeni/nithyakarma-tracker/commit/8307d0af10f243fc57c7bb0816f0793d80ad6425))
+
 ## [1.1.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.1.2...app-v1.1.3) (2026-09-02)
 
 
