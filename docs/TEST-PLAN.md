@@ -47,6 +47,8 @@ a different screen.
 | `android-sandhya-throwaway@...` | Pre-onboarded (male, ad-free, sandhya tracked) for `android-sandhya.sh` | `seed-android-sandhya-throwaway.sql` | Manual, drop-then-create each run |
 | `android-referral-throwaway@...` | Not pre-onboarded, for `android-referral.sh`'s manual referral-entry test | `seed-android-referral-throwaway.sql` | Manual, drop-then-create each run |
 
+No test account password is committed (2026-11-09). `e2efull`/`e2efemale` get a random password and the specs mint a session with the service-role key. The form-driven flows (`referral.spec.js`, the two `android-*.sh` scripts) read `E2E_REFERRAL_THROWAWAY_PASSWORD` / `ANDROID_E2E_PASSWORD` from your environment; paste the same value into the seed's `v_password` locally before running it, and never save it.
+
 ---
 
 ## Android tooling (this dev machine, updated 2026-08-21)
