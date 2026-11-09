@@ -706,3 +706,60 @@ describe('TodayPage - practices fetch failures are not empty lists', () => {
     expect(screen.queryByText('No matches')).not.toBeInTheDocument()
   })
 })
+
+const plainItem = (id, name) => ({
+  up: { id, current_streak: 0, sequence_position: 0 },
+  practice: { id: id.length, name, cadence: 'daily', affects_streak: true },
+  logs: [],
+})
+
+// F6 (state machine audit): reward modals are an explicit queue.
+describe('TodayPage - reward modal queue', () => {
+  it('shows the celebration first and the tier-up only after it is dismissed', async () => {
+    h.items = [plainItem('up-a', 'Japam')]
+    h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 3, practice_streak: 3, tier_up: true, tier: 'Sadhaka' })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Done' }))
+    await waitFor(() => expect(screen.getByTestId('celebration')).toBeInTheDocument())
+    expect(screen.queryByTestId('tier-up')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('close-celebration'))
+    expect(await screen.findByTestId('tier-up')).toHaveTextContent('Sadhaka')
+  })
+
+  it('shows a tier-up straight away when there is no celebration', async () => {
+    h.items = [plainItem('up-a', 'Japam')]
+    h.submit.mockResolvedValue({ saved: true, day_complete: false, overall_streak: 0, tier_up: true, tier: 'Yogi' })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Done' }))
+    expect(await screen.findByTestId('tier-up')).toHaveTextContent('Yogi')
+    expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
+  })
+})
+
+// F3 (state machine audit): each card tracks its own in-flight save.
+describe('TodayPage - per-card saving state', () => {
+  it("finishing one card's save does not re-enable another card that is still saving", async () => {
+    h.items = [plainItem('up-a', 'Japam'), plainItem('up-b', 'Gita')]
+    let resolveA
+    h.submit.mockImplementation((id) => id === 'up-a'
+      ? new Promise((res) => { resolveA = res })
+      : new Promise(() => {})) // B never finishes in this test
+    render(<TodayPage />)
+    const [btnA, btnB] = screen.getAllByRole('button', { name: 'Mark Done' })
+    fireEvent.click(btnA)
+    fireEvent.click(btnB)
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Saving...' })).toHaveLength(2))
+    resolveA({ saved: true, day_complete: false, overall_streak: 0 })
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Saving...' })).toHaveLength(1))
+    expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled()
+  })
+
+  it('ignores a second tap on a card that is already saving', async () => {
+    h.items = [plainItem('up-a', 'Japam')]
+    h.submit.mockImplementation(() => new Promise(() => {}))
+    render(<TodayPage />)
+    const btn = screen.getByRole('button', { name: 'Mark Done' })
+    fireEvent.click(btn); fireEvent.click(btn)
+    expect(h.submit).toHaveBeenCalledTimes(1)
+  })
+})

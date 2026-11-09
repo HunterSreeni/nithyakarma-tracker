@@ -1,7 +1,7 @@
 // AI-DEV NOTE: Protected notification subscription flow. See AGENTS.md
 // "Notifications & reminders" - do not change platform detection, permission
 // gating, or subscription lifecycle without Sreeni's explicit instruction.
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabase'
 import { scheduleAllReminders, cancelAllReminders } from '../utils/notifications'
@@ -34,6 +34,10 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
   // toggle disabled and offer a retry instead.
   const [loadFailed, setLoadFailed] = useState(false)
   const [loadAttempt, setLoadAttempt] = useState(0)
+  // One toggle at a time: a second tap during the permission prompt or the
+  // registration used to race the first on a stale `enabled`.
+  const [toggling, setToggling] = useState(false)
+  const togglingRef = useRef(false)
   const native = Capacitor.isNativePlatform()
 
   useEffect(() => {
@@ -120,7 +124,7 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
     return () => { cancelled = true; if (status) status.onchange = null }
   }, [native])
 
-  const toggle = useCallback(async () => {
+  const runToggle = useCallback(async () => {
     setError('')
     const next = !enabled
 
@@ -181,6 +185,12 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
     setEnabled(next)
   }, [user, native, enabled, includeSandhya])
 
+  const toggle = useCallback(async () => {
+    if (togglingRef.current) return
+    togglingRef.current = true; setToggling(true)
+    try { await runToggle() } finally { togglingRef.current = false; setToggling(false) }
+  }, [runToggle])
+
   // Sends a real push through the full server round-trip right now, instead
   // of waiting for a scheduled reminder window - the fastest way to confirm
   // whether a given account's subscription actually works.
@@ -216,7 +226,7 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
   }, [user])
 
   return {
-    enabled, tharpanamEnabled, observancesEnabled, loading, loadFailed, retryLoad, error, testResult,
+    enabled, tharpanamEnabled, observancesEnabled, loading, loadFailed, retryLoad, toggling, error, testResult,
     supported: native || isPushSupported(),
     toggle, toggleTharpanam, toggleObservances, sendTestNotification,
   }

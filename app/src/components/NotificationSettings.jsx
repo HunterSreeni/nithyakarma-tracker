@@ -5,7 +5,7 @@ import ErrorBanner from './ErrorBanner'
 export default function NotificationSettings() {
   const { session, profile } = useAuth()
   const {
-    enabled, tharpanamEnabled, observancesEnabled, loading, loadFailed, retryLoad, error, testResult, supported,
+    enabled, tharpanamEnabled, observancesEnabled, loading, loadFailed, retryLoad, toggling, error, testResult, supported,
     toggle, toggleTharpanam, toggleObservances, sendTestNotification,
   } = useNotifications(session.user, { includeSandhya: profile.gender === 'male' })
 
@@ -17,7 +17,7 @@ export default function NotificationSettings() {
       ) : (
         <>
           <label className="checkbox-row" style={{ marginTop: 0 }}>
-            <input type="checkbox" checked={enabled} disabled={loading || loadFailed} onChange={toggle} />
+            <input type="checkbox" checked={enabled} disabled={loading || loadFailed || toggling} onChange={toggle} />
             Reminder notifications
           </label>
           <div className="tp-hint">
