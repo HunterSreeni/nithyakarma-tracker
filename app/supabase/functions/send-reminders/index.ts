@@ -172,7 +172,7 @@ Deno.serve(async (req: Request) => {
   const [subsResult, upsResult, panchangamResult, rulesResult] = await Promise.all([
     supabase.from("push_subscriptions").select("user_id, endpoint, p256dh, auth_key, platform").in("user_id", ids),
     supabase.from("user_practices")
-      .select("id, owner_id, family_member_id, practice:practices(cadence, weekday, is_sandhyavandhanam, affects_streak)")
+      .select("id, owner_id, family_member_id, archived_at, practice:practices(cadence, weekday, is_sandhyavandhanam, affects_streak)")
       .in("owner_id", ids).is("family_member_id", null),
     supabase.from("panchangam_days")
       .select("date, thithi, tamil_month, tamil_day, malayalam_month, malayalam_day, nakshatra")
@@ -296,7 +296,13 @@ Deno.serve(async (req: Request) => {
       continue;
     }
 
+    // AI-DEV NOTE: removed (archived) practices are kept as rows so their logs
+    // still count - an archived practice logged earlier today still completed
+    // the day in submit_practice_log's aggregate, so dayComplete sees ALL rows.
+    // But a user whose practices are all removed has nothing to be nudged
+    // about, and Sandhya slot pushes follow only an active Sandhya row.
     const mine = (ups ?? []).filter((u: any) => u.owner_id === uid);
+    const active = mine.filter((u: any) => !u.archived_at);
     let title = TITLES[slot];
     let body = BODIES[slot];
 
@@ -305,7 +311,7 @@ Deno.serve(async (req: Request) => {
       // aggregate: ANY ONE affects_streak, scheduled practice logged today
       // (any 1 of 3 sandhya slots included) already secures the streak, so
       // the nudge must stay silent - not require every practice logged.
-      if (!mine.length) continue;
+      if (!active.length) continue;
       const items = mine.map((u: any) => ({ practice: u.practice, logs: logsByUp.get(u.id) ?? [] }));
       if (dayComplete(items, date)) continue;
       // Say what is actually at stake when a freeze is in play, instead of the
@@ -316,7 +322,7 @@ Deno.serve(async (req: Request) => {
     } else {
       // sandhya slot reminders only for male users tracking sandhyavandhanam
       if (profileById.get(uid)?.gender !== "male") continue;
-      const sandhya = mine.find((u: any) => u.practice.is_sandhyavandhanam);
+      const sandhya = active.find((u: any) => u.practice.is_sandhyavandhanam);
       if (!sandhya) continue;
       const dayLogs = (logsByUp.get(sandhya.id) ?? []).filter((l: any) => l.log_date === date);
       if (dayLogs.some((l: any) => l.slot === slot)) continue; // already done

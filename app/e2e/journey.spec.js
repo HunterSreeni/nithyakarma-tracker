@@ -2,6 +2,7 @@ import { test, expect, chromium } from '@playwright/test'
 import { mkdtempSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
+import { seedSession } from './helpers/session.js'
 
 // Full user journey against the production build + live Supabase backend.
 // Runs against the dedicated DESTRUCTIVE account e2efull - the final step
@@ -15,6 +16,7 @@ import path from 'path'
 const EMAIL = process.env.E2E_EMAIL ?? 'e2efull@nithyakarma.test'
 const PASSWORD = process.env.E2E_PASSWORD ?? 'E2eFull#2026'
 const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:4173'
+const SEEDING_KEYS = Boolean(process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 test.describe.serial('Nithyakarma full journey @destructive', () => {
   let page, context, userDataDir
@@ -38,16 +40,28 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     rmSync(userDataDir, { recursive: true, force: true })
   })
 
-  test('login with email/password', async () => {
-    await page.goto('/')
-    await expect(page.getByText('Continue with Google')).toBeVisible()
-    await page.fill('#auth-email', EMAIL)
-    await page.fill('#auth-password', PASSWORD)
-    await page.getByRole('button', { name: 'Sign In' }).click()
+  // The real sign-in form is gated by Cloudflare Turnstile, which never issues
+  // a token to an automated browser, so the button sits on "Verifying..."
+  // forever. When the service-role key is available, mint a real session
+  // server-side instead (same approach as the CI specs - see
+  // e2e/helpers/session.js); otherwise fall back to the form (works only where
+  // Turnstile is disabled for the build).
+  test('sign in (seeded session, or email/password)', async () => {
+    if (SEEDING_KEYS) {
+      await seedSession(page, { email: EMAIL })
+      await page.goto('/')
+    } else {
+      await page.goto('/')
+      await expect(page.getByText('Continue with Google')).toBeVisible()
+      await page.fill('#auth-email', EMAIL)
+      await page.fill('#auth-password', PASSWORD)
+      await page.getByRole('button', { name: 'Sign In' }).click()
+    }
     await expect(page.getByRole('button', { name: /Get started/ })).toBeVisible({ timeout: 15000 })
   })
 
   test('onboarding: male user gets Sandhyavandhanam, then the guided tour runs', async () => {
+    test.setTimeout(90000) // includes the push-subscribe round trip below
     await page.getByRole('button', { name: /Get started/ }).click() // value-prop intro -> form
     await page.getByLabel('Your name').fill('E2E Sreeni')
     await page.getByRole('button', { name: 'Male', exact: true }).click()
@@ -59,7 +73,9 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     // playwright.config.js) rather than skipping past it.
     await expect(page.getByText('Turn on reminders?')).toBeVisible({ timeout: 15000 })
     await page.getByRole('button', { name: 'Enable notifications' }).click()
-    await expect(page.getByText('Notifications enabled!')).toBeVisible({ timeout: 15000 })
+    // pushManager.subscribe() round-trips to Google's push service, which is
+    // occasionally slow from a fresh Chromium profile - allow for it.
+    await expect(page.getByText('Notifications enabled!')).toBeVisible({ timeout: 40000 })
     await page.getByRole('button', { name: 'Continue' }).click()
 
     await expect(page.getByText(/Namaskaram, E2E/)).toBeVisible({ timeout: 15000 })
@@ -88,19 +104,19 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByText('1 of 3 sandhyas done')).toBeVisible()
 
-    // Slot 2 - still progressing
+    // Slots 2 and 3 - the day was already completed by slot 1, and since
+    // 2026-08-04 (TodayPage `wasComplete`) the celebration only fires on the
+    // mark that FIRST completes the day, so no modal/Continue here.
     await page.getByRole('button', { name: 'Noon' }).click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await page.getByRole('button', { name: 'Save' }).click()
-    await page.getByRole('button', { name: 'Continue' }).click()
-    await expect(page.getByText('2 of 3 sandhyas done')).toBeVisible()
+    await expect(page.getByText('2 of 3 sandhyas done', { exact: false })).toBeVisible({ timeout: 15000 })
 
-    // Slot 3 - day complete
     await page.getByRole('button', { name: 'Evening' }).click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await page.getByRole('button', { name: 'Save' }).click()
-    await page.getByRole('button', { name: 'Continue' }).click()
-    await expect(page.getByText('All 3 sandhyas done')).toBeVisible()
+    await expect(page.getByText('All 3 sandhyas done')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('button', { name: 'Continue' })).toHaveCount(0)
   })
 
   test('add a practice from the dropdown', async () => {
@@ -110,12 +126,30 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await expect(page.locator('.practice-card', { hasText: 'Hanuman Chalisa' })).toBeVisible()
   })
 
-  test('complete a general practice: celebration from verified response', async () => {
+  // Sandhya already completed today above, so (since 2026-08-04, TodayPage
+  // `wasComplete`) this mark saves without a second day celebration.
+  test('complete a general practice: verified save, no repeat celebration', async () => {
     await page.locator('.practice-card', { hasText: 'Hanuman Chalisa' })
       .getByRole('button', { name: 'Mark Done' }).click()
-    await expect(page.getByText(/Hanuman Chalisa completed/)).toBeVisible({ timeout: 15000 })
-    await page.getByRole('button', { name: 'Continue' }).click()
-    await expect(page.locator('.practice-card.done', { hasText: 'Hanuman Chalisa' })).toBeVisible()
+    await expect(page.locator('.practice-card.done', { hasText: 'Hanuman Chalisa' })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(/Hanuman Chalisa completed/)).toHaveCount(0)
+  })
+
+  // Soft archive (migration 20261109090000): removing hides the card; adding
+  // the same practice back restores the same row, so today's completed log
+  // (and its history) comes back with it instead of starting fresh.
+  test('remove a practice, then re-add it with its log intact', async () => {
+    const card = page.locator('.practice-card', { hasText: 'Hanuman Chalisa' })
+    page.once('dialog', (d) => d.accept())
+    await card.getByRole('button', { name: 'Remove Hanuman Chalisa' }).click()
+    await expect(card).toHaveCount(0, { timeout: 15000 })
+    // Sandhyavandhanam is the constant practice - never removable.
+    await expect(page.getByRole('button', { name: 'Remove Sandhyavandhanam' })).toHaveCount(0)
+
+    await page.getByRole('button', { name: /Add an anushtanam/ }).click()
+    await page.getByPlaceholder('Search...').fill('hanuman')
+    await page.getByRole('button', { name: /Hanuman Chalisa/ }).click()
+    await expect(page.locator('.practice-card.done', { hasText: 'Hanuman Chalisa' })).toBeVisible({ timeout: 15000 })
   })
 
   // Intent 2.9 (2026-08-20): morning/evening either-or, same any-1-of-N
@@ -162,8 +196,12 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     // switcher chip appears on Today
     await page.getByRole('link', { name: /Today/ }).first().click()
     await expect(page.locator('.ps-chip', { hasText: 'Devika' })).toBeVisible()
-    // and she appears in Bala Sabha
+    // and she appears in Bala Sabha. The reload is deliberate: SabhaPage's
+    // ['leaderboard', period, scope] query is cached for staleTime 30s and is
+    // not invalidated by adding a child or marking (Phase 3 finding), so the
+    // Kids tab visited a minute ago would still show "No children".
     await page.getByRole('link', { name: /Sabha/ }).first().click()
+    await page.reload()
     await page.getByRole('button', { name: /Kids/ }).click()
     await expect(page.locator('.lb-row', { hasText: 'Devika' })).toBeVisible({ timeout: 15000 })
   })
@@ -190,25 +228,32 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
 
     await page.getByRole('link', { name: /Today/ }).first().click()
 
-    // Arjun (upanayanam done): both practices offered
+    // Dropdown items only (.dd-item) - the Sandhya card's "!" info button also
+    // matches a bare /Sandhyavandhanam/ role query.
+    const ddItem = (name) => page.locator('.dd-item', { hasText: name })
+
+    // Arjun (upanayanam done): Sandhyavandhanam was auto-added when he was
+    // created (addFamilyMember), so it is listed as already added; Samidhadhanam
+    // is offered.
     await page.locator('.ps-chip', { hasText: 'Arjun' }).click()
+    await expect(page.locator('.practice-card', { hasText: 'Sandhyavandhanam' })).toBeVisible({ timeout: 15000 })
     await page.getByRole('button', { name: /Add an anushtanam/ }).click()
-    await expect(page.getByRole('button', { name: /Sandhyavandhanam/ })).toBeVisible()
-    await expect(page.getByRole('button', { name: /Samidhadhanam/ })).toBeVisible()
+    await expect(ddItem('Sandhyavandhanam')).toBeVisible()
+    await expect(ddItem('Samidhadhanam')).toBeVisible()
     await page.keyboard.press('Escape')
 
     // Karthik (no upanayanam): neither offered
     await page.locator('.ps-chip', { hasText: 'Karthik' }).click()
     await page.getByRole('button', { name: /Add an anushtanam/ }).click()
-    await expect(page.getByRole('button', { name: /Sandhyavandhanam/ })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: /Samidhadhanam/ })).toHaveCount(0)
+    await expect(ddItem('Sandhyavandhanam')).toHaveCount(0)
+    await expect(ddItem('Samidhadhanam')).toHaveCount(0)
     await page.keyboard.press('Escape')
 
     // Devika (girl): neither offered
     await page.locator('.ps-chip', { hasText: 'Devika' }).click()
     await page.getByRole('button', { name: /Add an anushtanam/ }).click()
-    await expect(page.getByRole('button', { name: /Sandhyavandhanam/ })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: /Samidhadhanam/ })).toHaveCount(0)
+    await expect(ddItem('Sandhyavandhanam')).toHaveCount(0)
+    await expect(ddItem('Samidhadhanam')).toHaveCount(0)
     await page.keyboard.press('Escape')
 
     // back to self for the remaining tests
@@ -220,7 +265,7 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
   // predates AGENTS.md's current rule - see "Streak & freeze"), and must
   // never touch today's own card (today's streak/day-complete only ever
   // advance from today's own mark). Arjun (added above, upanayanam done) is
-  // Sandhya-eligible but has no practices yet - add it here.
+  // Sandhya-eligible, and Sandhyavandhanam was auto-added when he was created.
   //
   // AI-DEV NOTE: this test previously asserted copy ("Half punya, no streak
   // effect...") that no longer exists anywhere in the app - a stale
@@ -229,9 +274,8 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
   // skipped in CI until PR #132 (2026-08-20). Fixed to match the real,
   // currently-shipping copy in TodayPage.jsx's YesterdaySandhya component.
   test('family member (Arjun): Sandhyavandhanam yesterday catch-up awards full punya and counts toward the streak', async () => {
+    // Sandhyavandhanam was auto-added when Arjun was created (upanayanam done).
     await page.locator('.ps-chip', { hasText: 'Arjun' }).click()
-    await page.getByRole('button', { name: /Add an anushtanam/ }).click()
-    await page.getByRole('button', { name: /Sandhyavandhanam/ }).click()
     await expect(page.locator('.practice-card', { hasText: 'Sandhyavandhanam' })).toBeVisible({ timeout: 15000 })
     await expect(page.getByText('0 of 3 sandhyas done')).toBeVisible()
 
@@ -241,6 +285,9 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await expect(yesterdayPanel.getByRole('button', { name: 'Morning' })).toBeVisible()
 
     await yesterdayPanel.getByRole('button', { name: 'Morning' }).click()
+    // Like today's slots, a yesterday slot asks for the Gayatri count first.
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
     await expect(page.getByText(/\+\d+ punya/)).toBeVisible({ timeout: 15000 })
     await expect(yesterdayPanel.getByRole('button', { name: 'Morning' })).toBeDisabled()
 
@@ -287,6 +334,7 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
   })
 
   test('notification toggle disables and re-enables, saving the preference', async () => {
+    test.setTimeout(90000) // re-enable re-subscribes via Google's push service
     const toggle = page.getByRole('checkbox', { name: /Reminder notifications/ })
     await expect(toggle).toBeEnabled({ timeout: 15000 })
     // Already on: the onboarding step above enabled notifications.
@@ -294,7 +342,7 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await toggle.click() // turn off
     await expect(toggle).not.toBeChecked({ timeout: 15000 })
     await toggle.click() // turn back on - state flips after async permission+save
-    await expect(toggle).toBeChecked({ timeout: 15000 })
+    await expect(toggle).toBeChecked({ timeout: 40000 })
     await page.reload()
     await expect(page.getByRole('checkbox', { name: /Reminder notifications/ }))
       .toBeChecked({ timeout: 15000 })

@@ -5,7 +5,9 @@
 // and send-test-notification (on-demand). Parametrized on the caller's
 // service-role client and config object rather than module-level state, so
 // both functions can hold their own.
-import webpush from "npm:web-push";
+// AI-DEV NOTE: pinned - web-push 4.0.0 (2026-11-06) is ESM with no default
+// export; an unpinned import broke send-reminders at boot (503) on redeploy.
+import webpush from "npm:web-push@3.6.7";
 
 export const APP_URL = "https://app.nithyakarma.org";
 

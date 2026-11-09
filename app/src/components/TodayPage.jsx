@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, Suspense } from 'react'
-import { Flame, Snowflake, Check, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { Flame, Snowflake, Check, Search, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth'
 import { useToday } from '../hooks/useToday'
@@ -29,7 +29,7 @@ const GuidedTour = lazyWithRetry(() => import('./GuidedTour'))
 
 export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
-  const { items, loading, refreshing, error: loadError, submit, addPractice, reload } =
+  const { items, loading, refreshing, error: loadError, submit, addPractice, removePractice, reload } =
     useToday(session.user.id, selectedMember?.id ?? null)
   const [celebration, setCelebration] = useState(null)
   const [tierUp, setTierUp] = useState(null)
@@ -103,6 +103,21 @@ export default function TodayPage() {
     }
   }
 
+  // Soft remove (archive): logs, history and streak days already earned stay;
+  // adding it again later restores it.
+  const remove = async (item) => {
+    if (!window.confirm(`Remove ${item.practice.name} from ${subjectName}'s anushtanams? Past history is kept, and you can add it back anytime.`)) return
+    setBusyId(item.up.id); setError(null)
+    try {
+      await removePractice(item.up.id)
+      track('practice_removed', { practice: item.practice.slug })
+    } catch (err) {
+      setError(friendlyError(err))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   const onSlotClick = (item, slot) => setGayatriPrompt({ item, slot })
   // Sri Rudram and Samidhadhanam slots mark directly, unlike Sandhya's - no
   // Gayatri-count prompt applies.
@@ -166,7 +181,7 @@ export default function TodayPage() {
           {items.map(item => (
             <PracticeCard key={item.up.id} item={item}
               busy={busyId === item.up.id} onMark={mark} onSlotClick={onSlotClick}
-              onRudramSlotClick={onRudramSlotClick} />
+              onRudramSlotClick={onRudramSlotClick} onRemove={remove} />
           ))}
         </div>
       )}
@@ -246,7 +261,7 @@ function SuggestedPractices({ onAdd }) {
   )
 }
 
-function PracticeCard({ item, busy, onMark, onSlotClick, onRudramSlotClick }) {
+function PracticeCard({ item, busy, onMark, onSlotClick, onRudramSlotClick, onRemove }) {
   const { practice, up, logs } = item
   const done = isDoneToday(practice, logs)
   const slotsDone = new Set(logs.map(l => l.slot))
@@ -262,6 +277,12 @@ function PracticeCard({ item, busy, onMark, onSlotClick, onRudramSlotClick }) {
             <button type="button" className="info-btn" aria-expanded={showInfo}
               aria-label="Why are there three Sandhyavandhanam times?"
               onClick={() => setShowInfo(v => !v)}>!</button>
+          )}
+          {/* Sandhyavandhanam is the constant practice - not removable (server enforces too). */}
+          {!practice.is_sandhyavandhanam && (
+            <button type="button" className="remove-btn" disabled={busy}
+              aria-label={`Remove ${practice.name}`} title="Remove"
+              onClick={() => onRemove(item)}><X size={14} strokeWidth={2.5} /></button>
           )}
         </div>
         <div className="p-meta">

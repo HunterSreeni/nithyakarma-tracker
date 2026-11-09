@@ -18,14 +18,14 @@ vi.mock('../MonthlySpecialBanner', () => ({ default: () => null }))
 vi.mock('../ObservanceBanner', () => ({ default: () => null }))
 
 const h = vi.hoisted(() => ({
-  items: [], catalog: [], addPractice: vi.fn(),
+  items: [], catalog: [], addPractice: vi.fn(), removePractice: vi.fn(),
   submit: vi.fn(), showInterstitial: vi.fn().mockResolvedValue(false),
   profile: { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 },
   selectedMember: null,
   refresh: vi.fn(), rpc: vi.fn(), yesterdayLogs: [],
 }))
 vi.mock('../../hooks/useToday', () => ({
-  useToday: () => ({ items: h.items, loading: false, submit: h.submit, addPractice: h.addPractice }),
+  useToday: () => ({ items: h.items, loading: false, submit: h.submit, addPractice: h.addPractice, removePractice: h.removePractice }),
 }))
 vi.mock('../../utils/ads', () => ({ showInterstitial: (...a) => h.showInterstitial(...a) }))
 vi.mock('../../utils/review', () => ({ isMilestone: () => false, maybeRequestReview: vi.fn().mockResolvedValue(false) }))
@@ -76,7 +76,7 @@ const samidhaItem = (slots) => ({
 beforeEach(() => {
   queryClient.clear()
   h.items = []; h.catalog = []; h.yesterdayLogs = []
-  h.addPractice.mockClear(); h.submit.mockReset(); h.showInterstitial.mockClear()
+  h.addPractice.mockClear(); h.removePractice.mockReset(); h.submit.mockReset(); h.showInterstitial.mockClear()
   h.refresh.mockClear(); h.rpc.mockReset()
   h.profile = { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 }
   h.selectedMember = null
@@ -639,5 +639,47 @@ describe('TodayPage - Yesterday sandhya catch-up', () => {
     await screen.findByText("Couldn't reach the server. Check your connection and try again.")
     expect(h.refresh).not.toHaveBeenCalled()
     expect(within(yesterdayPanel()).getByText('Morning').closest('button')).not.toBeDisabled()
+  })
+})
+
+describe('TodayPage - removing an anushtanam', () => {
+  const plainItem = () => ({
+    up: { id: 'up-n', current_streak: 3, sequence_position: 0 },
+    practice: { id: 30, name: 'Narayaneeyam', slug: 'narayaneeyam', cadence: 'daily', target_count: null },
+    logs: [],
+  })
+  afterEach(() => { vi.restoreAllMocks() })
+
+  it('offers remove on a regular practice but never on Sandhyavandhanam', () => {
+    h.items = [sandhyaItem([]), plainItem()]
+    render(<TodayPage />)
+    expect(screen.getByRole('button', { name: 'Remove Narayaneeyam' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Remove Sandhyavandhanam' })).not.toBeInTheDocument()
+  })
+
+  it('archives only after the user confirms', async () => {
+    h.items = [plainItem()]
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    h.removePractice.mockResolvedValue(undefined)
+    render(<TodayPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Narayaneeyam' }))
+    await waitFor(() => expect(h.removePractice).toHaveBeenCalledWith('up-n'))
+  })
+
+  it('does nothing when the confirm is cancelled', () => {
+    h.items = [plainItem()]
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<TodayPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Narayaneeyam' }))
+    expect(h.removePractice).not.toHaveBeenCalled()
+  })
+
+  it('shows the error when removal fails', async () => {
+    h.items = [plainItem()]
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    h.removePractice.mockRejectedValue(new Error('Practice association not found'))
+    render(<TodayPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Narayaneeyam' }))
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 })

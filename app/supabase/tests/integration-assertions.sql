@@ -962,6 +962,79 @@ begin
     if not v_failed then raise exception 'FAIL: duplicate Samidhadhanam slot accepted'; end if;
   end;
 
+  -- 25. Soft archive / "remove anushtanam" (migration 20261109090000):
+  -- removing hides a practice but keeps its row and logs, so punya, the overall
+  -- streak and the leaderboard are untouched; Sandhyavandhanam is not
+  -- removable; only the owner can archive; restoring re-runs the eligibility
+  -- gate (previously insert-only), so a since-married user cannot restore
+  -- Samidhadhanam.
+  declare
+    v_arch_up uuid;
+    v_e2e_uid2 uuid;
+    v_p_before int; v_s_before int; v_lb_before bigint; v_lb_after bigint;
+    v_logs_before int;
+  begin
+    select up.id into v_arch_up from user_practices up join practices p on p.id = up.practice_id
+     where up.owner_id = v_uid and up.family_member_id is null and p.slug = 'samidhadhanam';
+    if v_arch_up is null then raise exception 'TEST SETUP: section 24 Samidhadhanam row missing'; end if;
+    select punya, current_streak into v_p_before, v_s_before from profiles where id = v_uid;
+    select score into v_lb_before from get_leaderboard('week', 'global') where subject_id = v_uid;
+    select count(*) into v_logs_before from practice_logs where user_practice_id = v_arch_up;
+
+    v_failed := false;
+    begin
+      perform set_practice_archived(v_sup, true);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: Sandhyavandhanam could be removed'; end if;
+
+    perform set_practice_archived(v_arch_up, true);
+    if (select archived_at from user_practices where id = v_arch_up) is null then
+      raise exception 'FAIL: archive did not set archived_at';
+    end if;
+    if (select count(*) from practice_logs where user_practice_id = v_arch_up) <> v_logs_before then
+      raise exception 'FAIL: archive removed practice logs';
+    end if;
+    if (select punya from profiles where id = v_uid) <> v_p_before
+       or (select current_streak from profiles where id = v_uid) <> v_s_before then
+      raise exception 'FAIL: archive changed punya or the overall streak';
+    end if;
+    select score into v_lb_after from get_leaderboard('week', 'global') where subject_id = v_uid;
+    if v_lb_after is distinct from v_lb_before then
+      raise exception 'FAIL: archive changed the leaderboard score (% -> %)', v_lb_before, v_lb_after;
+    end if;
+
+    -- a second account cannot archive/restore someone else's practice
+    select id into v_e2e_uid2 from auth.users where email = 'e2e@nithyakarma.test';
+    perform set_config('request.jwt.claims', json_build_object('sub', v_e2e_uid2::text)::text, true);
+    v_failed := false;
+    begin
+      perform set_practice_archived(v_arch_up, false);
+    exception when others then v_failed := true;
+    end;
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
+    if not v_failed then raise exception 'FAIL: another account could restore this practice'; end if;
+
+    -- restore re-checks eligibility
+    update profiles set is_married = true where id = v_uid;
+    v_failed := false;
+    begin
+      perform set_practice_archived(v_arch_up, false);
+    exception when others then v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: married user restored Samidhadhanam (eligibility not re-checked)'; end if;
+    update profiles set is_married = false where id = v_uid;
+
+    perform set_practice_archived(v_arch_up, false);
+    if (select archived_at from user_practices where id = v_arch_up) is not null then
+      raise exception 'FAIL: restore did not clear archived_at';
+    end if;
+
+    if has_function_privilege('anon', 'public.set_practice_archived(uuid, boolean)', 'execute') then
+      raise exception 'FAIL: set_practice_archived is executable by anon';
+    end if;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;
