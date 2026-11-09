@@ -11,10 +11,11 @@ import { seedSession } from './helpers/session.js'
 // mutates/destroys a shared live account, it is tagged @destructive and EXCLUDED
 // from CI (see .github/workflows/ci.yml). It is a manual pre-release gate; CI
 // runs only the non-destructive specs. See memory: e2efull-account.
-// CI injects these via the E2E_EMAIL / E2E_PASSWORD secrets; the committed
-// defaults keep local runs working without any env setup.
+// AI-DEV NOTE: no committed password fallback (it leaked a live account's
+// credential into git). The default path mints a session with the
+// service-role key in app/.env; the form path needs E2E_PASSWORD set.
 const EMAIL = process.env.E2E_EMAIL ?? 'e2efull@nithyakarma.test'
-const PASSWORD = process.env.E2E_PASSWORD ?? 'E2eFull#2026'
+const PASSWORD = process.env.E2E_PASSWORD
 const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:4173'
 const SEEDING_KEYS = Boolean(process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY)
 
@@ -51,6 +52,7 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
       await seedSession(page, { email: EMAIL })
       await page.goto('/')
     } else {
+      if (!PASSWORD) throw new Error('Set SUPABASE_SERVICE_ROLE_KEY (seeded session) or E2E_PASSWORD in app/.env to run the journey')
       await page.goto('/')
       await expect(page.getByText('Continue with Google')).toBeVisible()
       await page.fill('#auth-email', EMAIL)

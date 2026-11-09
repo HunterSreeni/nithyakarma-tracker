@@ -2,6 +2,10 @@
 -- The Playwright journey (app/e2e/journey.spec.js) deletes this account via the
 -- delete_account RPC at the end of each run, so re-run this before the next run.
 -- Run via the Supabase MCP execute_sql (never the CLI - see memory). Idempotent.
+-- The password is random and never stored: the journey signs in by minting a
+-- session with the service-role key (e2e/helpers/session.js). To use the
+-- form fallback instead, set your own password via the dashboard and
+-- E2E_PASSWORD - never commit it.
 do $$
 declare v_id uuid := gen_random_uuid();
 begin
@@ -16,7 +20,7 @@ begin
     email_change_token_current, reauthentication_token, phone_change, phone_change_token
   ) values (
     '00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
-    'e2efull@nithyakarma.test', crypt('E2eFull#2026', gen_salt('bf')),
+    'e2efull@nithyakarma.test', crypt(gen_random_uuid()::text, gen_salt('bf')),
     now(), now(), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
     '', '', '', '', '', '', '', ''
   );

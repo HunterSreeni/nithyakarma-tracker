@@ -29,7 +29,7 @@ a different screen.
 
 ## Test layers
 - **Unit** (Vitest + Testing Library + jsdom) - pure logic (`utils/`), hooks, components. 61 test files.
-- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 24 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
+- **Integration** (SQL via Supabase MCP, always `begin;...rollback;`) - RPCs, RLS, triggers, constraints, grants (`supabase/tests/integration-assertions.sql`, 27 numbered sections). Run manually via Supabase MCP `execute_sql`, never in CI.
 - **Deno** (`supabase/functions/_shared/observanceMatch.test.ts`) - the tharpanam/observance rule-matching engine. Runs in CI as of 2026-07-23 (`edge-functions` job) - the first Deno test ever wired into CI.
 - **E2E web** (Playwright, `app/e2e/*.spec.js`) - full flows against a real built app + live Supabase.
 - **E2E Android** (adb screenshot-tap shell scripts, `app/e2e/*.sh`) - build/install/launch + blind taps at hardcoded coordinates. **Assert only "no crash" via logcat + `pidof`** - no in-app text/state assertion is possible (WebView exposes no accessibility tree to `uiautomator`). Pass beyond that requires eyeballing saved screenshots and cross-checking DB state via Supabase MCP.
@@ -117,6 +117,30 @@ MCP - never `claude-in-chrome`, which is unsupported here.
 
 ---
 
+## Running the destructive web journey (`journey.spec.js`, updated 2026-11-09)
+
+The manual pre-release gate. It runs the local production build against the
+**live** Supabase project and deletes `e2efull` at the end.
+
+1. **Keys in `app/.env`:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_KEY` and
+   `SUPABASE_SERVICE_ROLE_KEY`. With all three, the spec mints a real session
+   server-side (`e2e/helpers/session.js`), because Turnstile never issues a token
+   to an automated browser. Without the service-role key it falls back to the
+   form and needs `E2E_PASSWORD`. There is no committed password any more:
+   `seed-e2efull.sql` sets a random one.
+2. **Re-seed** `e2efull` with `app/supabase/tests/seed-e2efull.sql` via Supabase
+   MCP `execute_sql`. It is idempotent.
+3. **Browser, once per machine:** `npx playwright install chromium`.
+4. **Run** from `app/`: `npx playwright test e2e/journey.spec.js --headed`
+   (16 tests, about 1 minute; the notification step waits up to 40s for push).
+5. **Afterwards:** `e2efull` is gone (the `delete_account` cascade). Re-seed
+   before the next run.
+
+Run it after any migration that touches grants, RLS or the mark/streak RPCs.
+During Phase 3 (2026-11-09) it ran after each of H1, M2 and M1, passing 16/16.
+
+---
+
 ## CI reality (`.github/workflows/ci.yml`) - what actually runs automatically
 
 This is the single most important cross-check against v1, which implied far more
@@ -125,7 +149,7 @@ automatic coverage than exists. Three parallel jobs on every PR and push to `mai
 | Job | Runs | Notes |
 |---|---|---|
 | `verify` | `npm run lint` -> `npm run test` (all Vitest, 61 files) -> `npm run build` | Full unit/component/hook/util suite, real gate |
-| `edge-functions` | `deno test supabase/functions/_shared/observanceMatch.test.ts` + `deno test supabase/functions/_shared/dayComplete.test.ts` | `dayComplete.test.ts` added 2026-08-06 (fixed the 8am/8pm nudge push firing after the streak was already secured via a different practice, or via 1-of-3 sandhya slots); `send-reminders`'s `Deno.serve` handler itself still has **zero** test coverage - only its two extracted pure helpers do |
+| `edge-functions` | `deno test supabase/functions/_shared/observanceMatch.test.ts` + `deno test supabase/functions/_shared/dayComplete.test.ts` | `dayComplete.test.ts` added 2026-08-06 (fixed the 8am/8pm nudge push firing after the streak was already secured via a different practice, or via 1-of-3 sandhya slots); `send-reminders`'s `Deno.serve` handler itself still has **zero** test coverage - only its extracted pure helpers do. 2026-11-09 (L2): the per-user gate (archived rows, day completion, male + active Sandhya, once per slot) moved to `_shared/reminderGate.ts` with `reminderGate.test.ts`; the job's `deno test supabase/functions/_shared/` picks it up automatically |
 | `e2e` | `npx playwright test --grep-invert "@destructive"` | Excludes any test titled with `@destructive` |
 
 **What the `e2e` job's filter actually leaves running:**
@@ -495,6 +519,7 @@ messaging.
 | Hall banner suppressed when top score is 0 | - | ⬜ |
 | Opt-out hides from others, self still sees own row | Integration + E2E(W) | ✅ / ⚠️ manual-gate |
 | Score = completed practice-days (sandhya once per day, not per slot) | Integration | ✅ |
+| **2026-11-09 (M1):** board cached per account (query key carries the viewer id); in-memory query cache wiped on sign-out / SIGNED_OUT; board invalidated after marks, profile edits and family add/remove | Unit (`SabhaPage.test.jsx` per-account cache, `useAuth.test.jsx` query cache hygiene) | ✅ |
 
 ### Profile / family / referrals / delete
 | Case | Layer | Status |
@@ -507,6 +532,9 @@ messaging.
 | Community/leaderboard-opt-in decoupling (4 reachable combinations) | - | ⬜ only the individual toggles are tested, not the combination matrix |
 | Tier boundaries match client mirror | Integration + Unit(`tiers.test.js`, `logic-mirrors.test.js`) | ✅ |
 | `delete_account` RPC removes auth user (not just profile), `anon` cannot execute it | Integration(§7) | ✅ |
+| **2026-11-09 (H1):** reward/streak columns (`punya`, `ad_free_until`, `freeze_credits`, streaks, `referred_by`...) and `gender`/`practice_id` are not client-writable; the app's real edits still work | Integration(§26) + E2E(W, `journey.spec.js`) | ✅ |
+| **2026-11-09 (M2):** a user cannot delete only their own profile row (stopped referral re-farming via cascade); `delete_account` still cascades | Integration(§27) + E2E(W, `journey.spec.js` delete step) | ✅ |
+| **2026-11-09 (L1):** remove an anushtanam = soft archive; `submit_practice_log` refuses new logs on an archived row, restore re-enables it | Integration(§25) + E2E(W, `journey.spec.js` remove/re-add) | ✅ |
 | Delete flow: type-email-to-confirm gate, returns to auth | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
 | Referral reward copy is static, doesn't reflect the server-side 5/24h cap | - | ⬜ |
 | ~~Referrals list paints from a localStorage cache~~ | - | ➖ **removed 2026-08-23 (Intent 2.11)** - the Referrals page and `referralsCache` are deleted; the Profile invite card is the whole feature |
