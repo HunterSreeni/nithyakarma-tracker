@@ -41,10 +41,14 @@ let cached = null
 // takes no scope argument, so it is supabase-js's default 'global', which
 // revokes every refresh token for the account and would otherwise poison the
 // cache for the specs that run afterwards.
-export async function seedSession(page, { fresh = false } = {}) {
-  if (!SEEDING_CONFIGURED) throw new Error('seedSession() called without VITE_SUPABASE_URL / VITE_SUPABASE_KEY / SUPABASE_SERVICE_ROLE_KEY / E2E_UI_EMAIL')
+// `email` mints for a different account than E2E_UI_EMAIL (always fresh, never
+// cached) - the destructive journey uses it for e2efull.
+export async function seedSession(page, { fresh = false, email = null } = {}) {
+  if (email) fresh = true
+  const configured = email ? Boolean(SUPABASE_URL && ANON_KEY && SERVICE_ROLE_KEY) : SEEDING_CONFIGURED
+  if (!configured) throw new Error('seedSession() called without VITE_SUPABASE_URL / VITE_SUPABASE_KEY / SUPABASE_SERVICE_ROLE_KEY / E2E_UI_EMAIL')
 
-  const session = !fresh && cached ? cached : await mintSession()
+  const session = !fresh && cached ? cached : await mintSession(email ?? EMAIL)
   if (!fresh) cached = session
 
   // supabase-js's own storage contract (v2.110.0): the key is derived from the
@@ -59,13 +63,13 @@ export async function seedSession(page, { fresh = false } = {}) {
   return session
 }
 
-async function mintSession() {
+async function mintSession(email) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
   const { data: link, error: linkError } = await admin.auth.admin.generateLink({
     type: 'magiclink',
-    email: EMAIL,
+    email,
   })
   if (linkError) throw new Error(`generateLink failed: ${linkError.message}`)
 
