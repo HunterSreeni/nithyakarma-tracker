@@ -74,6 +74,14 @@ export function AuthProvider({ children }) {
   // null = self, otherwise a family_members row (parent tracks the child)
   const [selectedMember, setSelectedMember] = useState(null)
   const [loading, setLoading] = useState(!cached)
+  // AI-DEV NOTE: `profile === null` alone cannot tell "not fetched yet" from
+  // "this account has no profile". Gate must show Onboarding ONLY on 'absent':
+  // on 'unknown'/'loading' an existing user saw the onboarding intro flash on
+  // every fresh sign-in, and on a failed fetch they were stranded on it (its
+  // submit then hit a duplicate-key error). 'error' gets a Retry screen.
+  // States: unknown -> loading -> present | absent | error. A cached/loaded
+  // profile stays 'present' through background refreshes, even failed ones.
+  const [profileStatus, setProfileStatus] = useState(cached?.profile ? 'present' : 'unknown')
   const [sessionValidated, setSessionValidated] = useState(false)
   const dataLifecycle = useDataLifecycle()
   // Set only by createProfile() completing - the one true "onboarding just
@@ -106,20 +114,27 @@ export function AuthProvider({ children }) {
   // without Sreeni's explicit instruction; see AGENTS.md.
   const loadProfile = useCallback(async (session) => {
     const uid = session.user.id
-    const result = await queryClient.fetchQuery({
-      queryKey: ['profile', uid],
-      staleTime: 0,
-      queryFn: async () => {
-        const [profileResult, familyResult] = await withDeadline(Promise.all([
-          supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
-          supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
-        ]), 'Profile refresh')
-        return {
-          profile: unwrap(profileResult) ?? null,
-          familyMembers: unwrap(familyResult) ?? [],
-        }
-      },
-    })
+    setProfileStatus(s => s === 'present' ? s : 'loading')
+    let result
+    try {
+      result = await queryClient.fetchQuery({
+        queryKey: ['profile', uid],
+        staleTime: 0,
+        queryFn: async () => {
+          const [profileResult, familyResult] = await withDeadline(Promise.all([
+            supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
+            supabase.from('family_members').select('*').eq('parent_id', uid).order('name'),
+          ]), 'Profile refresh')
+          return {
+            profile: unwrap(profileResult) ?? null,
+            familyMembers: unwrap(familyResult) ?? [],
+          }
+        },
+      })
+    } catch (err) {
+      setProfileStatus(s => s === 'present' ? s : 'error')
+      throw err
+    }
     let profile = result.profile
     const familyMembers = result.familyMembers
     // Keep profiles.timezone tracking the device. It drives decay_stale_streaks'
@@ -137,6 +152,7 @@ export function AuthProvider({ children }) {
       } catch { /* a background write must never break the load path */ }
     }
     setProfile(profile)
+    setProfileStatus(profile ? 'present' : 'absent')
     setFamilyMembers(familyMembers)
     // selectedMember is a row snapshot taken when the chip was tapped
     // (ProfileSwitcher), so it goes stale the moment that child's streak /
@@ -161,7 +177,7 @@ export function AuthProvider({ children }) {
       setSession(nextSession)
       setSessionValidated(true)
       if (!nextSession) {
-        setProfile(null); setFamilyMembers([]); setSelectedMember(null)
+        setProfile(null); setFamilyMembers([]); setSelectedMember(null); setProfileStatus('unknown')
         clearAllCaches()
         setLoading(false)
       }
@@ -175,7 +191,7 @@ export function AuthProvider({ children }) {
       setSession(data.session)
       setSessionValidated(true)
       if (!data.session) {
-        setProfile(null); setFamilyMembers([]); setSelectedMember(null)
+        setProfile(null); setFamilyMembers([]); setSelectedMember(null); setProfileStatus('unknown')
         clearAllCaches()
       }
     }).catch(() => {
@@ -347,7 +363,7 @@ export function AuthProvider({ children }) {
   }
 
   const value = {
-    session, profile, familyMembers, selectedMember, setSelectedMember, loading,
+    session, profile, profileStatus, familyMembers, selectedMember, setSelectedMember, loading,
     signInGoogle, signInEmail, signUpEmail, signOut, resetPassword, updatePassword,
     createProfile, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount,
     // called by TodayPage after every mark (incl. yesterday Sandhya)

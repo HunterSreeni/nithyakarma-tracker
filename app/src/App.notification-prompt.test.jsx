@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 
-const auth = vi.hoisted(() => ({ session: null, profile: null, loading: false, justOnboarded: false, clearJustOnboarded: () => {} }))
+const auth = vi.hoisted(() => ({ session: null, profile: null, profileStatus: 'unknown', loading: false, justOnboarded: false, clearJustOnboarded: () => {} }))
 
 vi.mock('./hooks/useAuth', () => ({
   useAuth: () => auth,
@@ -27,6 +27,7 @@ describe('App Gate notification prompt', () => {
   beforeEach(() => {
     auth.session = { user: { id: 'u1' } }
     auth.profile = null
+    auth.profileStatus = 'loading'
     auth.loading = false
     auth.justOnboarded = false
     auth.clearJustOnboarded = vi.fn(() => { auth.justOnboarded = false })
@@ -68,6 +69,7 @@ describe('App Gate notification prompt', () => {
 
   it('shows the prompt once justOnboarded flips true right after Onboarding was shown', async () => {
     auth.profile = null
+    auth.profileStatus = 'absent'
     const { rerender } = render(<App />)
     await act(async () => {})
     expect(screen.getByText('ONBOARDING_STUB')).toBeInTheDocument()
@@ -85,6 +87,7 @@ describe('App Gate notification prompt', () => {
 
   it('proceeds to the main app once the prompt calls onDone', async () => {
     auth.profile = null
+    auth.profileStatus = 'absent'
     const { rerender } = render(<App />)
     await act(async () => {})
 

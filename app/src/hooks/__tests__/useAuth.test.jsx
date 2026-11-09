@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 
 const mockNative = vi.fn().mockReturnValue(false)
 vi.mock('@capacitor/core', () => ({
@@ -173,6 +173,56 @@ describe('profile cache (cold-restart instant resume)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+// F1 (state machine audit): profileStatus separates 'not fetched yet' from
+// 'no profile', so Gate only shows Onboarding when the server said absent.
+describe('profileStatus', () => {
+  const SESSION = { data: { session: { user: { id: 'u1', email: 'a@b.com' } } } }
+  const tables = (profileRead) => (t) => t === 'profiles'
+    ? { select: () => ({ eq: () => ({ maybeSingle: profileRead }) }), update: () => ({ eq: () => Promise.resolve({ error: null }) }) }
+    : { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }) }
+
+  it("is 'absent' only after the server returns no profile", async () => {
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: null, error: null })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.profileStatus).toBe('absent'))
+  })
+
+  it("is 'present' once a profile loads", async () => {
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: { id: 'u1', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }, error: null })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.profileStatus).toBe('present'))
+  })
+
+  it("is 'error', not 'absent', when the fetch fails with no cached profile", async () => {
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: null, error: { message: 'network down' } })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.profileStatus).toBe('error'))
+    expect(result.current.profile).toBe(null)
+  })
+
+  it("keeps a cached profile 'present' when a background refresh fails", async () => {
+    localStorage.setItem('nk_profile_cache_v1', JSON.stringify({ userId: 'u1', email: 'a@b.com', profile: { id: 'u1' }, familyMembers: [] }))
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: null, error: { message: 'network down' } })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await act(async () => { await result.current.refresh()?.catch(() => {}) })
+    expect(result.current.profileStatus).toBe('present')
+  })
+
+  it("resets to 'unknown' on sign-out", async () => {
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: null, error: null })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.profileStatus).toBe('absent'))
+    act(() => { authCb('SIGNED_OUT', null) })
+    expect(result.current.profileStatus).toBe('unknown')
   })
 })
 
