@@ -400,34 +400,64 @@ begin
     if not v_failed then raise exception 'FAIL: weekly practice logged on a non-scheduled weekday'; end if;
   end;
 
-  -- N. push_subscriptions: the unique constraint is (user_id, endpoint) now,
-  -- not endpoint alone - two different accounts must each be able to hold a
-  -- row for the same physical device/browser endpoint (e.g. shared test
-  -- hardware), which is exactly what silently broke push in production.
+  -- N. push_subscriptions: one endpoint (physical device/browser) belongs to
+  -- exactly one account - the latest to register it. Two rows for one FCM
+  -- token made send-reminders push every reminder twice to a shared phone
+  -- (the client's cross-account delete was a silent no-op under RLS). The
+  -- push_subscriptions_single_owner trigger enforces this server-side.
   -- Reuses the persistent e2e account as a second real profile.
   declare
     v_e2e_uid uuid;
     v_shared_endpoint text := 'test-shared-endpoint-' || gen_random_uuid();
+    v_other_endpoint text := 'test-other-endpoint-' || gen_random_uuid();
+    v_owner uuid;
+    v_n int;
   begin
     select id into v_e2e_uid from auth.users where email = 'e2e@nithyakarma.test';
     if v_e2e_uid is null then raise exception 'TEST SETUP: e2e user missing'; end if;
     insert into push_subscriptions (user_id, endpoint, platform) values (v_uid, v_shared_endpoint, 'android');
+    insert into push_subscriptions (user_id, endpoint, platform) values (v_uid, v_other_endpoint, 'android');
+    -- second account registers the same device -> takes it over
+    insert into push_subscriptions (user_id, endpoint, platform) values (v_e2e_uid, v_shared_endpoint, 'android');
+    select count(*), min(user_id::text)::uuid into v_n, v_owner from push_subscriptions where endpoint = v_shared_endpoint;
+    if v_n <> 1 or v_owner <> v_e2e_uid then
+      raise exception 'FAIL: shared endpoint not handed to the latest account (rows=%, owner=%)', v_n, v_owner;
+    end if;
+    -- the previous account's OTHER devices are untouched
+    if not exists (select 1 from push_subscriptions where user_id = v_uid and endpoint = v_other_endpoint) then
+      raise exception 'FAIL: takeover removed an unrelated device of the previous account';
+    end if;
+    -- re-registering (upsert) by the current owner is idempotent
+    insert into push_subscriptions (user_id, endpoint, platform) values (v_e2e_uid, v_shared_endpoint, 'android')
+      on conflict (user_id, endpoint) do update set platform = excluded.platform;
+    select count(*) into v_n from push_subscriptions where endpoint = v_shared_endpoint;
+    if v_n <> 1 then raise exception 'FAIL: owner re-register duplicated the endpoint (rows=%)', v_n; end if;
+    -- same user + same endpoint must still be rejected - this is what the
+    -- client's onConflict:'user_id,endpoint' upsert relies on.
     v_failed := false;
     begin
       insert into push_subscriptions (user_id, endpoint, platform) values (v_e2e_uid, v_shared_endpoint, 'android');
     exception when unique_violation then
       v_failed := true;
     end;
-    if v_failed then raise exception 'FAIL: two different accounts could not each hold a row for the same endpoint (unique constraint still global)'; end if;
-    -- same user + same endpoint must still be rejected - this is what the
-    -- client's onConflict:'user_id,endpoint' upsert relies on.
-    v_failed := false;
-    begin
-      insert into push_subscriptions (user_id, endpoint, platform) values (v_uid, v_shared_endpoint, 'android');
-    exception when unique_violation then
-      v_failed := true;
-    end;
     if not v_failed then raise exception 'FAIL: duplicate (user_id, endpoint) was accepted'; end if;
+    -- the real client path: as `authenticated` under RLS, the previous
+    -- account's row is invisible to the caller yet must still be removed.
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text, 'role', 'authenticated')::text, true);
+    execute 'set local role authenticated';
+    insert into push_subscriptions (user_id, endpoint, platform) values (v_uid, v_shared_endpoint, 'android')
+      on conflict (user_id, endpoint) do update set platform = excluded.platform;
+    execute 'reset role';
+    select count(*), min(user_id::text)::uuid into v_n, v_owner from push_subscriptions where endpoint = v_shared_endpoint;
+    if v_n <> 1 or v_owner <> v_uid then
+      raise exception 'FAIL: RLS-scoped re-register did not take the device back (rows=%, owner=%)', v_n, v_owner;
+    end if;
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
+    -- the trigger function must not be directly callable by app roles
+    if has_function_privilege('authenticated', 'public.push_subscriptions_single_owner()', 'execute')
+       or has_function_privilege('anon', 'public.push_subscriptions_single_owner()', 'execute') then
+      raise exception 'FAIL: push_subscriptions_single_owner is executable by anon/authenticated';
+    end if;
   end;
 
   -- 16. p_award_streak = false (learning-progress verse marks must not drive

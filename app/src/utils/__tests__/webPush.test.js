@@ -11,7 +11,7 @@ vi.mock('../../lib/supabase', () => ({
 // Valid base64 (no url-unsafe chars needed) so urlBase64ToUint8Array doesn't throw.
 vi.stubEnv('VITE_VAPID_PUBLIC_KEY', 'QUJDRA')
 
-const { isPushSupported, setupWebPush, deleteWebPushSubscription } = await import('../webPush')
+const { isPushSupported, setupWebPush, deleteWebPushSubscription, releaseWebPushEndpoint } = await import('../webPush')
 
 function fakeRegistration({ existingSubscription = null, newSubscription } = {}) {
   return {
@@ -41,14 +41,13 @@ describe('isPushSupported', () => {
 })
 
 describe('setupWebPush', () => {
-  it('creates a subscription and reclaims any row left by a different account before upserting', async () => {
+  it('creates a subscription and upserts it without a client-side cross-account delete', async () => {
     navigator.serviceWorker = { ready: Promise.resolve(fakeRegistration()) }
     await setupWebPush('u1')
-    // The unique constraint is (user_id, endpoint), not endpoint alone - a
-    // stale row from a previous account on this device/browser must be
-    // cleared first or the upsert would collide under RLS.
-    expect(eq).toHaveBeenCalledWith('endpoint', 'https://push.example/ep1')
-    expect(neq).toHaveBeenCalledWith('user_id', 'u1')
+    // That delete was a silent no-op under RLS; the single-owner trigger
+    // hands a shared endpoint to this account server-side instead.
+    expect(eq).not.toHaveBeenCalled()
+    expect(neq).not.toHaveBeenCalled()
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'u1', endpoint: 'https://push.example/ep1',
@@ -106,5 +105,23 @@ describe('deleteWebPushSubscription', () => {
   it('is best-effort and does not throw if the browser call fails', async () => {
     navigator.serviceWorker = { ready: Promise.reject(new Error('boom')) }
     await expect(deleteWebPushSubscription('u1')).resolves.toBeUndefined()
+  })
+})
+
+describe('releaseWebPushEndpoint (sign-out)', () => {
+  it('unsubscribes this browser and deletes only its own row', async () => {
+    const unsubscribe = vi.fn().mockResolvedValue(true)
+    navigator.serviceWorker = {
+      ready: Promise.resolve({ pushManager: { getSubscription: vi.fn().mockResolvedValue({ endpoint: 'https://push.example/ep9', unsubscribe }) } }),
+    }
+    await releaseWebPushEndpoint('u1')
+    expect(unsubscribe).toHaveBeenCalled()
+    expect(match).toHaveBeenCalledWith({ user_id: 'u1', endpoint: 'https://push.example/ep9' })
+  })
+
+  it('does nothing when this browser has no subscription', async () => {
+    navigator.serviceWorker = { ready: Promise.resolve({ pushManager: { getSubscription: vi.fn().mockResolvedValue(null) } }) }
+    await releaseWebPushEndpoint('u1')
+    expect(match).not.toHaveBeenCalled()
   })
 })

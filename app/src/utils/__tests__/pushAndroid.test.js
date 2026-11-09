@@ -28,7 +28,7 @@ vi.mock('@capacitor/push-notifications', () => ({ PushNotifications: push }))
 const localSchedule = vi.fn().mockResolvedValue(undefined)
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: { schedule: localSchedule } }))
 
-import { registerFCM, unregisterFCM } from '../pushAndroid'
+import { registerFCM, unregisterFCM, releaseFCMToken } from '../pushAndroid'
 
 // saveToken() runs unawaited off the 'registration' listener callback - flush
 // past its internal awaits (delete-then-upsert) before asserting on it.
@@ -64,15 +64,16 @@ describe('registerFCM', () => {
     )
   })
 
-  it('reclaims a token left over from a different account before upserting', async () => {
+  it('does not attempt a client-side cross-account delete (RLS made it a silent no-op)', async () => {
     await registerFCM('u1')
     listeners.registration({ value: 'shared-device-token' })
     await flush()
-    // The unique constraint is (user_id, endpoint) now, not endpoint alone -
-    // a stale row owned by a previous account on the same device must be
-    // cleared first or the upsert would collide under RLS.
-    expect(eq).toHaveBeenCalledWith('endpoint', 'shared-device-token')
-    expect(neq).toHaveBeenCalledWith('user_id', 'u1')
+    // Ownership transfer is the push_subscriptions_single_owner trigger's job.
+    expect(eq).not.toHaveBeenCalled()
+    expect(neq).not.toHaveBeenCalled()
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: 'u1', endpoint: 'shared-device-token' }), { onConflict: 'user_id,endpoint' },
+    )
   })
 
   it('logs instead of throwing when the token upsert fails', async () => {
@@ -112,5 +113,24 @@ describe('unregisterFCM', () => {
     listeners.registration({ value: 'token-C' })
     await flush()
     expect(upsert).not.toHaveBeenCalled()
+  })
+})
+
+describe('releaseFCMToken (sign-out)', () => {
+  it("deletes only this device's row and stops saving rotated tokens", async () => {
+    await registerFCM('u1')
+    listeners.registration({ value: 'token-D' })
+    await flush()
+    await releaseFCMToken()
+    expect(match).toHaveBeenCalledWith({ user_id: 'u1', endpoint: 'token-D' })
+    upsert.mockClear()
+    listeners.registration({ value: 'token-E' })
+    await flush()
+    expect(upsert).not.toHaveBeenCalled()
+  })
+
+  it('is a no-op when this device never saved a token', async () => {
+    await releaseFCMToken()
+    expect(match).not.toHaveBeenCalled()
   })
 })

@@ -7,6 +7,9 @@ import { clearHistoryCache } from '../utils/historyCache'
 import { deviceTimezone } from '../utils/timezone'
 import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
 import { useDataLifecycle } from './useDataLifecycle'
+import { cancelAllReminders } from '../utils/notifications'
+import { releaseFCMToken } from '../utils/pushAndroid'
+import { releaseWebPushEndpoint } from '../utils/webPush'
 
 const AuthContext = createContext(null)
 
@@ -220,7 +223,21 @@ export function AuthProvider({ children }) {
   // Clear our own cache eagerly rather than waiting on onAuthStateChange's
   // SIGNED_OUT branch - avoids a window where a fast subsequent reload (or a
   // different user signing in on a shared device) could still read stale data.
-  const signOut = () => { clearProfileCache(); clearTodayCache(); clearHistoryCache(); return supabase.auth.signOut() }
+  // AI-DEV NOTE: Release this device's push row and local reminders BEFORE
+  // auth.signOut() (the delete needs the still-valid session under RLS), so the
+  // next account on a shared device doesn't receive this account's reminders.
+  // Capped and best-effort: sign-out must never hang offline - the
+  // push_subscriptions_single_owner trigger is the real guarantee.
+  const signOut = async () => {
+    clearProfileCache(); clearTodayCache(); clearHistoryCache()
+    const userId = session?.user?.id
+    await withDeadline(Promise.allSettled([
+      cancelAllReminders(),
+      releaseFCMToken(),
+      userId && !Capacitor.isNativePlatform() ? releaseWebPushEndpoint(userId) : null,
+    ]), 'Sign-out cleanup', 3000).catch(() => {})
+    return supabase.auth.signOut()
+  }
 
   // Recovery: email a reset link that returns to /reset, then set the new password.
   const resetPassword = (email, captchaToken) =>
