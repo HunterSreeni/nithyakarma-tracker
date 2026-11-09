@@ -1,0 +1,151 @@
+# AI-DEV NOTE: Manual-only by design (Sreeni, 2026-11-09): builds a signed
+# Play Store AAB ONLY when someone clicks "Run workflow" - never on push, PR
+# or release. Signing material lives only in repository secrets and is wiped
+# at the end of the job. The upload key must be the one registered in Play
+# Console (Play App Signing); never generate a new key here.
+name: android-release (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to build
+        required: true
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: app
+    env:
+      BUNDLETOOL_VERSION: 1.18.3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Check required secrets
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
+        run: |
+          missing=0
+          for name in ANDROID_KEYSTORE_B64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD \
+                      GOOGLE_SERVICES_JSON_B64 VITE_SUPABASE_URL VITE_SUPABASE_KEY VITE_VAPID_PUBLIC_KEY VITE_TURNSTILE_SITE_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Missing repository secret $name"; missing=1; fi
+          done
+          exit $missing
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - name: Write app/.env (public client config only)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_APP_URL: https://app.nithyakarma.org
+        run: |
+          {
+            echo "VITE_SUPABASE_URL=$VITE_SUPABASE_URL"
+            echo "VITE_SUPABASE_KEY=$VITE_SUPABASE_KEY"
+            echo "VITE_VAPID_PUBLIC_KEY=$VITE_VAPID_PUBLIC_KEY"
+            echo "VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY"
+            echo "VITE_SENTRY_DSN=$VITE_SENTRY_DSN"
+            echo "VITE_APP_URL=$VITE_APP_URL"
+          } > .env
+
+      - run: npm run build
+      - run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Restore signing key and Firebase config
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_B64" | base64 -d > android/app/nithyakarma-upload.jks
+          {
+            echo "storeFile=nithyakarma-upload.jks"
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+          } > android/keystore.properties
+          echo "$GOOGLE_SERVICES_JSON_B64" | base64 -d > android/app/google-services.json
+          # Without google-services.json the build still succeeds but ships with
+          # no FCM push - refuse rather than produce that bundle.
+          grep -Eq '"package_name": *"org.nithyakarma.app"' android/app/google-services.json \
+            || { echo "::error::google-services.json is not for org.nithyakarma.app"; exit 1; }
+
+      - name: Build signed AAB
+        working-directory: app/android
+        run: ./gradlew --no-daemon bundleRelease
+
+      - name: Verify signature, package and version
+        id: verify
+        env:
+          # Optional: the upload certificate SHA-256 from Play Console (App
+          # signing > Upload key). When set, a bundle signed with any other key
+          # fails here instead of being rejected by Play after upload.
+          EXPECTED_UPLOAD_SHA256: ${{ secrets.ANDROID_UPLOAD_CERT_SHA256 }}
+        run: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          jarsigner -verify "$AAB" | grep -q "jar verified" || { echo "::error::AAB is not signed"; exit 1; }
+          echo "Upload certificate (compare SHA-256 with Play Console > App signing > Upload key):"
+          keytool -printcert -jarfile "$AAB" | grep -E "Owner|SHA256"
+          if [ -n "$EXPECTED_UPLOAD_SHA256" ]; then
+            ACTUAL=$(keytool -printcert -jarfile "$AAB" | sed -n 's/.*SHA256: *//p' | head -1 | tr -d ': ' | tr 'a-f' 'A-F')
+            WANT=$(echo "$EXPECTED_UPLOAD_SHA256" | tr -d ': ' | tr 'a-f' 'A-F')
+            [ "$ACTUAL" = "$WANT" ] || { echo "::error::Signed with a key that is not the Play upload key"; exit 1; }
+          fi
+          curl -sSfL -o /tmp/bundletool.jar \
+            "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          MANIFEST=$(java -jar /tmp/bundletool.jar dump manifest --bundle "$AAB")
+          echo "$MANIFEST" | grep -q 'package="org.nithyakarma.app"' || { echo "::error::Unexpected package"; exit 1; }
+          VERSION_NAME=$(echo "$MANIFEST" | sed -n 's/.*android:versionName="\([^"]*\)".*/\1/p' | head -1)
+          VERSION_CODE=$(echo "$MANIFEST" | sed -n 's/.*android:versionCode="\([^"]*\)".*/\1/p' | head -1)
+          [ -n "$VERSION_NAME" ] && [ -n "$VERSION_CODE" ] || { echo "::error::Could not read version from the bundle"; exit 1; }
+          echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE"
+          echo "name=nithyakarma-${VERSION_NAME}-${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.verify.outputs.name }}
+          path: app/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/app/nithyakarma-upload.jks android/keystore.properties android/app/google-services.json .env /tmp/bundletool.jar
