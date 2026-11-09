@@ -15,7 +15,11 @@
 do $$
 declare v_id uuid := gen_random_uuid();
 declare v_sandhya int;
+declare v_password text := 'REPLACE_ME';
 begin
+  -- AI-DEV NOTE: never commit a real password here. Paste your local
+  -- ANDROID_E2E_PASSWORD value into v_password before running, and do not save it.
+  if v_password = 'REPLACE_ME' then raise exception 'Set v_password to your local ANDROID_E2E_PASSWORD first'; end if;
   delete from auth.users where email = 'android-sandhya-throwaway@nithyakarma.test';
 
   insert into auth.users (
@@ -25,7 +29,7 @@ begin
     email_change_token_current, reauthentication_token, phone_change, phone_change_token
   ) values (
     '00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
-    'android-sandhya-throwaway@nithyakarma.test', crypt('AndroidSandhya2026xyz', gen_salt('bf')),
+    'android-sandhya-throwaway@nithyakarma.test', crypt(v_password, gen_salt('bf')),
     now(), now(), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
     '', '', '', '', '', '', '', ''
   );
