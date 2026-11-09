@@ -3,6 +3,8 @@
 // anything unrecognized.
 export function friendlyError(err) {
   const message = err?.message ?? String(err ?? '')
+  // Errors we wrote for the user ourselves (e.g. a partial success) pass through.
+  if (err?.userFacing) return message
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     return "You're offline. Check your connection and try again."
   }

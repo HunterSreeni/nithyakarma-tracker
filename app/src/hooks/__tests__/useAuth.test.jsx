@@ -226,6 +226,73 @@ describe('profileStatus', () => {
   })
 })
 
+// F2 (state machine audit): onboarding and add-family-member are multi-step;
+// a retry after a partial failure must be safe and Sandhya never silently lost.
+describe('retry-safe onboarding and family add', () => {
+  const SESSION = { data: { session: { user: { id: 'u1', email: 'a@b.com' } } } }
+  const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone
+  function mockDb({ profileInsertError = null, existingProfile = { id: 'u1', timezone: TZ }, sandhyaInsertError = null } = {}) {
+    const calls = { sandhyaInserts: [] }
+    supabase.from.mockImplementation((t) => {
+      if (t === 'profiles') return {
+        insert: () => Promise.resolve({ error: profileInsertError }),
+        select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: existingProfile, error: null }) }) }),
+        update: () => ({ eq: () => Promise.resolve({ error: null }) }),
+      }
+      if (t === 'practices') return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { id: 1 }, error: null }) }) }) }
+      if (t === 'user_practices') return { insert: (row) => { calls.sandhyaInserts.push(row); return Promise.resolve({ error: sandhyaInsertError }) } }
+      return {
+        select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }),
+        insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: 'c1' }, error: null }) }) }),
+      }
+    })
+    return calls
+  }
+  const PROFILE = { displayName: 'A', gender: 'male', isMarried: false, panchangamTradition: 'tamil', referralCode: null }
+  async function signedIn() {
+    getSession.mockResolvedValue(SESSION)
+    const hook = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(hook.result.current.loading).toBe(false))
+    return hook.result
+  }
+
+  it('a retry whose profile insert hits a duplicate finishes the remaining steps', async () => {
+    const calls = mockDb({ profileInsertError: { code: '23505', message: 'duplicate key' } })
+    const result = await signedIn()
+    await act(async () => { await result.current.createProfile(PROFILE) })
+    expect(calls.sandhyaInserts).toHaveLength(1)
+  })
+
+  it('still fails when the duplicate is not actually our profile', async () => {
+    mockDb({ profileInsertError: { code: '23505', message: 'duplicate key' }, existingProfile: null })
+    const result = await signedIn()
+    await expect(result.current.createProfile(PROFILE)).rejects.toMatchObject({ code: '23505' })
+  })
+
+  it('surfaces a failed Sandhya insert instead of silently skipping it', async () => {
+    mockDb({ sandhyaInsertError: { code: '08006', message: 'connection failure' } })
+    const result = await signedIn()
+    await expect(result.current.createProfile(PROFILE)).rejects.toMatchObject({ code: '08006' })
+  })
+
+  it('treats an already-present Sandhya row as done', async () => {
+    mockDb({ sandhyaInsertError: { code: '23505', message: 'duplicate key' } })
+    const result = await signedIn()
+    await act(async () => { await result.current.createProfile(PROFILE) })
+  })
+
+  it('a family add whose Sandhya step fails keeps the child and reports a partial, user-facing error', async () => {
+    mockDb({ sandhyaInsertError: { code: '08006', message: 'connection failure' } })
+    const result = await signedIn()
+    let caught
+    await act(async () => {
+      try { await result.current.addFamilyMember({ name: 'Arjun', gender: 'male', upanayanamDone: true, balaSabhaOptIn: true }) } catch (e) { caught = e }
+    })
+    expect(caught).toMatchObject({ partial: true, userFacing: true })
+    expect(caught.message).toMatch(/Arjun was added/)
+  })
+})
+
 // M1: the in-memory React Query cache must not outlive the account, and the
 // Sabha board must refetch after anything that moves scores or visibility.
 describe('query cache hygiene', () => {

@@ -277,6 +277,19 @@ export function AuthProvider({ children }) {
     })
   const updatePassword = (password) => supabase.auth.updateUser({ password })
 
+  // AI-DEV NOTE: onboarding runs several writes in a row, so a retry after a
+  // partial failure must be safe. Sandhyavandhanam is (re)ensured, never
+  // silently skipped: a duplicate means it is already there; any other
+  // failure is surfaced so the user can retry instead of being left without it.
+  const ensureSandhya = async (familyMemberId) => {
+    const sandhya = unwrap(await supabase.from('practices')
+      .select('id').eq('is_sandhyavandhanam', true).single())
+    const { error } = await supabase.from('user_practices').insert({
+      owner_id: session.user.id, family_member_id: familyMemberId, practice_id: sandhya.id,
+    })
+    if (error && error.code !== '23505') throw error
+  }
+
   // Onboarding: create the profile row (RLS: id must equal auth.uid()).
   const createProfile = async ({ displayName, gender, isMarried, panchangamTradition, referralCode }) => {
     const { error } = await supabase.from('profiles').insert({
@@ -284,7 +297,14 @@ export function AuthProvider({ children }) {
       is_married: gender === 'male' ? !!isMarried : false,
       panchangam_tradition: panchangamTradition ?? 'tamil',
     })
-    if (error) throw error
+    if (error) {
+      // A retry after a partial failure: the row is keyed by this user's own id,
+      // so a unique violation means our earlier attempt already created it -
+      // confirm it is really there, then finish the remaining steps.
+      if (error.code !== '23505') throw error
+      const existing = unwrap(await supabase.from('profiles').select('id').eq('id', session.user.id).maybeSingle())
+      if (!existing) throw error
+    }
     if (referralCode) {
       // AI-DEV NOTE: Protected referral call site. See AGENTS.md "Referrals" -
       // apply_referral owns the reward/rate-limit logic server-side; do not
@@ -298,15 +318,7 @@ export function AuthProvider({ children }) {
       }
     }
     // Sandhyavandhanam is the constant practice for male users
-    if (gender === 'male') {
-      const { data: sandhya } = await supabase.from('practices')
-        .select('id').eq('is_sandhyavandhanam', true).single()
-      if (sandhya) {
-        await supabase.from('user_practices').insert({
-          owner_id: session.user.id, practice_id: sandhya.id,
-        })
-      }
-    }
+    if (gender === 'male') await ensureSandhya(null)
     track('onboarding_complete', { gender, referred: !!referralCode })
     await loadProfile(session)
     setJustOnboarded(true)
@@ -330,14 +342,19 @@ export function AuthProvider({ children }) {
       bala_sabha_opt_in: balaSabhaOptIn,
     }).select().single()
     if (error) throw error
-    // Boys with upanayanam done get Sandhyavandhanam automatically
+    // Boys with upanayanam done get Sandhyavandhanam automatically. The child
+    // row already exists at this point and re-submitting would add a second
+    // child, so on failure keep the child, refresh, and say what is missing.
     if (gender === 'male' && upanayanamDone) {
-      const { data: sandhya } = await supabase.from('practices')
-        .select('id').eq('is_sandhyavandhanam', true).single()
-      if (sandhya) {
-        await supabase.from('user_practices').insert({
-          owner_id: session.user.id, family_member_id: data.id, practice_id: sandhya.id,
-        })
+      try {
+        await ensureSandhya(data.id)
+      } catch {
+        invalidateLeaderboard()
+        await loadProfile(session)
+        const partial = new Error(`${name} was added, but Sandhyavandhanam could not be added. Add it from Today.`)
+        partial.userFacing = true
+        partial.partial = true // the child exists - callers must not offer a re-submit
+        throw partial
       }
     }
     invalidateLeaderboard()
