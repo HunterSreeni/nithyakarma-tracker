@@ -299,3 +299,21 @@ describe('useNotifications preference load failure', () => {
     expect(result.current.error).toBe('')
   })
 })
+
+// F5 (state machine audit): one toggle at a time.
+describe('useNotifications toggle in-flight state', () => {
+  it('a second tap while a toggle is running is ignored', async () => {
+    let finish
+    setupWebPush.mockImplementation(() => new Promise((res) => { finish = res }))
+    const { result } = renderHook(() => useNotifications(user))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    let first
+    act(() => { first = result.current.toggle() })
+    await waitFor(() => expect(result.current.toggling).toBe(true))
+    await act(async () => { await result.current.toggle() })
+    expect(setupWebPush).toHaveBeenCalledTimes(1)
+    await act(async () => { finish(); await first })
+    expect(result.current.toggling).toBe(false)
+    expect(result.current.enabled).toBe(true)
+  })
+})
