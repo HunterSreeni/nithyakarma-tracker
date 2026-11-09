@@ -50,6 +50,20 @@ function clearProfileCache() {
   try { localStorage.removeItem(PROFILE_CACHE_KEY) } catch { /* ignore */ }
 }
 
+// AI-DEV NOTE: the in-memory React Query cache outlives a sign-out, so a
+// second account on a shared device could briefly see the first one's
+// leaderboard/history. Wipe it with the localStorage caches.
+function clearAllCaches() {
+  clearProfileCache(); clearTodayCache(); clearHistoryCache()
+  queryClient.clear()
+}
+
+// Marks, profile edits (leaderboard opt-in) and family changes move Sabha
+// scores/visibility; without this the board stays stale for its 30s staleTime.
+function invalidateLeaderboard() {
+  queryClient.invalidateQueries({ queryKey: ['leaderboard'] }).catch(() => {})
+}
+
 export function AuthProvider({ children }) {
   // Cheap (a few KB of JSON) - fine to read once per render rather than thread
   // through a ref, and only its first-render value is ever used below.
@@ -148,7 +162,7 @@ export function AuthProvider({ children }) {
       setSessionValidated(true)
       if (!nextSession) {
         setProfile(null); setFamilyMembers([]); setSelectedMember(null)
-        clearProfileCache(); clearTodayCache(); clearHistoryCache()
+        clearAllCaches()
         setLoading(false)
       }
     })
@@ -162,7 +176,7 @@ export function AuthProvider({ children }) {
       setSessionValidated(true)
       if (!data.session) {
         setProfile(null); setFamilyMembers([]); setSelectedMember(null)
-        clearProfileCache(); clearTodayCache(); clearHistoryCache()
+        clearAllCaches()
       }
     }).catch(() => {
       if (!mounted) return
@@ -229,7 +243,7 @@ export function AuthProvider({ children }) {
   // Capped and best-effort: sign-out must never hang offline - the
   // push_subscriptions_single_owner trigger is the real guarantee.
   const signOut = async () => {
-    clearProfileCache(); clearTodayCache(); clearHistoryCache()
+    clearAllCaches()
     const userId = session?.user?.id
     await withDeadline(Promise.allSettled([
       cancelAllReminders(),
@@ -289,6 +303,7 @@ export function AuthProvider({ children }) {
   const updateProfile = async (fields) => {
     const { error } = await supabase.from('profiles').update(fields).eq('id', session.user.id)
     if (error) throw error
+    invalidateLeaderboard()
     await loadProfile(session)
   }
 
@@ -309,6 +324,7 @@ export function AuthProvider({ children }) {
         })
       }
     }
+    invalidateLeaderboard()
     await loadProfile(session)
     return data
   }
@@ -317,6 +333,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.from('family_members').delete().eq('id', id)
     if (error) throw error
     if (selectedMember?.id === id) setSelectedMember(null)
+    invalidateLeaderboard()
     await loadProfile(session)
   }
 
@@ -333,7 +350,8 @@ export function AuthProvider({ children }) {
     session, profile, familyMembers, selectedMember, setSelectedMember, loading,
     signInGoogle, signInEmail, signUpEmail, signOut, resetPassword, updatePassword,
     createProfile, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount,
-    refresh: () => session && loadProfile(session),
+    // called by TodayPage after every mark (incl. yesterday Sandhya)
+    refresh: () => { if (!session) return; invalidateLeaderboard(); return loadProfile(session) },
     justOnboarded, clearJustOnboarded, dataStatus: dataLifecycle.status,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -34,6 +34,7 @@ Protected implementation surfaces:
 ## Punya & tiers
 
 - Punya only increases through `submit_practice_log`'s `pr.punya_value` award (see Streak & freeze above) or `apply_referral`'s signup bonus. Never award punya from client code.
+- Reward/streak columns (`punya`, `ad_free_until`, `freeze_credits`, streaks, `last_complete_date`, `referred_by`, `referral_code`) on `profiles`/`family_members`/`user_practices` are server-only: `authenticated` has column-level grants for just the fields the app edits (migration `20261109120000_lock_reward_columns.sql`). Never re-grant table-wide INSERT/UPDATE; add a new client-editable column to that allow-list explicitly. `gender` is not client-updatable (it would bypass the eligibility gate).
 - Tier thresholds (`tier_for`) are fixed bands: Shishya < 100 <= Sadhaka < 400 <= Yogi < 1000 <= Rishi < 2500 <= Brahmarishi. Freeze cap (`freeze_cap_for`) mirrors the same bands 1..5. Changing one without the other breaks the "tier crossing tops up freeze" rule above.
 
 Protected implementation surfaces: `tier_for` (`app/supabase/migrations/*tier_for*`), `freeze_cap_for` (already covered by the `*streak*` glob above), `app/src/utils/tiers.js`.
@@ -41,6 +42,7 @@ Protected implementation surfaces: `tier_for` (`app/supabase/migrations/*tier_fo
 ## Referrals
 
 - A referral code can only be applied once per referred account (`referred_by` set on first use), never self-referral, and is rate-limited to 5 applications per referrer per rolling 24 hours.
+- "Once per referred account" relies on `referrals.referred_id` being unique, so the referrals row must survive while the account exists: users cannot delete their own `profiles` row (no DELETE policy or grant, migration `20261109140000_block_profile_self_delete.sql`). Only `delete_account` removes a profile, via the `auth.users` cascade.
 - Both sides get the same reward on a successful apply: 30 ad-free days (extending, not replacing, any existing `ad_free_until`) and one freeze credit, capped at the referrer's/referee's own current tier cap via `freeze_cap_for`.
 
 Protected implementation surfaces: `apply_referral`, `get_my_referrals` (`app/supabase/migrations/*referral*`), the `apply_referral` call site in `app/src/hooks/useAuth.jsx`.
@@ -54,13 +56,13 @@ Protected implementation surfaces: `apply_referral`, `get_my_referrals` (`app/su
 - Sandhya slot reminders are gated to male users with an active (non-archived) Sandhyavandhanam practice; the streak nudge skips users whose practices are all archived, but day completion still counts every row's logs; each slot fires once, never re-sent after that slot is already logged.
 - One push endpoint (device FCM token / browser subscription) belongs to exactly one account - the latest to register it. The `push_subscriptions_single_owner` trigger enforces this server-side; a client-side delete of another account's row is a silent no-op under RLS (that was the duplicate-push-on-shared-phone bug). Sign-out releases only this device's row and cancels local reminders, best-effort and time-capped - never block sign-out on it.
 
-Protected implementation surfaces: `claim_notification_delivery` (`app/supabase/migrations/*notification_deliver*`), `push_subscriptions_single_owner` (`app/supabase/migrations/*push_subscriptions*`), `app/supabase/functions/send-reminders/`, `app/supabase/functions/send-freeze-notifications/`, `app/supabase/functions/_shared/{push,freezeNudge,streakEventMessage,observanceMatch,dayComplete,reminderWindow}.ts`, `app/src/hooks/useNotifications.js`, `app/src/utils/{notifications,pushAndroid,webPush}.js`.
+Protected implementation surfaces: `claim_notification_delivery` (`app/supabase/migrations/*notification_deliver*`), `push_subscriptions_single_owner` (`app/supabase/migrations/*push_subscriptions*`), `app/supabase/functions/send-reminders/`, `app/supabase/functions/send-freeze-notifications/`, `app/supabase/functions/_shared/{push,freezeNudge,streakEventMessage,observanceMatch,dayComplete,reminderWindow,reminderGate}.ts`, `app/src/hooks/useNotifications.js`, `app/src/utils/{notifications,pushAndroid,webPush}.js`.
 
 ## Sandhya / Samidhadhanam eligibility gating
 
 - `check_sandhya_eligibility` (a DB trigger on `user_practices` insert, and on restore of an archived row via `sandhya_eligibility_on_restore`) is the sole gate: Sandhyavandhanam requires male + (for family members) `upanayanam_done`; Samidhadhanam additionally requires unmarried (self) or upanayanam-done-and-unmarried (family member). These are hard `raise exception` blocks, not soft warnings - client-side checks are a UX convenience only, never the actual gate.
 
-- Removing an anushtanam is a soft archive (`user_practices.archived_at` via `set_practice_archived`), never a hard delete: logs, punya, the overall streak, history and leaderboard scores stay. Re-adding the same practice restores the same row. Sandhyavandhanam is not removable. Streak/punya RPCs deliberately ignore `archived_at`.
+- Removing an anushtanam is a soft archive (`user_practices.archived_at` via `set_practice_archived`), never a hard delete: logs, punya, the overall streak, history and leaderboard scores stay. Re-adding the same practice restores the same row. Sandhyavandhanam is not removable. Streak/punya day-completion logic deliberately ignores `archived_at` (past logs keep counting), but `submit_practice_log` (and so `submit_yesterday_sandhya`) refuses NEW logs on an archived row (migration `20261109160000_reject_logs_on_archived_practice.sql`).
 
 Protected implementation surfaces: `check_sandhya_eligibility` (`app/supabase/migrations/*sandhya_eligibility*`, `*samidhadhanam*`, `*brahmayagnam*`), `set_practice_archived` (`app/supabase/migrations/*archive_user_practices*`).
 
