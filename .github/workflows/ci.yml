@@ -49,6 +49,15 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # AI-DEV NOTE: every e2e run signs in to the same live e2e@ account, and
+    # journey-child creates and removes a same-named family fixture. Two
+    # overlapping runs (a push to main plus the release PR) removed each
+    # other's fixture and failed the release gate (run 42643657059,
+    # 2026-11-09). Queue runs on that account instead of overlapping, and
+    # never cancel one mid-run - that would leak its fixture.
+    concurrency:
+      group: e2e-live-account
+      cancel-in-progress: false
     # 2026-08-19: npx playwright install --with-deps chromium's internal
     # apt-get hung silently (network flake on the runner's package mirror)
     # for 1h19m with zero output before the default 6h job timeout would
