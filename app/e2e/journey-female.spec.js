@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { seedSession } from './helpers/session.js'
 
 // Female-signup activation path (Intent 1.5 Testing Gate): profiles without
 // Sandhyavandhanam land on the "Suggested to start" nudge instead of an empty
@@ -8,14 +9,24 @@ import { test, expect } from '@playwright/test'
 // supabase/tests/seed-e2efemale.sql (through the Supabase MCP). @destructive,
 // excluded from CI (see .github/workflows/ci.yml) - a manual pre-release gate.
 const EMAIL = process.env.E2E_FEMALE_EMAIL ?? 'e2efemale@nithyakarma.test'
-const PASSWORD = process.env.E2E_FEMALE_PASSWORD ?? 'E2eFemale#2026'
+// AI-DEV NOTE: no committed password fallback. With the service-role key in
+// app/.env the session is minted server-side (Turnstile blocks the form);
+// otherwise the form path needs E2E_FEMALE_PASSWORD.
+const PASSWORD = process.env.E2E_FEMALE_PASSWORD
+const SEEDING_KEYS = Boolean(process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 test('female onboarding reaches an actionable Today via the suggested-practices nudge @destructive', async ({ page }) => {
-  await page.goto('/')
-  await expect(page.getByText('Continue with Google')).toBeVisible()
-  await page.fill('#auth-email', EMAIL)
-  await page.fill('#auth-password', PASSWORD)
-  await page.getByRole('button', { name: 'Sign In' }).click()
+  if (SEEDING_KEYS) {
+    await seedSession(page, { email: EMAIL })
+    await page.goto('/')
+  } else {
+    if (!PASSWORD) throw new Error('Set SUPABASE_SERVICE_ROLE_KEY (seeded session) or E2E_FEMALE_PASSWORD in app/.env')
+    await page.goto('/')
+    await expect(page.getByText('Continue with Google')).toBeVisible()
+    await page.fill('#auth-email', EMAIL)
+    await page.fill('#auth-password', PASSWORD)
+    await page.getByRole('button', { name: 'Sign In' }).click()
+  }
   await expect(page.getByRole('button', { name: /Get started/ })).toBeVisible({ timeout: 15000 })
 
   await page.getByRole('button', { name: /Get started/ }).click() // value-prop intro -> form
