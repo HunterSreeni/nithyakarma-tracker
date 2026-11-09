@@ -19,7 +19,11 @@ export default function SabhaPage() {
   const [tab, setTab] = useState(SCOPES[0])
   const { profile } = useAuth()
   const query = useQuery({
-    queryKey: ['leaderboard', tab.period, tab.scope],
+    // AI-DEV NOTE: keyed by the viewer - get_leaderboard's rows depend on who
+    // asks (own row, opt-in), so a shared device must never reuse another
+    // account's cached board. useAuth invalidates ['leaderboard'] after marks,
+    // profile and family changes.
+    queryKey: ['leaderboard', profile.id, tab.period, tab.scope],
     enabled: !!profile.community_enabled,
     queryFn: async () => unwrap(await withDeadline(
       supabase.rpc('get_leaderboard', { p_period: tab.period, p_scope: tab.scope }),

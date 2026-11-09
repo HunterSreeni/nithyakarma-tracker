@@ -176,6 +176,39 @@ describe('profile cache (cold-restart instant resume)', () => {
   })
 })
 
+// M1: the in-memory React Query cache must not outlive the account, and the
+// Sabha board must refetch after anything that moves scores or visibility.
+describe('query cache hygiene', () => {
+  const LB = ['leaderboard', 'u1', 'week', 'global']
+
+  it('signOut() wipes the in-memory query cache (shared device)', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    queryClient.setQueryData(LB, [{ subject_id: 'u1' }])
+    await result.current.signOut()
+    expect(queryClient.getQueryData(LB)).toBeUndefined()
+  })
+
+  it('a SIGNED_OUT auth event also wipes it', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    queryClient.setQueryData(LB, [{ subject_id: 'u1' }])
+    authCb('SIGNED_OUT', null)
+    expect(queryClient.getQueryData(LB)).toBeUndefined()
+  })
+
+  it('refresh() (called after every mark) marks the leaderboard stale', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    queryClient.setQueryData(LB, [{ subject_id: 'u1' }])
+    await result.current.refresh()
+    expect(queryClient.getQueryState(LB).isInvalidated).toBe(true)
+  })
+})
+
 // profiles.timezone drives decay_stale_streaks' idea of "today" for this
 // account and its children (migration 20260810120000), so it has to track the
 // device rather than only being written when someone opens the notification
