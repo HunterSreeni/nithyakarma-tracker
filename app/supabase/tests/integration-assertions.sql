@@ -1035,6 +1035,84 @@ begin
     end if;
   end;
 
+  -- 26. Column allow-list (migration 20261109120000): as the real
+  -- `authenticated` role, reward/streak columns on profiles, family_members
+  -- and user_practices are server-only (only SECURITY DEFINER RPCs write
+  -- them), gender/practice_id cannot be flipped to dodge the eligibility
+  -- gate, and the edits the app genuinely makes still work.
+  declare
+    v_fm26 uuid;
+    v_up26 uuid;
+    v_attempt text;
+    v_attempts text[] := array[
+      'update profiles set punya = 999999 where id = %L',
+      'update profiles set ad_free_until = now() + interval ''10 years'' where id = %L',
+      'update profiles set freeze_credits = 99 where id = %L',
+      'update profiles set current_streak = 500, best_streak = 500 where id = %L',
+      'update profiles set last_complete_date = current_date where id = %L',
+      'update profiles set referred_by = id where id = %L',
+      'update profiles set gender = ''female'' where id = %L'
+    ];
+  begin
+    select id into v_fm26 from family_members where parent_id = v_uid limit 1;
+    select id into v_up26 from user_practices where owner_id = v_uid limit 1;
+    if v_fm26 is null or v_up26 is null then raise exception 'TEST SETUP: section 26 needs a family member and a practice'; end if;
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text, 'role', 'authenticated')::text, true);
+    execute 'set local role authenticated';
+
+    foreach v_attempt in array v_attempts loop
+      v_failed := false;
+      begin
+        execute format(v_attempt, v_uid);
+      exception when insufficient_privilege then v_failed := true;
+      end;
+      if not v_failed then execute 'reset role'; raise exception 'FAIL: authenticated could run: %', v_attempt; end if;
+    end loop;
+
+    v_failed := false;
+    begin
+      update family_members set punya = 999999, freeze_credits = 99 where id = v_fm26;
+    exception when insufficient_privilege then v_failed := true;
+    end;
+    if not v_failed then execute 'reset role'; raise exception 'FAIL: authenticated could write family_members punya/freeze'; end if;
+
+    v_failed := false;
+    begin
+      update family_members set upanayanam_done = true, gender = 'male' where id = v_fm26;
+    exception when insufficient_privilege then v_failed := true;
+    end;
+    if not v_failed then execute 'reset role'; raise exception 'FAIL: authenticated could flip a child''s gender/upanayanam'; end if;
+
+    v_failed := false;
+    begin
+      update user_practices set current_streak = 500 where id = v_up26;
+    exception when insufficient_privilege then v_failed := true;
+    end;
+    if not v_failed then execute 'reset role'; raise exception 'FAIL: authenticated could write user_practices streak'; end if;
+
+    v_failed := false;
+    begin
+      update user_practices set practice_id = v_sandhya where id = v_up26;
+    exception when insufficient_privilege then v_failed := true;
+    end;
+    if not v_failed then execute 'reset role'; raise exception 'FAIL: authenticated could switch practice_id (eligibility bypass)'; end if;
+
+    v_failed := false;
+    begin
+      insert into user_practices (owner_id, practice_id, current_streak) values (v_uid, 9, 500);
+    exception when insufficient_privilege then v_failed := true;
+    end;
+    if not v_failed then execute 'reset role'; raise exception 'FAIL: authenticated could insert a practice with a streak'; end if;
+
+    -- the edits the app really makes still succeed
+    update profiles set display_name = 'Integration Test', is_married = false, panchangam_tradition = 'tamil',
+      leaderboard_opt_in = false, community_enabled = false, timezone = 'Asia/Kolkata' where id = v_uid;
+    update family_members set name = name, bala_sabha_opt_in = bala_sabha_opt_in where id = v_fm26;
+
+    execute 'reset role';
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;

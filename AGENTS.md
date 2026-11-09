@@ -34,6 +34,7 @@ Protected implementation surfaces:
 ## Punya & tiers
 
 - Punya only increases through `submit_practice_log`'s `pr.punya_value` award (see Streak & freeze above) or `apply_referral`'s signup bonus. Never award punya from client code.
+- Reward/streak columns (`punya`, `ad_free_until`, `freeze_credits`, streaks, `last_complete_date`, `referred_by`, `referral_code`) on `profiles`/`family_members`/`user_practices` are server-only: `authenticated` has column-level grants for just the fields the app edits (migration `20261109120000_lock_reward_columns.sql`). Never re-grant table-wide INSERT/UPDATE; add a new client-editable column to that allow-list explicitly. `gender` is not client-updatable (it would bypass the eligibility gate).
 - Tier thresholds (`tier_for`) are fixed bands: Shishya < 100 <= Sadhaka < 400 <= Yogi < 1000 <= Rishi < 2500 <= Brahmarishi. Freeze cap (`freeze_cap_for`) mirrors the same bands 1..5. Changing one without the other breaks the "tier crossing tops up freeze" rule above.
 
 Protected implementation surfaces: `tier_for` (`app/supabase/migrations/*tier_for*`), `freeze_cap_for` (already covered by the `*streak*` glob above), `app/src/utils/tiers.js`.
