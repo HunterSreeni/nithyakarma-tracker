@@ -50,11 +50,9 @@ export async function setupWebPush(userId) {
     })
   }
   const sub = subscription.toJSON()
-  // A shared/reused browser endpoint may still be owned by a different
-  // account (e.g. a test device signed into two accounts) - the unique
-  // constraint is per-user now, so reclaim it for this user first.
-  await supabase.from('push_subscriptions').delete()
-    .eq('endpoint', sub.endpoint).neq('user_id', userId)
+  // AI-DEV NOTE: a browser endpoint left over from another account is handed
+  // to this one by the push_subscriptions_single_owner trigger - a client-side
+  // delete of the other account's row is silently a no-op under RLS.
   const { error } = await supabase.from('push_subscriptions').upsert({
     user_id: userId, endpoint: sub.endpoint,
     p256dh: sub.keys.p256dh, auth_key: sub.keys.auth, platform: 'web',
@@ -69,5 +67,20 @@ export async function deleteWebPushSubscription(userId) {
     if (subscription) await subscription.unsubscribe()
     await supabase.from('push_subscriptions').delete()
       .match({ user_id: userId, platform: 'web' })
+  } catch { /* best effort */ }
+}
+
+// Sign-out cleanup: unsubscribe this browser and drop just its row, so the
+// next account here starts clean and the same account's self-heal in
+// useNotifications re-subscribes it on the next sign-in. Best effort.
+export async function releaseWebPushEndpoint(userId) {
+  try {
+    if (!isPushSupported()) return
+    const registration = await navigator.serviceWorker.ready
+    const subscription = await registration.pushManager.getSubscription()
+    if (!subscription) return
+    const { endpoint } = subscription
+    await subscription.unsubscribe()
+    await supabase.from('push_subscriptions').delete().match({ user_id: userId, endpoint })
   } catch { /* best effort */ }
 }
