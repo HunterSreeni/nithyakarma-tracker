@@ -10,6 +10,7 @@ async function fetchToday(ownerId, familyMemberId) {
   let practicesQuery = supabase.from('user_practices')
     .select('*, practice:practices(*)')
     .eq('owner_id', ownerId)
+    .is('archived_at', null)
   practicesQuery = familyMemberId
     ? practicesQuery.eq('family_member_id', familyMemberId)
     : practicesQuery.is('family_member_id', null)
@@ -68,10 +69,35 @@ export function useToday(ownerId, familyMemberId = null) {
     return data
   }
 
+  // AI-DEV NOTE: re-adding a removed (archived) practice restores the SAME row
+  // - the unique (owner, member, practice) index forbids a second one, and
+  // restoring brings its logs/history back. The restore re-runs the server
+  // eligibility gate (sandhya_eligibility_on_restore trigger). A row that is
+  // still active but hidden today (weekly practice on an off day) is left as is.
   const addPractice = async (practiceId) => {
-    unwrap(await withDeadline(supabase.from('user_practices').insert({
-      owner_id: ownerId, family_member_id: familyMemberId, practice_id: practiceId,
-    }), 'Add practice'))
+    let existingQuery = supabase.from('user_practices').select('id, archived_at')
+      .eq('owner_id', ownerId).eq('practice_id', practiceId)
+    existingQuery = familyMemberId
+      ? existingQuery.eq('family_member_id', familyMemberId)
+      : existingQuery.is('family_member_id', null)
+    const existing = unwrap(await withDeadline(existingQuery.maybeSingle(), 'Add practice'))
+    if (existing?.archived_at) {
+      unwrap(await withDeadline(supabase.rpc('set_practice_archived', {
+        p_user_practice_id: existing.id, p_archived: false,
+      }), 'Add practice'))
+    } else if (!existing) {
+      unwrap(await withDeadline(supabase.from('user_practices').insert({
+        owner_id: ownerId, family_member_id: familyMemberId, practice_id: practiceId,
+      }), 'Add practice'))
+    }
+    await reload()
+  }
+
+  // Soft remove: hides it from Today and reminders, keeps logs/history.
+  const removePractice = async (userPracticeId) => {
+    unwrap(await withDeadline(supabase.rpc('set_practice_archived', {
+      p_user_practice_id: userPracticeId, p_archived: true,
+    }), 'Remove practice'))
     await reload()
   }
 
@@ -82,6 +108,7 @@ export function useToday(ownerId, familyMemberId = null) {
     error: query.error ? friendlyError(query.error) : '',
     submit,
     addPractice,
+    removePractice,
     reload,
   }
 }

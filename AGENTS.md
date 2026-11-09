@@ -51,15 +51,17 @@ Protected implementation surfaces: `apply_referral`, `get_my_referrals` (`app/su
 - Streak/freeze transition pushes (`freeze_used`, `streak_reset`) are event-driven from the durable `streak_events` table, not inferred from current profile state, and fire before the time-window reminder logic on every run.
 - The 08:00/20:00 streak nudges gate on the same "any one `affects_streak` practice already logged today" day-completion rule as the streak logic itself (`dayComplete` mirrors `cadence.js`/the SQL bool_or aggregate) - never "every practice logged", or the nudge fires after the day is already secured.
 - Freeze-aware nudge wording (`freezeNudge`) only replaces the generic nudge at the exact gaps the freeze mechanic cares about (1-day gap at 20:00, 2-day gap at 08:00) - judged against each user's own local day, never a fixed UTC cron time.
-- Sandhya slot reminders are gated to male users with an active Sandhyavandhanam practice; each slot fires once, never re-sent after that slot is already logged.
+- Sandhya slot reminders are gated to male users with an active (non-archived) Sandhyavandhanam practice; the streak nudge skips users whose practices are all archived, but day completion still counts every row's logs; each slot fires once, never re-sent after that slot is already logged.
 
 Protected implementation surfaces: `claim_notification_delivery` (`app/supabase/migrations/*notification_deliver*`), `app/supabase/functions/send-reminders/`, `app/supabase/functions/send-freeze-notifications/`, `app/supabase/functions/_shared/{push,freezeNudge,streakEventMessage,observanceMatch,dayComplete,reminderWindow}.ts`, `app/src/hooks/useNotifications.js`, `app/src/utils/{notifications,pushAndroid,webPush}.js`.
 
 ## Sandhya / Samidhadhanam eligibility gating
 
-- `check_sandhya_eligibility` (a DB trigger on `user_practices` insert) is the sole gate: Sandhyavandhanam requires male + (for family members) `upanayanam_done`; Samidhadhanam additionally requires unmarried (self) or upanayanam-done-and-unmarried (family member). These are hard `raise exception` blocks, not soft warnings - client-side checks are a UX convenience only, never the actual gate.
+- `check_sandhya_eligibility` (a DB trigger on `user_practices` insert, and on restore of an archived row via `sandhya_eligibility_on_restore`) is the sole gate: Sandhyavandhanam requires male + (for family members) `upanayanam_done`; Samidhadhanam additionally requires unmarried (self) or upanayanam-done-and-unmarried (family member). These are hard `raise exception` blocks, not soft warnings - client-side checks are a UX convenience only, never the actual gate.
 
-Protected implementation surfaces: `check_sandhya_eligibility` (`app/supabase/migrations/*sandhya_eligibility*`, `*samidhadhanam*`, `*brahmayagnam*`).
+- Removing an anushtanam is a soft archive (`user_practices.archived_at` via `set_practice_archived`), never a hard delete: logs, punya, the overall streak, history and leaderboard scores stay. Re-adding the same practice restores the same row. Sandhyavandhanam is not removable. Streak/punya RPCs deliberately ignore `archived_at`.
+
+Protected implementation surfaces: `check_sandhya_eligibility` (`app/supabase/migrations/*sandhya_eligibility*`, `*samidhadhanam*`, `*brahmayagnam*`), `set_practice_archived` (`app/supabase/migrations/*archive_user_practices*`).
 
 ## Account deletion
 

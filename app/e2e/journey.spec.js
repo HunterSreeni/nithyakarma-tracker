@@ -118,6 +118,23 @@ test.describe.serial('Nithyakarma full journey @destructive', () => {
     await expect(page.locator('.practice-card.done', { hasText: 'Hanuman Chalisa' })).toBeVisible()
   })
 
+  // Soft archive (migration 20261109090000): removing hides the card; adding
+  // the same practice back restores the same row, so today's completed log
+  // (and its history) comes back with it instead of starting fresh.
+  test('remove a practice, then re-add it with its log intact', async () => {
+    const card = page.locator('.practice-card', { hasText: 'Hanuman Chalisa' })
+    page.once('dialog', (d) => d.accept())
+    await card.getByRole('button', { name: 'Remove Hanuman Chalisa' }).click()
+    await expect(card).toHaveCount(0, { timeout: 15000 })
+    // Sandhyavandhanam is the constant practice - never removable.
+    await expect(page.getByRole('button', { name: 'Remove Sandhyavandhanam' })).toHaveCount(0)
+
+    await page.getByRole('button', { name: /Add an anushtanam/ }).click()
+    await page.getByPlaceholder('Search...').fill('hanuman')
+    await page.getByRole('button', { name: /Hanuman Chalisa/ }).click()
+    await expect(page.locator('.practice-card.done', { hasText: 'Hanuman Chalisa' })).toBeVisible({ timeout: 15000 })
+  })
+
   // Intent 2.9 (2026-08-20): morning/evening either-or, same any-1-of-N
   // semantics as Sri Rudram's 3 slots, not a required pair. Self is an
   // unmarried male throughout this journey (the onboarding test above never
