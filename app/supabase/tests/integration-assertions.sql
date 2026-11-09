@@ -1113,6 +1113,26 @@ begin
     perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
   end;
 
+  -- 27. No profile self-delete (migration 20261109140000): deleting only the
+  -- profile row cascaded the referrals row away, so re-onboarding could call
+  -- apply_referral again. Account deletion goes through delete_account.
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text, 'role', 'authenticated')::text, true);
+    execute 'set local role authenticated';
+    v_failed := false;
+    begin
+      delete from profiles where id = v_uid;
+    exception when insufficient_privilege then v_failed := true;
+    end;
+    execute 'reset role';
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
+    if not v_failed then raise exception 'FAIL: authenticated could delete its own profile row'; end if;
+    if not exists (select 1 from profiles where id = v_uid) then raise exception 'FAIL: profile row is gone after a blocked delete'; end if;
+    if exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'profiles' and cmd = 'DELETE') then
+      raise exception 'FAIL: a profile DELETE policy exists again';
+    end if;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;
