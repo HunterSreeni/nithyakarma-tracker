@@ -35,6 +35,12 @@ vi.mock('../../lib/supabase', () => ({
   },
 }))
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
+const cancelAllReminders = vi.fn().mockResolvedValue(undefined)
+const releaseFCMToken = vi.fn().mockResolvedValue(undefined)
+const releaseWebPushEndpoint = vi.fn().mockResolvedValue(undefined)
+vi.mock('../../utils/notifications', () => ({ cancelAllReminders: (...a) => cancelAllReminders(...a) }))
+vi.mock('../../utils/pushAndroid', () => ({ releaseFCMToken: (...a) => releaseFCMToken(...a) }))
+vi.mock('../../utils/webPush', () => ({ releaseWebPushEndpoint: (...a) => releaseWebPushEndpoint(...a) }))
 
 import { AuthProvider, useAuth } from '../useAuth'
 import { supabase } from '../../lib/supabase'
@@ -134,6 +140,39 @@ describe('profile cache (cold-restart instant resume)', () => {
     result.current.signOut()
     expect(localStorage.getItem(CACHE_KEY)).toBe(null)
     resolveSignOut({ error: null })
+  })
+
+  // Shared-device duplicate-push bug: the previous account's device row and
+  // local reminders must be released while the session is still valid (RLS).
+  it("signOut() releases this device's push row and local reminders before ending the session", async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    const order = []
+    releaseWebPushEndpoint.mockImplementation(async () => { order.push('release') })
+    signOut.mockImplementation(async () => { order.push('signOut'); return { error: null } })
+    await result.current.signOut()
+    expect(cancelAllReminders).toHaveBeenCalled()
+    expect(releaseFCMToken).toHaveBeenCalled()
+    expect(releaseWebPushEndpoint).toHaveBeenCalledWith('u1')
+    expect(order).toEqual(['release', 'signOut'])
+  })
+
+  it('signOut() still signs out when cleanup hangs (offline) or fails', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      getSession.mockResolvedValue({ data: { session: { user: { id: 'u1', email: 'a@b.com' } } } })
+      const { result } = renderHook(() => useAuth(), { wrapper })
+      await waitFor(() => expect(result.current.loading).toBe(false))
+      releaseWebPushEndpoint.mockReturnValue(new Promise(() => {}))
+      releaseFCMToken.mockRejectedValue(new Error('offline'))
+      const done = result.current.signOut()
+      await vi.advanceTimersByTimeAsync(3100)
+      await done
+      expect(signOut).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

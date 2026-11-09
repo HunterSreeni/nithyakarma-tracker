@@ -15,6 +15,8 @@ import { supabase } from '../lib/supabase'
 // silently stop forever.
 let currentUserId = null
 let listenersReady = false
+// Last token saved for currentUserId, so sign-out can drop just THIS device.
+let currentToken = null
 
 // Distinct from the scheduled-reminder ids (100-500) in utils/notifications.js -
 // this one just relays whatever push just arrived, so re-using it across
@@ -23,11 +25,11 @@ const FOREGROUND_PUSH_ID = 600
 
 async function saveToken(token) {
   if (!currentUserId) return
-  // A device token can be left over from a previous account signed into the
-  // same device (e.g. shared test hardware) - reclaim it for this user since
-  // the unique constraint is now per-user, not global.
-  await supabase.from('push_subscriptions').delete()
-    .eq('endpoint', token).neq('user_id', currentUserId)
+  currentToken = token
+  // AI-DEV NOTE: no client-side "reclaim" delete here - RLS scopes it to our
+  // own rows, so it never removed a previous account's row for this token
+  // (the duplicate-push bug). The push_subscriptions_single_owner trigger
+  // hands the token to this account server-side on insert.
   const { error } = await supabase.from('push_subscriptions').upsert({
     user_id: currentUserId, endpoint: token, platform: 'android',
   }, { onConflict: 'user_id,endpoint' })
@@ -104,6 +106,21 @@ export async function registerFCM(userId) {
 export async function unregisterFCM(userId) {
   if (!Capacitor.isNativePlatform()) return
   currentUserId = null // stop persisting rotated tokens once disabled
+  currentToken = null
   await supabase.from('push_subscriptions').delete()
     .match({ user_id: userId, platform: 'android' })
+}
+
+// Sign-out cleanup: drop only this device's row (the account may still want
+// push on its other devices) and stop saving rotated tokens for it. Best
+// effort - the single-owner trigger still reassigns the token when the next
+// account registers, even if this never reaches the server (e.g. offline).
+export async function releaseFCMToken() {
+  const userId = currentUserId
+  const token = currentToken
+  currentUserId = null
+  currentToken = null
+  if (!Capacitor.isNativePlatform() || !userId || !token) return
+  await supabase.from('push_subscriptions').delete()
+    .match({ user_id: userId, endpoint: token })
 }
