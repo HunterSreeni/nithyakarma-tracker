@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.2.0...app-v1.2.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **auth:** only show onboarding once the profile is confirmed absent ([68631ea](https://github.com/HunterSreeni/nithyakarma-tracker/commit/68631eabaeb86420cfe092a986b63550a3a475e3))
+* **notifications:** one notification toggle at a time ([d39f9ea](https://github.com/HunterSreeni/nithyakarma-tracker/commit/d39f9eaf657e2598ef164738ba654a813ec4e26a))
+* **onboarding:** make onboarding and add-family-member retry-safe ([b24d4d3](https://github.com/HunterSreeni/nithyakarma-tracker/commit/b24d4d35749964fbb8ac3de3fcc5fc84b20c6577))
+* **referrals:** refuse a second referral once referred_by is set ([5e6b2f6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/5e6b2f6c29795221c5377e6b9e4f5b0fa480a2f9))
+* **referrals:** refuse a second referral once referred_by is set ([81bd5af](https://github.com/HunterSreeni/nithyakarma-tracker/commit/81bd5af541c15c8533f7c275b16fa4f24bd838a9))
+* state machine audit phase A (auth gate, retry-safe onboarding, fetch errors) ([401fa6e](https://github.com/HunterSreeni/nithyakarma-tracker/commit/401fa6e3e4dad0f0c16bdecb021a5d65b4d8574c))
+* state machine audit phase B (per-card saving, modal queue, toggle in-flight) ([bcd88e2](https://github.com/HunterSreeni/nithyakarma-tracker/commit/bcd88e2a58a4477afa38c2ff405e9cbe4da4b2f4))
+* **state:** close the post-insert gaps found in review ([3746adb](https://github.com/HunterSreeni/nithyakarma-tracker/commit/3746adbcbf2d8a7a365928f36e2bab6e0b254ed8))
+* **today:** per-card saving state and an explicit reward-modal queue ([36692e9](https://github.com/HunterSreeni/nithyakarma-tracker/commit/36692e9d8f3789e998d5de7ed645cfa53dd28109))
+* **today:** show fetch failures as errors, not empty lists ([26f57ff](https://github.com/HunterSreeni/nithyakarma-tracker/commit/26f57ff8a54786c9d51d3f352e453d2b50438de8))
+
 ## [1.2.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.1.3...app-v1.2.0) (2026-11-09)
 
 
