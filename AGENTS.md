@@ -62,7 +62,7 @@ Protected implementation surfaces: `claim_notification_delivery` (`app/supabase/
 
 - `check_sandhya_eligibility` (a DB trigger on `user_practices` insert, and on restore of an archived row via `sandhya_eligibility_on_restore`) is the sole gate: Sandhyavandhanam requires male + (for family members) `upanayanam_done`; Samidhadhanam additionally requires unmarried (self) or upanayanam-done-and-unmarried (family member). These are hard `raise exception` blocks, not soft warnings - client-side checks are a UX convenience only, never the actual gate.
 
-- Removing an anushtanam is a soft archive (`user_practices.archived_at` via `set_practice_archived`), never a hard delete: logs, punya, the overall streak, history and leaderboard scores stay. Re-adding the same practice restores the same row. Sandhyavandhanam is not removable. Streak/punya RPCs deliberately ignore `archived_at`.
+- Removing an anushtanam is a soft archive (`user_practices.archived_at` via `set_practice_archived`), never a hard delete: logs, punya, the overall streak, history and leaderboard scores stay. Re-adding the same practice restores the same row. Sandhyavandhanam is not removable. Streak/punya day-completion logic deliberately ignores `archived_at` (past logs keep counting), but `submit_practice_log` (and so `submit_yesterday_sandhya`) refuses NEW logs on an archived row (migration `20261109160000_reject_logs_on_archived_practice.sql`).
 
 Protected implementation surfaces: `check_sandhya_eligibility` (`app/supabase/migrations/*sandhya_eligibility*`, `*samidhadhanam*`, `*brahmayagnam*`), `set_practice_archived` (`app/supabase/migrations/*archive_user_practices*`).
 

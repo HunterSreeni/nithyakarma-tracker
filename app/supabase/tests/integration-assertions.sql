@@ -992,6 +992,15 @@ begin
     if (select archived_at from user_practices where id = v_arch_up) is null then
       raise exception 'FAIL: archive did not set archived_at';
     end if;
+    -- L1 (migration 20261109160000): an archived row takes no new logs.
+    v_failed := false;
+    begin
+      perform submit_practice_log(v_arch_up, 'morning', null, null, true);
+    exception when others then
+      if sqlerrm not like '%was removed%' then raise; end if;
+      v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: submit_practice_log accepted a log on an archived practice'; end if;
     if (select count(*) from practice_logs where user_practice_id = v_arch_up) <> v_logs_before then
       raise exception 'FAIL: archive removed practice logs';
     end if;
