@@ -192,6 +192,17 @@ begin
     if (select freeze_credits from profiles where id = v_uid) <> 1 then
       raise exception 'FAIL: valid referral did not grant +1 freeze credit';
     end if;
+
+    -- 9c. Once per account even without the referrals row (migration
+    -- 20261109180000): referred_by alone must block a second apply.
+    delete from referrals where referred_id = v_uid;
+    v_failed := false;
+    begin perform apply_referral(v_code);
+    exception when others then
+      if sqlerrm not like '%already been applied%' then raise; end if;
+      v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: a second referral was accepted once referred_by was set'; end if;
   end if;
 
   -- 9b. apply_referral rate limit (S3): a referrer can only be credited 5 times

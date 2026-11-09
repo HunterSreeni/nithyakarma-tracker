@@ -41,7 +41,7 @@ Protected implementation surfaces: `tier_for` (`app/supabase/migrations/*tier_fo
 
 ## Referrals
 
-- A referral code can only be applied once per referred account (`referred_by` set on first use), never self-referral, and is rate-limited to 5 applications per referrer per rolling 24 hours.
+- A referral code can only be applied once per referred account (`referred_by` set on first use), never self-referral, and is rate-limited to 5 applications per referrer per rolling 24 hours. `apply_referral` refuses when the caller's `referred_by` is already set (migration `20261109180000_referral_once_per_account.sql`), in addition to the unique `referrals.referred_id`.
 - "Once per referred account" relies on `referrals.referred_id` being unique, so the referrals row must survive while the account exists: users cannot delete their own `profiles` row (no DELETE policy or grant, migration `20261109140000_block_profile_self_delete.sql`). Only `delete_account` removes a profile, via the `auth.users` cascade.
 - Both sides get the same reward on a successful apply: 30 ad-free days (extending, not replacing, any existing `ad_free_until`) and one freeze credit, capped at the referrer's/referee's own current tier cap via `freeze_cap_for`.
 

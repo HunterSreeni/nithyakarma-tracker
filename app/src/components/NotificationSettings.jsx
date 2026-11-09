@@ -1,10 +1,11 @@
 import { useAuth } from '../hooks/useAuth'
 import { useNotifications } from '../hooks/useNotifications'
+import ErrorBanner from './ErrorBanner'
 
 export default function NotificationSettings() {
   const { session, profile } = useAuth()
   const {
-    enabled, tharpanamEnabled, observancesEnabled, loading, error, testResult, supported,
+    enabled, tharpanamEnabled, observancesEnabled, loading, loadFailed, retryLoad, toggling, error, testResult, supported,
     toggle, toggleTharpanam, toggleObservances, sendTestNotification,
   } = useNotifications(session.user, { includeSandhya: profile.gender === 'male' })
 
@@ -16,7 +17,7 @@ export default function NotificationSettings() {
       ) : (
         <>
           <label className="checkbox-row" style={{ marginTop: 0 }}>
-            <input type="checkbox" checked={enabled} disabled={loading} onChange={toggle} />
+            <input type="checkbox" checked={enabled} disabled={loading || loadFailed || toggling} onChange={toggle} />
             Reminder notifications
           </label>
           <div className="tp-hint">
@@ -25,12 +26,12 @@ export default function NotificationSettings() {
               : 'Streak nudges at 8:00 AM and 8:00 PM when today\'s anushtanams are not yet marked.'}
           </div>
           <label className="checkbox-row">
-            <input type="checkbox" checked={tharpanamEnabled} disabled={!enabled}
+            <input type="checkbox" checked={tharpanamEnabled} disabled={!enabled || loadFailed}
               onChange={e => toggleTharpanam(e.target.checked)} />
             Tharpanam reminders - monthly Amavasya, Karkidaka Vaavu, and the two Sankranti days
           </label>
           <label className="checkbox-row">
-            <input type="checkbox" checked={observancesEnabled} disabled={!enabled}
+            <input type="checkbox" checked={observancesEnabled} disabled={!enabled || loadFailed}
               onChange={e => toggleObservances(e.target.checked)} />
             Auspicious-day reminders - Pongal, Sivarathri, and other festivals
           </label>
@@ -38,7 +39,9 @@ export default function NotificationSettings() {
             Send test notification
           </button>
           {testResult && <div className="tp-hint">{testResult}</div>}
-          {error && <div className="auth-error" role="alert">{error}</div>}
+          {loadFailed
+            ? <ErrorBanner message={error} onRetry={retryLoad} />
+            : error && <div className="auth-error" role="alert">{error}</div>}
         </>
       )}
     </div>

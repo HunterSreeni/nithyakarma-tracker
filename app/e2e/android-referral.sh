@@ -24,7 +24,9 @@ PKG="org.nithyakarma.app"
 APK="$APP_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
 SCRATCH="$(mktemp -d)"
 EMAIL="android-referral-throwaway@nithyakarma.test"
-PASSWORD="AndroidReferral2026xyz"
+# Never commit the password: export ANDROID_E2E_PASSWORD (the same value you
+# pasted into the seed's v_password) before running.
+PASSWORD="${ANDROID_E2E_PASSWORD:?export ANDROID_E2E_PASSWORD first (see the seed file)}"
 REFERRER_CODE="${1:?usage: android-referral.sh <referrer_code>}"
 cd "$APP_DIR"
 

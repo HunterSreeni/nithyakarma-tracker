@@ -22,7 +22,7 @@ const h = vi.hoisted(() => ({
   submit: vi.fn(), showInterstitial: vi.fn().mockResolvedValue(false),
   profile: { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 },
   selectedMember: null,
-  refresh: vi.fn(), rpc: vi.fn(), yesterdayLogs: [],
+  refresh: vi.fn(), rpc: vi.fn(), yesterdayLogs: [], catalogError: null,
 }))
 vi.mock('../../hooks/useToday', () => ({
   useToday: () => ({ items: h.items, loading: false, submit: h.submit, addPractice: h.addPractice, removePractice: h.removePractice }),
@@ -44,7 +44,7 @@ vi.mock('../../lib/supabase', () => {
   const chain = (table) => {
     const c = {
       select: () => c, eq: () => c, in: () => c,
-      order: () => Promise.resolve({ data: h.catalog }),
+      order: () => Promise.resolve(h.catalogError ? { data: null, error: h.catalogError } : { data: h.catalog, error: null }),
       then: (resolve) => resolve({ data: table === 'practice_logs' ? h.yesterdayLogs : h.catalog }),
     }
     return c
@@ -75,7 +75,7 @@ const samidhaItem = (slots) => ({
 
 beforeEach(() => {
   queryClient.clear()
-  h.items = []; h.catalog = []; h.yesterdayLogs = []
+  h.items = []; h.catalog = []; h.yesterdayLogs = []; h.catalogError = null
   h.addPractice.mockClear(); h.removePractice.mockReset(); h.submit.mockReset(); h.showInterstitial.mockClear()
   h.refresh.mockClear(); h.rpc.mockReset()
   h.profile = { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 }
@@ -681,5 +681,85 @@ describe('TodayPage - removing an anushtanam', () => {
     render(<TodayPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Remove Narayaneeyam' }))
     expect(await screen.findByRole('alert')).toBeInTheDocument()
+  })
+})
+
+// F4 (state machine audit): a failed practices fetch is an error with Retry,
+// never an empty list (a blank Today for a new user, or "No matches").
+describe('TodayPage - practices fetch failures are not empty lists', () => {
+  it('shows Retry instead of a blank day when the suggestions fetch fails, and recovers', async () => {
+    h.items = []; h.catalogError = { message: 'Failed to fetch' }
+    render(<TodayPage />)
+    const retry = await screen.findByRole('button', { name: 'Retry' })
+    expect(screen.queryByText('Suggested to start')).not.toBeInTheDocument()
+    h.catalogError = null
+    h.catalog = [{ id: 2, slug: 'narayaneeyam', name: 'Narayaneeyam', cadence: 'daily' }]
+    fireEvent.click(retry)
+    expect(await screen.findByText('Suggested to start')).toBeInTheDocument()
+  })
+
+  it('the add-practice list shows an error with Retry, not "No matches", when the catalog fetch fails', async () => {
+    h.items = [sandhyaItem([])]; h.catalogError = { message: 'Failed to fetch' }
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Add an anushtanam to track...'))
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeInTheDocument()
+    expect(screen.queryByText('No matches')).not.toBeInTheDocument()
+  })
+})
+
+const plainItem = (id, name) => ({
+  up: { id, current_streak: 0, sequence_position: 0 },
+  practice: { id: id.length, name, cadence: 'daily', affects_streak: true },
+  logs: [],
+})
+
+// F6 (state machine audit): reward modals are an explicit queue.
+describe('TodayPage - reward modal queue', () => {
+  it('shows the celebration first and the tier-up only after it is dismissed', async () => {
+    h.items = [plainItem('up-a', 'Japam')]
+    h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 3, practice_streak: 3, tier_up: true, tier: 'Sadhaka' })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Done' }))
+    await waitFor(() => expect(screen.getByTestId('celebration')).toBeInTheDocument())
+    expect(screen.queryByTestId('tier-up')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('close-celebration'))
+    expect(await screen.findByTestId('tier-up')).toHaveTextContent('Sadhaka')
+  })
+
+  it('shows a tier-up straight away when there is no celebration', async () => {
+    h.items = [plainItem('up-a', 'Japam')]
+    h.submit.mockResolvedValue({ saved: true, day_complete: false, overall_streak: 0, tier_up: true, tier: 'Yogi' })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Done' }))
+    expect(await screen.findByTestId('tier-up')).toHaveTextContent('Yogi')
+    expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
+  })
+})
+
+// F3 (state machine audit): each card tracks its own in-flight save.
+describe('TodayPage - per-card saving state', () => {
+  it("finishing one card's save does not re-enable another card that is still saving", async () => {
+    h.items = [plainItem('up-a', 'Japam'), plainItem('up-b', 'Gita')]
+    let resolveA
+    h.submit.mockImplementation((id) => id === 'up-a'
+      ? new Promise((res) => { resolveA = res })
+      : new Promise(() => {})) // B never finishes in this test
+    render(<TodayPage />)
+    const [btnA, btnB] = screen.getAllByRole('button', { name: 'Mark Done' })
+    fireEvent.click(btnA)
+    fireEvent.click(btnB)
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Saving...' })).toHaveLength(2))
+    resolveA({ saved: true, day_complete: false, overall_streak: 0 })
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Saving...' })).toHaveLength(1))
+    expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled()
+  })
+
+  it('ignores a second tap on a card that is already saving', async () => {
+    h.items = [plainItem('up-a', 'Japam')]
+    h.submit.mockImplementation(() => new Promise(() => {}))
+    render(<TodayPage />)
+    const btn = screen.getByRole('button', { name: 'Mark Done' })
+    fireEvent.click(btn); fireEvent.click(btn)
+    expect(h.submit).toHaveBeenCalledTimes(1)
   })
 })

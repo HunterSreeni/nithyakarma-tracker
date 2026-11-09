@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({
   },
   updateProfile: vi.fn(() => Promise.resolve()),
   familyMembers: [],
+  addFamilyMember: vi.fn(),
 }))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
@@ -17,7 +18,7 @@ vi.mock('../../hooks/useAuth', () => ({
     profile: h.profile,
     familyMembers: h.familyMembers,
     updateProfile: h.updateProfile,
-    addFamilyMember: vi.fn(),
+    addFamilyMember: h.addFamilyMember,
     removeFamilyMember: vi.fn(),
     deleteAccount: vi.fn(),
     signOut: vi.fn(),
@@ -80,5 +81,30 @@ describe('ProfilePage family member punya and tier', () => {
     const devikaRow = screen.getByText('Devika').closest('.fam-row')
     expect(devikaRow).toHaveTextContent('120 punya')
     expect(devikaRow).toHaveTextContent('Sadhaka')
+  })
+})
+
+// F2 (state machine audit): a family add that created the child but failed a
+// follow-up step must not leave the form open for a duplicate re-submit.
+describe('ProfilePage add family member - partial failure', () => {
+  it('closes the form and reports the partial result in the family section', async () => {
+    const partial = Object.assign(new Error('Arjun was added, but Sandhyavandhanam could not be added. Add it from Today.'), { partial: true, userFacing: true })
+    h.addFamilyMember = vi.fn(() => Promise.reject(partial))
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: '+ Add family member' }))
+    fireEvent.change(screen.getByLabelText("Child's name"), { target: { value: 'Arjun' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Boy' }))
+    fireEvent.submit(screen.getByLabelText("Child's name").closest('form'))
+    expect(await screen.findByText(/Arjun was added, but Sandhyavandhanam/)).toBeInTheDocument()
+    expect(screen.queryByLabelText("Child's name")).not.toBeInTheDocument()
+    expect(h.addFamilyMember).toHaveBeenCalledTimes(1)
+  })
+
+  it('Cancel just closes the form without a notice', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: '+ Add family member' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByLabelText("Child's name")).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

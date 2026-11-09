@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 
 const mockNative = vi.fn().mockReturnValue(false)
 vi.mock('@capacitor/core', () => ({
@@ -173,6 +173,140 @@ describe('profile cache (cold-restart instant resume)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+// F1 (state machine audit): profileStatus separates 'not fetched yet' from
+// 'no profile', so Gate only shows Onboarding when the server said absent.
+describe('profileStatus', () => {
+  const SESSION = { data: { session: { user: { id: 'u1', email: 'a@b.com' } } } }
+  const tables = (profileRead) => (t) => t === 'profiles'
+    ? { select: () => ({ eq: () => ({ maybeSingle: profileRead }) }), update: () => ({ eq: () => Promise.resolve({ error: null }) }) }
+    : { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }) }
+
+  it("is 'absent' only after the server returns no profile", async () => {
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: null, error: null })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.profileStatus).toBe('absent'))
+  })
+
+  it("is 'present' once a profile loads", async () => {
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: { id: 'u1', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }, error: null })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.profileStatus).toBe('present'))
+  })
+
+  it("is 'error', not 'absent', when the fetch fails with no cached profile", async () => {
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: null, error: { message: 'network down' } })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.profileStatus).toBe('error'))
+    expect(result.current.profile).toBe(null)
+  })
+
+  it("keeps a cached profile 'present' when a background refresh fails", async () => {
+    localStorage.setItem('nk_profile_cache_v1', JSON.stringify({ userId: 'u1', email: 'a@b.com', profile: { id: 'u1' }, familyMembers: [] }))
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: null, error: { message: 'network down' } })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await act(async () => { await result.current.refresh()?.catch(() => {}) })
+    expect(result.current.profileStatus).toBe('present')
+  })
+
+  it("resets to 'unknown' on sign-out", async () => {
+    getSession.mockResolvedValue(SESSION)
+    supabase.from.mockImplementation(tables(() => Promise.resolve({ data: null, error: null })))
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.profileStatus).toBe('absent'))
+    act(() => { authCb('SIGNED_OUT', null) })
+    expect(result.current.profileStatus).toBe('unknown')
+  })
+})
+
+// F2 (state machine audit): onboarding and add-family-member are multi-step;
+// a retry after a partial failure must be safe and Sandhya never silently lost.
+describe('retry-safe onboarding and family add', () => {
+  const SESSION = { data: { session: { user: { id: 'u1', email: 'a@b.com' } } } }
+  const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone
+  function mockDb({ profileInsertError = null, existingProfile = { id: 'u1', timezone: TZ }, sandhyaInsertError = null } = {}) {
+    const calls = { sandhyaInserts: [] }
+    supabase.from.mockImplementation((t) => {
+      if (t === 'profiles') return {
+        insert: () => Promise.resolve({ error: profileInsertError }),
+        select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: existingProfile, error: null }) }) }),
+        update: () => ({ eq: () => Promise.resolve({ error: null }) }),
+      }
+      if (t === 'practices') return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { id: 1 }, error: null }) }) }) }
+      if (t === 'user_practices') return { insert: (row) => { calls.sandhyaInserts.push(row); return Promise.resolve({ error: sandhyaInsertError }) } }
+      return {
+        select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [] }) }) }),
+        insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: 'c1' }, error: null }) }) }),
+      }
+    })
+    return calls
+  }
+  const PROFILE = { displayName: 'A', gender: 'male', isMarried: false, panchangamTradition: 'tamil', referralCode: null }
+  async function signedIn() {
+    getSession.mockResolvedValue(SESSION)
+    const hook = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(hook.result.current.loading).toBe(false))
+    return hook.result
+  }
+
+  it('a retry whose profile insert hits a duplicate finishes the remaining steps', async () => {
+    const calls = mockDb({ profileInsertError: { code: '23505', message: 'duplicate key' } })
+    const result = await signedIn()
+    await act(async () => { await result.current.createProfile(PROFILE) })
+    expect(calls.sandhyaInserts).toHaveLength(1)
+  })
+
+  it('still fails when the duplicate is not actually our profile', async () => {
+    mockDb({ profileInsertError: { code: '23505', message: 'duplicate key' }, existingProfile: null })
+    const result = await signedIn()
+    await expect(result.current.createProfile(PROFILE)).rejects.toMatchObject({ code: '23505' })
+  })
+
+  it('surfaces a failed Sandhya insert instead of silently skipping it', async () => {
+    mockDb({ sandhyaInsertError: { code: '08006', message: 'connection failure' } })
+    const result = await signedIn()
+    await expect(result.current.createProfile(PROFILE)).rejects.toMatchObject({ code: '08006' })
+  })
+
+  it('treats an already-present Sandhya row as done', async () => {
+    mockDb({ sandhyaInsertError: { code: '23505', message: 'duplicate key' } })
+    const result = await signedIn()
+    await act(async () => { await result.current.createProfile(PROFILE) })
+  })
+
+  it('a family add whose Sandhya step fails keeps the child and reports a partial, user-facing error', async () => {
+    mockDb({ sandhyaInsertError: { code: '08006', message: 'connection failure' } })
+    const result = await signedIn()
+    let caught
+    await act(async () => {
+      try { await result.current.addFamilyMember({ name: 'Arjun', gender: 'male', upanayanamDone: true, balaSabhaOptIn: true }) } catch (e) { caught = e }
+    })
+    expect(caught).toMatchObject({ partial: true, userFacing: true })
+    expect(caught.message).toMatch(/Arjun was added/)
+  })
+
+  it('a family add whose list refresh fails afterwards is still a partial success, never a plain retryable error', async () => {
+    mockDb()
+    const result = await signedIn()
+    let familyReads = 0
+    const base = supabase.from.getMockImplementation()
+    supabase.from.mockImplementation((t) => t === 'family_members'
+      ? { ...base(t), select: () => ({ eq: () => ({ order: () => (++familyReads >= 1 ? Promise.resolve({ data: null, error: { message: 'Failed to fetch' } }) : Promise.resolve({ data: [] })) }) }) }
+      : base(t))
+    let caught
+    await act(async () => {
+      try { await result.current.addFamilyMember({ name: 'Meera', gender: 'female', upanayanamDone: false, balaSabhaOptIn: true }) } catch (e) { caught = e }
+    })
+    expect(caught).toMatchObject({ partial: true, userFacing: true })
+    expect(caught.message).toMatch(/Meera was added/)
+    supabase.from.mockImplementation(base) // don't leak the failing read into later tests
   })
 })
 

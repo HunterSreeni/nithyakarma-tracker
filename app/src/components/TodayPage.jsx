@@ -31,14 +31,24 @@ export default function TodayPage() {
   const { session, profile, selectedMember, refresh } = useAuth()
   const { items, loading, refreshing, error: loadError, submit, addPractice, removePractice, reload } =
     useToday(session.user.id, selectedMember?.id ?? null)
-  const [celebration, setCelebration] = useState(null)
-  const [tierUp, setTierUp] = useState(null)
+  // AI-DEV NOTE: reward modals are an explicit FIFO queue - one shown at a
+  // time, the next appears when the current one is dismissed. A day-complete
+  // celebration always comes before the tier-up it may carry, so the two never
+  // stack. (Replaces an ad-hoc celebration/tierUp/pendingTierUpRef trio.)
+  const [modalQueue, setModalQueue] = useState([]) // [{ type: 'celebration' | 'tierUp', data }]
   const [gayatriPrompt, setGayatriPrompt] = useState(null) // { item, slot }
-  const [busyId, setBusyId] = useState(null)
+  // Per-card in-flight set, not one shared id: with a single id, finishing
+  // card A's save re-enabled card B's button while B was still saving.
+  const [busyIds, setBusyIds] = useState(() => new Set())
+  const busyRef = useRef(new Set())
   const [error, setError] = useState(null)
-  // Holds a tier-up until the streak celebration (if any) has been dismissed,
-  // so the two modals never stack on top of each other.
-  const pendingTierUpRef = useRef(null)
+  const begin = (id) => {
+    if (busyRef.current.has(id)) return false
+    busyRef.current.add(id); setBusyIds(new Set(busyRef.current))
+    return true
+  }
+  const end = (id) => { busyRef.current.delete(id); setBusyIds(new Set(busyRef.current)) }
+  const dismissModal = () => setModalQueue(q => q.slice(1))
 
   const subjectName = selectedMember?.name ?? profile.display_name
   // Read the alive/dead boundary live rather than trusting current_streak,
@@ -57,7 +67,8 @@ export default function TodayPage() {
   })
 
   const mark = async (item, slot = null, count = null) => {
-    setBusyId(item.up.id); setError(null)
+    if (!begin(item.up.id)) return
+    setError(null)
     // Any one scheduled practice now completes the day, so day_complete stays
     // true for every remaining mark that day - snapshot whether it was already
     // true before this log, so the celebration/review-prompt/ad-milestone logic
@@ -86,20 +97,14 @@ export default function TodayPage() {
       const reviewed = milestone ? await maybeRequestReview() : false
       if (!reviewed) await showInterstitial(profile)
       const willCelebrate = justCompleted && (result.overall_streak ?? 0) >= 1
-      if (willCelebrate) {
-        setCelebration({ ...result, subjectName })
-      }
-      if (result.tier_up) {
-        if (willCelebrate) {
-          pendingTierUpRef.current = result.tier
-        } else {
-          setTierUp({ tier: result.tier })
-        }
-      }
+      const next = []
+      if (willCelebrate) next.push({ type: 'celebration', data: { ...result, subjectName } })
+      if (result.tier_up) next.push({ type: 'tierUp', data: { tier: result.tier } })
+      if (next.length) setModalQueue(q => [...q, ...next])
     } catch (err) {
       setError(friendlyError(err))
     } finally {
-      setBusyId(null)
+      end(item.up.id)
     }
   }
 
@@ -107,14 +112,15 @@ export default function TodayPage() {
   // adding it again later restores it.
   const remove = async (item) => {
     if (!window.confirm(`Remove ${item.practice.name} from ${subjectName}'s anushtanams? Past history is kept, and you can add it back anytime.`)) return
-    setBusyId(item.up.id); setError(null)
+    if (!begin(item.up.id)) return
+    setError(null)
     try {
       await removePractice(item.up.id)
       track('practice_removed', { practice: item.practice.slug })
     } catch (err) {
       setError(friendlyError(err))
     } finally {
-      setBusyId(null)
+      end(item.up.id)
     }
   }
 
@@ -180,7 +186,7 @@ export default function TodayPage() {
         <div className="practice-list">
           {items.map(item => (
             <PracticeCard key={item.up.id} item={item}
-              busy={busyId === item.up.id} onMark={mark} onSlotClick={onSlotClick}
+              busy={busyIds.has(item.up.id)} onMark={mark} onSlotClick={onSlotClick}
               onRudramSlotClick={onRudramSlotClick} onRemove={remove} />
           ))}
         </div>
@@ -189,18 +195,11 @@ export default function TodayPage() {
 
       <AddPracticeDropdown existing={items.map(i => i.practice.id)} onAdd={addPractice} />
 
-      {celebration && (
-        <CelebrationModal data={celebration} onClose={() => {
-          setCelebration(null)
-          if (pendingTierUpRef.current) {
-            setTierUp({ tier: pendingTierUpRef.current })
-            pendingTierUpRef.current = null
-          }
-        }} />
+      {modalQueue[0]?.type === 'celebration' && (
+        <CelebrationModal data={modalQueue[0].data} onClose={dismissModal} />
       )}
-
-      {tierUp && (
-        <TierUpModal tier={tierUp.tier} onClose={() => setTierUp(null)} />
+      {modalQueue[0]?.type === 'tierUp' && (
+        <TierUpModal tier={modalQueue[0].data.tier} onClose={dismissModal} />
       )}
 
       {gayatriPrompt && (
@@ -225,20 +224,27 @@ export default function TodayPage() {
 // actionable screen instead of a blank list.
 const SUGGESTED_SLUGS = ['narayaneeyam', 'lalitha-sahasranamam', 'devi-mahatmyam']
 
+// AI-DEV NOTE: a failed fetch must show an error with Retry, never an empty
+// list - for a new user with nothing tracked yet, "empty" left Today blank.
 function SuggestedPractices({ onAdd }) {
-  const [suggestions, setSuggestions] = useState([])
   const [busy, setBusy] = useState(null)
-
-  useEffect(() => {
-    supabase.from('practices').select('*').in('slug', SUGGESTED_SLUGS).eq('active', true).order('id')
-      .then(({ data }) => setSuggestions(data ?? []))
-  }, [])
+  const suggestionsQuery = useQuery({
+    queryKey: ['practices', 'suggested'],
+    queryFn: async () => unwrap(await withDeadline(
+      supabase.from('practices').select('*').in('slug', SUGGESTED_SLUGS).eq('active', true).order('id'),
+      'Suggested practices',
+    )) ?? [],
+  }, queryClient)
+  const suggestions = suggestionsQuery.data ?? []
 
   const add = async (id) => {
     setBusy(id)
     try { await onAdd(id) } finally { setBusy(null) }
   }
 
+  if (suggestionsQuery.error) {
+    return <ErrorBanner message={friendlyError(suggestionsQuery.error)} onRetry={() => suggestionsQuery.refetch()} />
+  }
   if (!suggestions.length) return null
   return (
     <>
@@ -446,25 +452,26 @@ function YesterdaySandhya({ item }) {
 function AddPracticeDropdown({ existing, onAdd }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [catalog, setCatalog] = useState([])
-  const [catalogLoaded, setCatalogLoaded] = useState(false)
   const [error, setError] = useState(null)
   const { profile, selectedMember } = useAuth()
   const dropdownRef = useRef(null)
   useFocusTrap(dropdownRef, open)
 
-  // On first open, not on mount: `catalog` is only ever read inside the
+  // On first open, not on mount: the catalog is only ever read inside the
   // `open &&` block below, so fetching the whole practices table on every
   // Today render just put a full table read on the reopen critical path for a
-  // dropdown most users never touch. Tracked with a loaded flag rather than
-  // `catalog.length`, so the in-flight state is distinguishable from a genuine
-  // empty result - otherwise the first open renders "No matches" for the whole
-  // round trip, which reads as "there is nothing to add".
-  useEffect(() => {
-    if (!open || catalogLoaded) return
-    supabase.from('practices').select('*').eq('active', true).order('id')
-      .then(({ data }) => { setCatalog(data ?? []); setCatalogLoaded(true) })
-  }, [open, catalogLoaded])
+  // dropdown most users never touch. Pending, failed and genuinely empty are
+  // distinct states - "No matches" during the round trip or after a failed
+  // fetch reads as "there is nothing to add".
+  const catalogQuery = useQuery({
+    queryKey: ['practices', 'catalog'],
+    enabled: open,
+    queryFn: async () => unwrap(await withDeadline(
+      supabase.from('practices').select('*').eq('active', true).order('id'),
+      'Practice catalog',
+    )) ?? [],
+  }, queryClient)
+  const catalog = catalogQuery.data ?? []
 
   useEffect(() => {
     if (!open) return
@@ -522,9 +529,11 @@ function AddPracticeDropdown({ existing, onAdd }) {
               </button>
             )
           })}
-          {!catalogLoaded
-            ? <div className="dd-item muted">Loading...</div>
-            : visible.length === 0 && <div className="dd-item muted">No matches</div>}
+          {catalogQuery.error
+            ? <ErrorBanner message={friendlyError(catalogQuery.error)} onRetry={() => catalogQuery.refetch()} />
+            : catalogQuery.isPending
+              ? <div className="dd-item muted">Loading...</div>
+              : visible.length === 0 && <div className="dd-item muted">No matches</div>}
         </div>
       )}
       {error && <div className="auth-error" role="alert">{error}</div>}

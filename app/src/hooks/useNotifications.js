@@ -1,7 +1,7 @@
 // AI-DEV NOTE: Protected notification subscription flow. See AGENTS.md
 // "Notifications & reminders" - do not change platform detection, permission
 // gating, or subscription lifecycle without Sreeni's explicit instruction.
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabase'
 import { scheduleAllReminders, cancelAllReminders } from '../utils/notifications'
@@ -29,20 +29,42 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [testResult, setTestResult] = useState('')
+  // AI-DEV NOTE: a failed preference read must not look like "notifications
+  // off" - that showed an unchecked toggle for users who had them on. Keep the
+  // toggle disabled and offer a retry instead.
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)
+  // One toggle at a time: a second tap during the permission prompt or the
+  // registration used to race the first on a stale `enabled`.
+  const [toggling, setToggling] = useState(false)
+  const togglingRef = useRef(false)
   const native = Capacitor.isNativePlatform()
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
+    // A slow read for a previous account must not overwrite this one's state.
+    let stale = false
+    setLoading(true); setLoadFailed(false)
     supabase.from('notification_preferences')
       .select('enabled, tharpanam_enabled, observances_enabled').eq('user_id', user.id).maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error: loadError }) => {
+        if (stale) return
+        if (loadError) throw loadError
         setEnabled(data?.enabled ?? false)
         setTharpanamEnabled(data?.tharpanam_enabled ?? false)
         setObservancesEnabled(data?.observances_enabled ?? false)
         setLoading(false)
       })
-      .catch(() => setLoading(false))
-  }, [user])
+      .catch((err) => {
+        if (stale) return
+        setLoadFailed(true)
+        setError(friendlyError(err))
+        setLoading(false)
+      })
+    return () => { stale = true }
+  }, [user, loadAttempt])
+
+  const retryLoad = useCallback(() => { setError(''); setLoadAttempt(n => n + 1) }, [])
 
   // Keep local reminders scheduled on native when enabled
   useEffect(() => {
@@ -102,7 +124,7 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
     return () => { cancelled = true; if (status) status.onchange = null }
   }, [native])
 
-  const toggle = useCallback(async () => {
+  const runToggle = useCallback(async () => {
     setError('')
     const next = !enabled
 
@@ -163,6 +185,12 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
     setEnabled(next)
   }, [user, native, enabled, includeSandhya])
 
+  const toggle = useCallback(async () => {
+    if (togglingRef.current) return
+    togglingRef.current = true; setToggling(true)
+    try { await runToggle() } finally { togglingRef.current = false; setToggling(false) }
+  }, [runToggle])
+
   // Sends a real push through the full server round-trip right now, instead
   // of waiting for a scheduled reminder window - the fastest way to confirm
   // whether a given account's subscription actually works.
@@ -198,7 +226,7 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
   }, [user])
 
   return {
-    enabled, tharpanamEnabled, observancesEnabled, loading, error, testResult,
+    enabled, tharpanamEnabled, observancesEnabled, loading, loadFailed, retryLoad, toggling, error, testResult,
     supported: native || isPushSupported(),
     toggle, toggleTharpanam, toggleObservances, sendTestNotification,
   }
