@@ -291,6 +291,23 @@ describe('retry-safe onboarding and family add', () => {
     expect(caught).toMatchObject({ partial: true, userFacing: true })
     expect(caught.message).toMatch(/Arjun was added/)
   })
+
+  it('a family add whose list refresh fails afterwards is still a partial success, never a plain retryable error', async () => {
+    mockDb()
+    const result = await signedIn()
+    let familyReads = 0
+    const base = supabase.from.getMockImplementation()
+    supabase.from.mockImplementation((t) => t === 'family_members'
+      ? { ...base(t), select: () => ({ eq: () => ({ order: () => (++familyReads >= 1 ? Promise.resolve({ data: null, error: { message: 'Failed to fetch' } }) : Promise.resolve({ data: [] })) }) }) }
+      : base(t))
+    let caught
+    await act(async () => {
+      try { await result.current.addFamilyMember({ name: 'Meera', gender: 'female', upanayanamDone: false, balaSabhaOptIn: true }) } catch (e) { caught = e }
+    })
+    expect(caught).toMatchObject({ partial: true, userFacing: true })
+    expect(caught.message).toMatch(/Meera was added/)
+    supabase.from.mockImplementation(base) // don't leak the failing read into later tests
+  })
 })
 
 // M1: the in-memory React Query cache must not outlive the account, and the

@@ -287,6 +287,8 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.from('user_practices').insert({
       owner_id: session.user.id, family_member_id: familyMemberId, practice_id: sandhya.id,
     })
+    // The only unique key this insert can hit besides its random id is
+    // (owner, member, practice) - so 23505 means Sandhya is already tracked.
     if (error && error.code !== '23505') throw error
   }
 
@@ -342,23 +344,31 @@ export function AuthProvider({ children }) {
       bala_sabha_opt_in: balaSabhaOptIn,
     }).select().single()
     if (error) throw error
-    // Boys with upanayanam done get Sandhyavandhanam automatically. The child
-    // row already exists at this point and re-submitting would add a second
-    // child, so on failure keep the child, refresh, and say what is missing.
+    // AI-DEV NOTE: the child row exists from here on and re-submitting would
+    // add a second child, so EVERY later failure is reported as a partial
+    // success (callers close the form) - never as a plain retryable error.
+    const partialFailure = async (message) => {
+      invalidateLeaderboard()
+      await loadProfile(session).catch(() => {})
+      const partial = new Error(message)
+      partial.userFacing = true
+      partial.partial = true
+      throw partial
+    }
+    // Boys with upanayanam done get Sandhyavandhanam automatically.
     if (gender === 'male' && upanayanamDone) {
       try {
         await ensureSandhya(data.id)
       } catch {
-        invalidateLeaderboard()
-        await loadProfile(session)
-        const partial = new Error(`${name} was added, but Sandhyavandhanam could not be added. Add it from Today.`)
-        partial.userFacing = true
-        partial.partial = true // the child exists - callers must not offer a re-submit
-        throw partial
+        await partialFailure(`${name} was added, but Sandhyavandhanam could not be added. Add it from Today.`)
       }
     }
     invalidateLeaderboard()
-    await loadProfile(session)
+    try {
+      await loadProfile(session)
+    } catch {
+      await partialFailure(`${name} was added, but the list could not refresh. Reopen Profile to see them.`)
+    }
     return data
   }
 

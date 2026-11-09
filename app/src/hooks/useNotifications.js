@@ -38,10 +38,13 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
+    // A slow read for a previous account must not overwrite this one's state.
+    let stale = false
     setLoading(true); setLoadFailed(false)
     supabase.from('notification_preferences')
       .select('enabled, tharpanam_enabled, observances_enabled').eq('user_id', user.id).maybeSingle()
       .then(({ data, error: loadError }) => {
+        if (stale) return
         if (loadError) throw loadError
         setEnabled(data?.enabled ?? false)
         setTharpanamEnabled(data?.tharpanam_enabled ?? false)
@@ -49,10 +52,12 @@ export function useNotifications(user, { includeSandhya } = { includeSandhya: fa
         setLoading(false)
       })
       .catch((err) => {
+        if (stale) return
         setLoadFailed(true)
         setError(friendlyError(err))
         setLoading(false)
       })
+    return () => { stale = true }
   }, [user, loadAttempt])
 
   const retryLoad = useCallback(() => { setError(''); setLoadAttempt(n => n + 1) }, [])
