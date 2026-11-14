@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.2.2...app-v1.2.3) (2026-11-14)
+
+
+### Bug Fixes
+
+* **r8-check:** allow renaming non-plugin bridge classes, keep checking their methods ([ce00c0d](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ce00c0d2503f82ddebe683c6b3ce1457a5471361))
+
 ## [1.2.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.2.1...app-v1.2.2) (2026-11-14)
 
 
