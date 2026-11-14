@@ -33,6 +33,11 @@ a different screen.
 - **Deno** (`supabase/functions/_shared/observanceMatch.test.ts`) - the tharpanam/observance rule-matching engine. Runs in CI as of 2026-07-23 (`edge-functions` job) - the first Deno test ever wired into CI.
 - **E2E web** (Playwright, `app/e2e/*.spec.js`) - full flows against a real built app + live Supabase.
 - **E2E Android** (adb screenshot-tap shell scripts, `app/e2e/*.sh`) - build/install/launch + blind taps at hardcoded coordinates. **Assert only "no crash" via logcat + `pidof`** - no in-app text/state assertion is possible (WebView exposes no accessibility tree to `uiautomator`). Pass beyond that requires eyeballing saved screenshots and cross-checking DB state via Supabase MCP.
+- **R8 bridge gate** (added 2026-11-14 with `minifyEnabled true`) - `app/scripts/r8-check.mjs` + `r8-verify.sh` dump the DEX that actually ships and fail if R8 renamed/stripped any `@CapacitorPlugin` class, `@PluginMethod`, base `Plugin` method, `@JavascriptInterface` method, `MainActivity` or the FCM `MessagingService`, or if obfuscation is under 25%. Runs in `android-r8.yml` (PRs touching the native build) and in `android-release.yml` before the AAB is uploaded as an artifact. Unit-tested in `scripts/__tests__/r8-check.test.js`.
+- **JS -> native contract** (`scripts/__tests__/native-bridge-contract.test.js`, in `npm test`) - every `Plugin.method(` call in `src/` must be a real `@PluginMethod` in the installed native plugin source. Catches a plugin upgrade dropping/renaming a method the app calls.
+- **Mutation** (`.github/workflows/mutation.yml`, manual + weekly, not per-PR):
+  - `js`: `npm run test:coverage` (thresholds on the bridge wrappers + R8 checker, see `vite.config.js`) then `npm run test:mutation` (Stryker 10, `stryker.config.json`; baseline 72.8% on 2026-11-14, break below 70% as a ratchet, target 80%: remaining survivors are mostly in `share.js`, `webPush.js` and the `r8-check.mjs` CLI wrapper) over `ads/pushAndroid/notifications/webPush/haptics/share.js` and `r8-check.mjs`. HTML report is the `stryker-report` artifact.
+  - `r8-rules`: 4 config mutants (`app/scripts/r8-mutate.mjs`: drop Capacitor plugin keeps, drop the `@JavascriptInterface` keep, minify off, `-dontobfuscate`). Each must be visible in R8's `configuration.txt` and must make `r8-verify.sh` fail; a surviving mutant = a blind spot in the gate.
 - **UI/UX** - loading / empty / error / success states, responsiveness, celebration.
 - **A11y** - `axe-core` automated scan (`a11y.test.jsx`) + manual labels/contrast/keyboard/focus/touch-target/motion review.
 
@@ -838,6 +843,16 @@ Signed in as e2e (male) and a female profile, on web + Android emulator:
 - Overnight: confirm a reminder fires in a tz window; confirm streak persists to
   Day 2; confirm a missed-day scenario resets correctly.
 - Track results in `TEST-RESULTS.md`; file any defect with repro.
+- **Minified (R8) build, on a real phone, before the first R8 release reaches production**
+  (and after any Capacitor/plugin upgrade): install the signed AAB from the internal
+  track OVER the current production version (data must survive), plus one fresh
+  install. Check: cold start, sign-in (Sreeni signs in manually), mark a practice
+  (haptic fires), yesterday Sandhya catch-up, enable reminders (permission allow AND
+  deny paths), local reminder fires, FCM push with the app foregrounded / backgrounded /
+  killed, tapping a push opens the app, AdMob test interstitial, in-app review prompt
+  at a milestone, share card to WhatsApp, a learning PDF renders, offline then back
+  online. Also read Play's pre-launch report for the internal-track build. Rollback =
+  `minifyEnabled false` (known-good build path).
 
 ## 6. Recommended additions (priority order)
 1. Set the `E2E_UI_EMAIL`/`E2E_UI_PASSWORD` repo secrets (values already known, see

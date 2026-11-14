@@ -158,6 +158,15 @@ gate is enforced by CI.
 
 ### Intent R5 - Upload ProGuard/R8 mapping + native debug symbols to Play Console
 
+> **Update 14 Nov 2026 - R8 enabled on `chore/r8-obfuscation`.** Play Console now
+> flags "DEX obfuscation 0%" with a Feb 2027 deadline. `minifyEnabled true` (still
+> `proguard-android.txt`, no optimisation; `shrinkResources` off). Instead of
+> hand-writing keep rules blind, a build gate (`app/scripts/r8-check.mjs`, workflows
+> `android-r8.yml` + `android-release.yml`) proves from the shipped DEX that every
+> Capacitor bridge class/method survived; R8 config mutants and Stryker run in
+> `mutation.yml`. Remaining before production: the on-device pass in
+> `docs/TEST-PLAN.md` section 5 on the internal track.
+
 > Raised 19 Aug 2026: the first production release (`0.31.7`) submitted with two Play
 > Console warnings - no deobfuscation file and no native debug symbols. Non-blocking
 > (submission went through). Split in two on investigation (19 Aug 2026):

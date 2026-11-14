@@ -20,6 +20,7 @@ vi.mock('../ObservanceBanner', () => ({ default: () => null }))
 const h = vi.hoisted(() => ({
   items: [], catalog: [], addPractice: vi.fn(), removePractice: vi.fn(),
   submit: vi.fn(), showInterstitial: vi.fn().mockResolvedValue(false),
+  isMilestone: vi.fn(() => false), maybeRequestReview: vi.fn().mockResolvedValue(false),
   profile: { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 },
   selectedMember: null,
   refresh: vi.fn(), rpc: vi.fn(), yesterdayLogs: [], catalogError: null,
@@ -28,7 +29,10 @@ vi.mock('../../hooks/useToday', () => ({
   useToday: () => ({ items: h.items, loading: false, submit: h.submit, addPractice: h.addPractice, removePractice: h.removePractice }),
 }))
 vi.mock('../../utils/ads', () => ({ showInterstitial: (...a) => h.showInterstitial(...a) }))
-vi.mock('../../utils/review', () => ({ isMilestone: () => false, maybeRequestReview: vi.fn().mockResolvedValue(false) }))
+vi.mock('../../utils/review', () => ({
+  isMilestone: (...a) => h.isMilestone(...a),
+  maybeRequestReview: (...a) => h.maybeRequestReview(...a),
+}))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
     session: { user: { id: 'u1' } },
@@ -77,6 +81,7 @@ beforeEach(() => {
   queryClient.clear()
   h.items = []; h.catalog = []; h.yesterdayLogs = []; h.catalogError = null
   h.addPractice.mockClear(); h.removePractice.mockReset(); h.submit.mockReset(); h.showInterstitial.mockClear()
+  h.isMilestone.mockReset().mockReturnValue(false); h.maybeRequestReview.mockReset().mockResolvedValue(false)
   h.refresh.mockClear(); h.rpc.mockReset()
   h.profile = { gender: 'male', display_name: 'Test User', current_streak: 0, best_streak: 0, freeze_credits: 2 }
   h.selectedMember = null
@@ -197,6 +202,47 @@ describe('TodayPage - ad timing (Intent 0.2 reorder)', () => {
     render(<TodayPage />)
     fireEvent.click(screen.getByText('Mark Done'))
     await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+  })
+})
+
+describe('TodayPage - native review prompt vs interstitial at a streak milestone', () => {
+  const item = {
+    up: { id: 'up1', current_streak: 0, sequence_position: 0 },
+    practice: { id: 5, name: 'Vishnu', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
+    logs: [],
+  }
+
+  it('asks for the in-app review instead of an ad when the milestone review is shown', async () => {
+    h.items = [item]
+    h.isMilestone.mockReturnValue(true)
+    h.maybeRequestReview.mockResolvedValue(true)
+    h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 7, practice_streak: 7 })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(screen.getByTestId('celebration')).toBeInTheDocument())
+    expect(h.isMilestone).toHaveBeenCalledWith(7)
+    expect(h.maybeRequestReview).toHaveBeenCalledTimes(1)
+    expect(h.showInterstitial).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the interstitial when the review prompt was not shown', async () => {
+    h.items = [item]
+    h.isMilestone.mockReturnValue(true)
+    h.maybeRequestReview.mockResolvedValue(false)
+    h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 7, practice_streak: 7 })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalledTimes(1))
+  })
+
+  it('never asks for a review when the mark did not complete the day', async () => {
+    h.items = [item]
+    h.isMilestone.mockReturnValue(true)
+    h.submit.mockResolvedValue({ saved: true, day_complete: false, overall_streak: 7, practice_streak: 7 })
+    render(<TodayPage />)
+    fireEvent.click(screen.getByText('Mark Done'))
+    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+    expect(h.maybeRequestReview).not.toHaveBeenCalled()
   })
 })
 

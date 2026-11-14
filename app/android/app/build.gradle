@@ -53,7 +53,12 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled false
+            // AI-DEV NOTE: R8 obfuscation on (Play flagged 0%, fix by Feb 2027). Capacitor
+            // reaches plugins by reflection, so every release build must pass
+            // scripts/r8-check.mjs (android-r8 workflow) before it ships. shrinkResources
+            // stays OFF: local/push notifications resolve icons by resource name at runtime.
+            // proguard-android.txt (not -optimize) keeps R8 optimisation off to limit risk.
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             // Package native debug symbols already shipped inside dependency AARs
             // (AdMob etc.) into the AAB, so Play can symbolicate native crashes/ANRs.
