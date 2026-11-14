@@ -1,0 +1,60 @@
+# AI-DEV NOTE: R8 bridge-survival gate. Builds an UNSIGNED minified release APK
+# (no secrets, no keystore, nothing uploaded to Play) and fails if R8 renamed or
+# stripped any Capacitor plugin class/@PluginMethod/@JavascriptInterface member,
+# or if obfuscation did not happen. Runs on PRs that can change the native build.
+name: android-r8
+
+on:
+  pull_request:
+    paths:
+      - 'app/android/**'
+      - 'app/package.json'
+      - 'app/package-lock.json'
+      - 'app/capacitor.config.*'
+      - 'app/scripts/r8-*'
+      - '.github/workflows/android-r8.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  r8:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_KEY: r8-check-placeholder
+      - run: npx cap sync android
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Build unsigned minified release APK
+        working-directory: app/android
+        run: ./gradlew --no-daemon assembleRelease
+      - name: Verify R8 kept the Capacitor bridge
+        run: bash scripts/r8-verify.sh android/app/build/outputs/apk/release/app-release-unsigned.apk
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: r8-mapping
+          path: |
+            app/android/app/build/outputs/mapping/release/mapping.txt
+            app/android/app/build/outputs/mapping/release/configuration.txt
+            app/android/app/build/outputs/mapping/release/usage.txt
+          retention-days: 14
+          if-no-files-found: ignore
