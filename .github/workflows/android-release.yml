@@ -22,7 +22,10 @@ concurrency:
 
 jobs:
   aab:
-    runs-on: ubuntu-latest
+    # AI-DEV NOTE: pinned (not ubuntu-latest) so the signed Play build does not change
+    # OS under us when ubuntu-latest moves to Ubuntu 26 (from 2026-10-19). Revisit
+    # before GitHub retires the 24.04 image.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
       run:
@@ -30,7 +33,7 @@ jobs:
     env:
       BUNDLETOOL_VERSION: 1.18.3
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
 
@@ -53,7 +56,7 @@ jobs:
           done
           exit $missing
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -82,7 +85,7 @@ jobs:
       - run: npm run build
       - run: npx cap sync android
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
@@ -139,7 +142,7 @@ jobs:
           echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE"
           echo "name=nithyakarma-${VERSION_NAME}-${VERSION_CODE}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.verify.outputs.name }}
           path: app/android/app/build/outputs/bundle/release/app-release.aab
