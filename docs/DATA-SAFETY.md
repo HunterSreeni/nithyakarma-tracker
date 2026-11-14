@@ -18,6 +18,7 @@ this in sync whenever data collection changes.
 | **Analytics events** (event name + numeric/flag props, no PII) | Product analytics (funnel/retention) | **Supabase (first-party, our own DB)** | **No third-party analytics vendor** | On for signed-in users |
 | **Product analytics events** (event name + allow-listed props: `day_complete`, `freeze_used`, `overall_streak`, `from`, `referred`; sanitised page URLs; UTM tags) | Marketing funnel (visit -> signup -> first practice -> retention) | **PostHog EU** (processor) | PostHog (service provider) | App: on; site: cookieless page views only (random visit id in sessionStorage, gone when the tab closes) |
 | **App-instance ID** (PostHog random `distinct_id`, the Supabase user id after sign-in) | Link a visit to the signup for attribution | PostHog EU | PostHog (service provider) | App only |
+| **Approximate location** (country, region, city via PostHog GeoIP; the IP itself is discarded) | Regional funnel analysis (e.g. Kerala vs Tamil Nadu) | PostHog EU | PostHog (service provider) | App + site, automatic |
 | **Install referrer** (Android, Play's `referrer` string, utm_* only kept) | Which campaign link led to the install | Device + PostHog EU | PostHog (service provider) | Android, read once |
 | **`app_first_open` event** (install_utm_* + `existing_user` flag) | Install step of the funnel, joined to signups | PostHog EU | PostHog (service provider) | Native app, once per install |
 | **Crash/error reports** | Stability | **Sentry** | Sentry (processor) | Only if a crash occurs |
@@ -43,6 +44,12 @@ this in sync whenever data collection changes.
 - **Account deletion is real** (`delete_account` removes the auth user; data
   cascades). Analytics rows are de-identified on deletion (`user_id -> null`).
 - Leaderboard visibility is user-controllable (opt-out).
+- **Approximate location (decided 2026-11-14, option A).** PostHog's "Discard
+  client IP data" is on, but its GeoIP transformation still reads the IP on
+  arrival and stores country/region/city before the IP is dropped. Play counts
+  city-level data as Approximate location, so it is declared below. To stop it,
+  disable PostHog's GeoIP transformation (Data pipeline -> Transformations) and
+  untick Approximate location in Play.
 - **Timezone is not location.** It is read from the device's OS timezone setting
   via `Intl.DateTimeFormat().resolvedOptions().timeZone` - no location
   permission, no GPS, and no IP geolocation, so nothing here belongs in the
@@ -61,7 +68,8 @@ this in sync whenever data collection changes.
 - "Data shared with third parties": Sentry (crash), Google FCM (push delivery),
   Google AdMob (advertising ID, for ads). No analytics data sold or shared.
 - **PostHog changes (2026-11-14):** under "Data collected" make sure **App
-  activity > App interactions** and **Device or other IDs** are ticked, purpose
+  activity > App interactions**, **Device or other IDs** and **Location >
+  Approximate location** are ticked, purpose
   **Analytics**, processed ephemerally: no, collection required (no in-app opt-out
   yet), encrypted in transit: yes. PostHog is a service provider processing on
   our behalf, which Play does not count as "sharing".
