@@ -8,9 +8,13 @@ import App from './App.jsx'
 import { initSentry } from './utils/sentry'
 import { queryClient } from './lib/queryClient'
 import { setupDataLifecycle } from './lib/dataLifecycle'
+import { initAnalytics, registerOnce } from './lib/posthog'
+import { getInstallAttribution } from './utils/installReferrer'
 
 initSentry()
 setupDataLifecycle()
+// Product analytics (PostHog EU); no-op outside production builds.
+if (initAnalytics()) getInstallAttribution().then(attr => { if (Object.keys(attr).length) registerOnce(attr) })
 
 function CrashFallback() {
   return (

@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
+import { useAnalyticsIdentity } from './hooks/useAnalyticsIdentity'
 import AuthPage from './components/AuthPage'
 import Layout from './components/Layout'
 import TodayPage from './components/TodayPage'
@@ -32,6 +33,7 @@ const DeviMahatmyamPage = lazyWithRetry(() => import('./components/DeviMahatmyam
 function Gate() {
   const { session, profile, profileStatus, refresh, loading, dataStatus, justOnboarded, clearJustOnboarded } = useAuth()
   const { pathname } = useLocation()
+  useAnalyticsIdentity(session)
   // Cheap watchdog for the one loading state that fully blanks the app: if
   // something upstream still manages to hang despite the guards in useAuth,
   // don't leave the user staring at a spinner forever.
