@@ -1,9 +1,32 @@
 import { useEffect, useRef, useState } from 'react'
-import * as pdfjsLib from 'pdfjs-dist'
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import ErrorBanner from './ErrorBanner'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
+export const WEBVIEW_STORE_URL = 'https://play.google.com/store/apps/details?id=com.google.android.webview'
+
+// AI-DEV NOTE: pdf.js and its worker load lazily, and the worker comes in through
+// Vite's `?worker` so it is bundled and down-levelled with the app's build target
+// (a `?url` worker was copied untouched and crashed old WebViews, Sentry
+// NITHYAKARMA-4). If the engine still cannot parse the code (SyntaxError), the
+// reader shows an "update Android System WebView" message instead of the whole
+// page crashing into the app's error boundary.
+let pdfjsPromise = null
+export function loadPdfjs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = Promise.all([
+      import('pdfjs-dist'),
+      import('pdfjs-dist/build/pdf.worker.min.mjs?worker'),
+    ]).then(([lib, { default: PdfWorker }]) => {
+      lib.GlobalWorkerOptions.workerPort = new PdfWorker()
+      return lib
+    }).catch((err) => {
+      pdfjsPromise = null
+      throw err
+    })
+  }
+  return pdfjsPromise
+}
+
+export const isOldEngineError = err => err instanceof SyntaxError || err?.name === 'SyntaxError'
 
 // Android's WebView (what this app runs in via Capacitor) has no built-in PDF
 // plugin, unlike desktop Chrome - an <iframe src="....pdf"> just renders
@@ -24,15 +47,17 @@ export default function PdfViewer({ src, title }) {
   const containerRef = useRef(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [outdated, setOutdated] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError('')
+    setOutdated(false)
     const container = containerRef.current
     if (container) container.replaceChildren()
 
-    pdfjsLib.getDocument({ url: src }).promise.then(async (pdf) => {
+    loadPdfjs().then(lib => lib.getDocument({ url: src }).promise).then(async (pdf) => {
       const width = container?.clientWidth || 360
       for (let i = 1; i <= pdf.numPages; i++) {
         if (cancelled) return
@@ -50,7 +75,8 @@ export default function PdfViewer({ src, title }) {
     }).catch((err) => {
       if (cancelled) return
       setLoading(false)
-      setError('Could not load this page.')
+      if (isOldEngineError(err)) setOutdated(true)
+      else setError('Could not load this page.')
       console.error('PDF render failed', err)
     })
 
@@ -61,6 +87,13 @@ export default function PdfViewer({ src, title }) {
     <div className="pdf-viewer">
       {loading && <div className="spinner-wrap">Loading...</div>}
       <ErrorBanner message={error} />
+      {outdated && (
+        <div className="auth-error" role="alert">
+          This reader needs a newer version of Android System WebView.{' '}
+          <a href={WEBVIEW_STORE_URL} target="_blank" rel="noopener noreferrer">Update it on Google Play</a>
+          , then reopen this page.
+        </div>
+      )}
       <div className="pdf-page-list" ref={containerRef} aria-label={title} />
     </div>
   )
