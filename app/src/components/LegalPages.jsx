@@ -151,7 +151,9 @@ export function PrivacyPage() {
         information; the counter keeps a random visit ID only until you close the browser tab. In the app (web and Android) we use PostHog, hosted in the EU, to understand how
         people find and use Nithyakarma. Events carry a random account ID and simple facts such as
         "a practice was marked" or "the day was completed", never your name, email, gender or which
-        practices you do. On Android we read the Google Play install referrer once, to learn which
+        practices you do. PostHog uses your IP address once, when an event arrives, to work out your
+        approximate location (country, region and city) and then discards the IP address; only that
+        approximate location is kept. On Android we read the Google Play install referrer once, to learn which
         campaign link led to the install. Once you delete your account, that random ID no longer
         links to you.
       </p>
