@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.2.1...app-v1.2.2) (2026-11-14)
+
+
+### Bug Fixes
+
+* **android:** drop the hardcoded Kali Java path from gradle.properties ([e85d6bc](https://github.com/HunterSreeni/nithyakarma-tracker/commit/e85d6bc309b055de886e6d033e26babf917dd2af))
+* **android:** drop the hardcoded Kali Java path from gradle.properties ([e2a6eb3](https://github.com/HunterSreeni/nithyakarma-tracker/commit/e2a6eb3262a913e458d5795a43aa60259cbd2103))
+
 ## [1.2.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.2.0...app-v1.2.1) (2026-11-09)
 
 
