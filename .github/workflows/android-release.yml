@@ -142,6 +142,9 @@ jobs:
           echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE"
           echo "name=nithyakarma-${VERSION_NAME}-${VERSION_CODE}" >> "$GITHUB_OUTPUT"
 
+      - name: Verify R8 kept the Capacitor bridge
+        run: bash scripts/r8-verify.sh android/app/build/outputs/bundle/release/app-release.aab
+
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.verify.outputs.name }}

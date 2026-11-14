@@ -10,6 +10,8 @@ vi.mock('../../utils/share', () => ({
   shareCardToWhatsApp: (...a) => shareCardToWhatsApp(...a),
 }))
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
+const celebrationHaptic = vi.fn()
+vi.mock('../../utils/haptics', () => ({ celebrationHaptic: (...a) => celebrationHaptic(...a) }))
 
 import CelebrationModal from '../CelebrationModal'
 
@@ -21,6 +23,12 @@ const data = {
 beforeEach(() => vi.clearAllMocks())
 
 describe('CelebrationModal', () => {
+  it('fires the native haptic exactly once when it opens', () => {
+    const { rerender } = render(<CelebrationModal data={data} onClose={() => {}} />)
+    rerender(<CelebrationModal data={data} onClose={() => {}} />)
+    expect(celebrationHaptic).toHaveBeenCalledTimes(1)
+  })
+
   it('renders streak and share card from the verified server response', () => {
     render(<CelebrationModal data={data} onClose={() => {}} />)
     expect(screen.getByText('48 Days')).toBeInTheDocument()
