@@ -853,6 +853,11 @@ Signed in as e2e (male) and a female profile, on web + Android emulator:
   at a milestone, share card to WhatsApp, a learning PDF renders, offline then back
   online. Also read Play's pre-launch report for the internal-track build. Rollback =
   `minifyEnabled false` (known-good build path).
+- **Getting a build onto the internal track:** Actions -> `android-release (manual)` ->
+  Run workflow, `play_track = internal`. It builds, signs, runs the signature/version/R8
+  checks, then uploads that same AAB with release notes from `app/CHANGELOG.md`
+  (`app/scripts/play-upload.mjs`). The service account can only release to testing
+  tracks; promoting to production stays a manual click in Play Console.
 
 ## 6. Recommended additions (priority order)
 1. Set the `E2E_UI_EMAIL`/`E2E_UI_PASSWORD` repo secrets (values already known, see

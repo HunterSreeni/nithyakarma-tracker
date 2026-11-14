@@ -3,6 +3,10 @@
 # or release. Signing material lives only in repository secrets and is wiped
 # at the end of the job. The upload key must be the one registered in Play
 # Console (Play App Signing); never generate a new key here.
+# play_track=internal (Sreeni, 2026-11-14) also uploads that exact signed AAB to
+# the Play INTERNAL testing track via scripts/play-upload.mjs. The service account
+# behind PLAY_SERVICE_ACCOUNT_JSON may only release to testing tracks; production
+# stays a manual promotion in Play Console.
 name: android-release (manual)
 
 on:
@@ -12,6 +16,11 @@ on:
         description: Branch, tag or commit to build
         required: true
         default: main
+      play_track:
+        description: Also upload to Google Play? (internal testing only)
+        type: choice
+        options: [none, internal]
+        default: none
 
 permissions:
   contents: read
@@ -141,6 +150,7 @@ jobs:
           [ -n "$VERSION_NAME" ] && [ -n "$VERSION_CODE" ] || { echo "::error::Could not read version from the bundle"; exit 1; }
           echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE"
           echo "name=nithyakarma-${VERSION_NAME}-${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Verify R8 kept the Capacitor bridge
         run: bash scripts/r8-verify.sh android/app/build/outputs/bundle/release/app-release.aab
@@ -151,6 +161,20 @@ jobs:
           path: app/android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
           if-no-files-found: error
+
+      - name: Upload to Google Play (internal testing)
+        if: inputs.play_track == 'internal'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          EXPECTED_UPLOAD_SHA256: ${{ secrets.ANDROID_UPLOAD_CERT_SHA256 }}
+        run: |
+          # Only ship a bundle whose upload key was actually checked above.
+          [ -n "$EXPECTED_UPLOAD_SHA256" ] || { echo "::error::Set ANDROID_UPLOAD_CERT_SHA256 before uploading to Play"; exit 1; }
+          [ -n "$PLAY_SERVICE_ACCOUNT_JSON" ] || { echo "::error::Missing repository secret PLAY_SERVICE_ACCOUNT_JSON"; exit 1; }
+          node scripts/play-upload.mjs \
+            --aab=android/app/build/outputs/bundle/release/app-release.aab \
+            --track=internal \
+            --version-name="${{ steps.verify.outputs.version_name }}"
 
       - name: Remove signing material
         if: always()
