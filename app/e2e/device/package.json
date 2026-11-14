@@ -1,0 +1,16 @@
+{
+  "name": "nithyakarma-device-tests",
+  "private": true,
+  "type": "module",
+  "description": "Human-in-the-loop physical Android device tests (Appium UiAutomator2). See README.md.",
+  "scripts": {
+    "info": "bash device-info.sh",
+    "smoke": "node run.mjs",
+    "full": "node run.mjs --writes"
+  },
+  "dependencies": {
+    "appium": "3.9.0",
+    "appium-uiautomator2-driver": "8.7.3",
+    "webdriverio": "10.2.0"
+  }
+}
