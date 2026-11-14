@@ -8,6 +8,13 @@ name: mutation
 
 on:
   workflow_dispatch:
+  # Also when the mutation tooling itself changes, so a broken mutant or config
+  # is caught in its own PR instead of at the next weekly run.
+  pull_request:
+    paths:
+      - '.github/workflows/mutation.yml'
+      - 'app/scripts/r8-mutate.mjs'
+      - 'app/stryker.config.json'
   schedule:
     - cron: '30 21 * * 0' # Sunday 21:30 UTC (Monday 03:00 IST)
 
