@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.3.0...app-v1.3.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **pdf:** stop old Android WebViews crashing on the PDF reader ([f8e7f7c](https://github.com/HunterSreeni/nithyakarma-tracker/commit/f8e7f7c09d080cfa42f80a6bf3ddefa51c607fed))
+
 ## [1.3.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.2.3...app-v1.3.0) (2026-11-14)
 
 
