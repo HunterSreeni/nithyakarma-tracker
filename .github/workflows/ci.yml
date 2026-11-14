@@ -27,6 +27,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+      # Old Android WebViews (floor: Chrome 90) must be able to parse every chunk.
+      - run: node scripts/check-build-syntax.mjs
 
   edge-functions:
     # supabase/functions/** runs on Deno, not Node - excluded from the `verify`

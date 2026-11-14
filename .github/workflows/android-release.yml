@@ -92,6 +92,8 @@ jobs:
           } > .env
 
       - run: npm run build
+      # Old Android WebViews (floor: Chrome 90) must be able to parse every chunk.
+      - run: node scripts/check-build-syntax.mjs
       - run: npx cap sync android
 
       - uses: actions/setup-java@v6

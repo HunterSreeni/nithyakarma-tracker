@@ -14,6 +14,13 @@ export default defineConfig(({ command, mode }) => {
   }
   return {
   plugins: [react()],
+  // AI-DEV NOTE: Android users can run an old, un-updated Android System WebView.
+  // Sentry NITHYAKARMA-4 (2026-11-14): WebView 90 crashed on pdf.js 4.x's class
+  // `static {}` blocks (Chrome 94+). Building for chrome90 makes the bundler lower
+  // that syntax for the app AND its workers. Do not raise this without checking
+  // Sentry/PostHog for the WebView versions still in use.
+  build: { target: ['chrome90', 'edge90', 'firefox90', 'safari14'] },
+  worker: { format: 'es' },
   test: {
     environment: 'jsdom',
     globals: true,
