@@ -177,6 +177,28 @@ describe('checkR8', () => {
     expect(checkR8({ ...base, dex }).errors).toEqual(['method missing from DEX: com.example.share.SharePlugin.share'])
   })
 
+  it('allows a non-plugin bridge class to be renamed but still checks its methods', () => {
+    const mapping = parseMapping('com.getcapacitor.MessageHandler -> a.a:\n    void postMessage(java.lang.String) -> postMessage\n')
+    const dex = parseDexdump(DEXDUMP.replace("La/a;'", "La/a;'").replace("name          : 'b'", "name          : 'postMessage'"))
+    const exp = [{ cls: 'com.getcapacitor.MessageHandler', isPlugin: false, methods: ['postMessage'] }]
+    expect(checkR8({ ...base, expected: exp, mapping, dex, minRatio: 0 }).errors).toEqual([])
+    const renamedMethod = parseMapping('com.getcapacitor.MessageHandler -> a.a:\n    void postMessage(java.lang.String) -> b\n')
+    expect(checkR8({ ...base, expected: exp, mapping: renamedMethod, dex: parseDexdump(DEXDUMP), minRatio: 0 }).errors)
+      .toEqual(['method renamed: com.getcapacitor.MessageHandler.postMessage -> b', 'method missing from DEX: com.getcapacitor.MessageHandler.postMessage'])
+  })
+
+  it('reports a renamed non-plugin class missing under its new name', () => {
+    const mapping = parseMapping('com.getcapacitor.Plugin -> z.z:\n')
+    const exp = [{ cls: 'com.getcapacitor.Plugin', isPlugin: false, methods: [] }]
+    expect(checkR8({ ...base, expected: exp, mapping, minRatio: 0 }).errors).toEqual(['class missing from DEX: com.getcapacitor.Plugin (as z.z)'])
+  })
+
+  it('still requires plugin classes to keep their name', () => {
+    const mapping = parseMapping(MAPPING.replace('SharePlugin -> com.example.share.SharePlugin:', 'SharePlugin -> a.c:'))
+    const exp = [{ cls: 'com.example.share.SharePlugin', isPlugin: true, methods: [] }]
+    expect(checkR8({ ...base, expected: exp, mapping }).errors).toContain('class renamed: com.example.share.SharePlugin -> a.c')
+  })
+
   it('checks the fixed manifest classes', () => {
     const { errors, checked } = checkR8({ ...base, fixedClasses: ['org.x.MainActivity'] })
     expect(checked).toBe(2)

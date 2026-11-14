@@ -125,11 +125,17 @@ export function obfuscationRatio(mapping) {
 export function checkR8({ expected, fixedClasses = FIXED_CLASSES, mapping, dex, minRatio = 0.25 }) {
   const errors = []
   const required = [...expected, ...fixedClasses.map(cls => ({ cls, methods: [] }))]
-  for (const { cls, methods } of required) {
-    const inDex = dex.get(cls)
+  for (const { cls, methods, isPlugin } of required) {
+    // Plugin classes and manifest components are loaded BY NAME, so the class name
+    // must survive. The base Plugin class and @JavascriptInterface holders (e.g.
+    // MessageHandler) are only referenced from compiled code, so R8 may rename the
+    // class itself; only their method names are reached reflectively.
+    const keepName = isPlugin !== false
     const mapped = mapping.get(cls)
-    if (mapped && mapped.renamed !== cls) errors.push(`class renamed: ${cls} -> ${mapped.renamed}`)
-    if (!inDex) { errors.push(`class missing from DEX: ${cls}`); continue }
+    const dexName = keepName ? cls : (mapped?.renamed ?? cls)
+    const inDex = dex.get(dexName)
+    if (keepName && mapped && mapped.renamed !== cls) errors.push(`class renamed: ${cls} -> ${mapped.renamed}`)
+    if (!inDex) { errors.push(`class missing from DEX: ${cls}${dexName !== cls ? ` (as ${dexName})` : ''}`); continue }
     for (const m of methods) {
       const renamedTo = [...(mapped?.methods.get(m) ?? [])].filter(n => n !== m)
       if (renamedTo.length) errors.push(`method renamed: ${cls}.${m} -> ${renamedTo.join(',')}`)
