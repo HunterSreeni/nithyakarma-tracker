@@ -16,10 +16,24 @@ this in sync whenever data collection changes.
 | Push token (FCM / web push) | Reminder notifications | Supabase | Google FCM (delivery only) | Optional (notifications off by default) |
 | Timezone (IANA name, e.g. `Asia/Kolkata`) | Deciding when the user's day starts and ends - reminder windows and streak/day boundaries | Supabase (`profiles.timezone`, `notification_preferences.timezone`) | No | Core function |
 | **Analytics events** (event name + numeric/flag props, no PII) | Product analytics (funnel/retention) | **Supabase (first-party, our own DB)** | **No third-party analytics vendor** | On for signed-in users |
+| **Product analytics events** (event name + allow-listed props: `day_complete`, `freeze_used`, `overall_streak`, `from`, `referred`; sanitised page URLs; UTM tags) | Marketing funnel (visit -> signup -> first practice -> retention) | **PostHog EU** (processor) | PostHog (service provider) | App: on; site: cookieless page views only (random visit id in sessionStorage, gone when the tab closes) |
+| **App-instance ID** (PostHog random `distinct_id`, the Supabase user id after sign-in) | Link a visit to the signup for attribution | PostHog EU | PostHog (service provider) | App only |
+| **Install referrer** (Android, Play's `referrer` string, utm_* only kept) | Which campaign link led to the install | Device + PostHog EU | PostHog (service provider) | Android, read once |
+| **`app_first_open` event** (install_utm_* + `existing_user` flag) | Install step of the funnel, joined to signups | PostHog EU | PostHog (service provider) | Native app, once per install |
 | **Crash/error reports** | Stability | **Sentry** | Sentry (processor) | Only if a crash occurs |
 | **Advertising ID / device identifiers** (Android only) | Serve interstitial ads | Not stored by us - on-device only | **Google AdMob** | Skipped for ad-free users; gated by UMP consent |
 
 ## Key privacy stances
+- **PostHog (added 2026-11-14, marketing funnel Phase 0a).** EU region, no
+  autocapture, no session replay, heatmaps, surveys or flags, no remote scripts.
+  Only the allow-listed props above are sent (`lib/posthog.js` `ALLOWED_PROPS`);
+  ritual flags (sandhya/rudram/samidha), practice names and gender stay in our
+  own DB. URLs are sanitised before send (referral codes and every non-`utm_*`
+  query param removed). Test accounts are marked `is_internal` (email never
+  sent). Project setting "discard client IP" should be on. The marketing site
+  uses a cookieless counter (`site/funnel.js`), not the SDK. Deleting an account
+  leaves only a random ID in PostHog; a scheduled PostHog person-deletion job is
+  Phase 0b. Every event carries `platform` (`web`/`android`/`ios`).
 - **Analytics is first-party.** Events go to our own `analytics_events` table.
   Props carry only event names + numbers/flags (e.g. `day_complete`,
   `overall_streak`) - never names, email, or practice content. RLS restricts
@@ -46,6 +60,11 @@ this in sync whenever data collection changes.
   Messages/Device IDs only if push is enabled.
 - "Data shared with third parties": Sentry (crash), Google FCM (push delivery),
   Google AdMob (advertising ID, for ads). No analytics data sold or shared.
+- **PostHog changes (2026-11-14):** under "Data collected" make sure **App
+  activity > App interactions** and **Device or other IDs** are ticked, purpose
+  **Analytics**, processed ephemerally: no, collection required (no in-app opt-out
+  yet), encrypted in transit: yes. PostHog is a service provider processing on
+  our behalf, which Play does not count as "sharing".
 - Tick **"Contains ads"** in the store listing; content rating questionnaire must
   answer "yes" to ads.
 - Provide the hosted Privacy Policy URL: `https://nithyakarma.org/privacy.html`.

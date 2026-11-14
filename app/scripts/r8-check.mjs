@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // R8 bridge-survival check for the minified Android release build.
 //
 // AI-DEV NOTE: Capacitor reaches native code by reflection: plugin classes are

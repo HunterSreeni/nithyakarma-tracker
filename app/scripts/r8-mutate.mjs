@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Applies one R8 config mutant so the mutation workflow can prove r8-verify.sh
 // catches it. Each mutant must change exactly what it claims (asserted here, and
 // again against R8's configuration.txt after the build via --assert).

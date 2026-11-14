@@ -9,6 +9,8 @@ vi.mock('../../lib/supabase', () => ({
   },
 }))
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }))
+const capture = vi.fn()
+vi.mock('../../lib/posthog', () => ({ capture: (...x) => capture(...x) }))
 
 import { track } from '../analytics'
 
@@ -39,5 +41,18 @@ describe('track', () => {
     getSession.mockResolvedValue({ data: { session: { user: { id: 'u-1' } } } })
     insert.mockRejectedValueOnce(new Error('network'))
     await expect(track('share_clicked', { from: 'profile' })).resolves.toBeUndefined()
+  })
+
+  it('also hands the event to PostHog (which applies the allow-list), even when signed out', async () => {
+    getSession.mockResolvedValue({ data: { session: null } })
+    await track('practice_marked', { day_complete: true, is_sandhya: true })
+    expect(capture).toHaveBeenCalledWith('practice_marked', { day_complete: true, is_sandhya: true })
+  })
+
+  it('still writes to Supabase when PostHog throws', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u-1' } } } })
+    capture.mockImplementationOnce(() => { throw new Error('posthog down') })
+    await track('share_clicked', { from: 'profile' })
+    expect(insert).toHaveBeenCalled()
   })
 })

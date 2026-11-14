@@ -2,6 +2,15 @@
   command = "npm run build"
   publish = "dist"
 
+# AI-DEV NOTE: same-origin PostHog (EU) proxy, so the CSP keeps connect-src 'self'
+# and ad-blockers do not drop analytics. Must stay ABOVE the SPA catch-all (first
+# match wins). Only ingestion is proxied: the SDK loads no remote scripts.
+[[redirects]]
+  from = "/ingest/*"
+  to = "https://eu.i.posthog.com/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

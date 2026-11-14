@@ -120,6 +120,7 @@ export function PrivacyPage() {
         <li><b>Firebase Cloud Messaging (Google)</b> - delivering Android push reminders.</li>
         <li><b>Google AdMob</b> - ads on Android only (skipped when ad-free); AdMob may use device identifiers per Google's policies. On first use we ask for consent where required (EEA/UK), and you can review or change that choice.</li>
         <li><b>Sentry</b> - anonymous crash and error reports to keep the app stable (no IP addresses or personal data).</li>
+        <li><b>PostHog (EU servers)</b> - product analytics: which screens are visited, how people found us (campaign tags) and whether key steps happen, for example a practice being marked. Events are tied to a random account ID (the same pseudonymous ID our database uses), never your name or email, and never include which practices you do or your gender.</li>
         <li><b>WhatsApp</b> - the "share" button simply opens a WhatsApp link with text you choose; we do not send your data to WhatsApp ourselves.</li>
       </ul>
 
@@ -145,9 +146,14 @@ export function PrivacyPage() {
 
       <h3>Web analytics (nithyakarma.org &amp; app.nithyakarma.org)</h3>
       <p>
-        Both the marketing site at nithyakarma.org and the app at app.nithyakarma.org use Cloudflare
-        Web Analytics for basic visit counts. It does not use cookies or collect any personal or
-        identifying information.
+        The marketing site at nithyakarma.org uses Cloudflare Web Analytics and a small cookieless
+        PostHog counter for visit counts and campaign tags. Neither uses cookies or collects personal
+        information; the counter keeps a random visit ID only until you close the browser tab. In the app (web and Android) we use PostHog, hosted in the EU, to understand how
+        people find and use Nithyakarma. Events carry a random account ID and simple facts such as
+        "a practice was marked" or "the day was completed", never your name, email, gender or which
+        practices you do. On Android we read the Google Play install referrer once, to learn which
+        campaign link led to the install. Once you delete your account, that random ID no longer
+        links to you.
       </p>
 
       <h3>Changes &amp; contact</h3>
