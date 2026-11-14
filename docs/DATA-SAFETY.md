@@ -16,9 +16,10 @@ this in sync whenever data collection changes.
 | Push token (FCM / web push) | Reminder notifications | Supabase | Google FCM (delivery only) | Optional (notifications off by default) |
 | Timezone (IANA name, e.g. `Asia/Kolkata`) | Deciding when the user's day starts and ends - reminder windows and streak/day boundaries | Supabase (`profiles.timezone`, `notification_preferences.timezone`) | No | Core function |
 | **Analytics events** (event name + numeric/flag props, no PII) | Product analytics (funnel/retention) | **Supabase (first-party, our own DB)** | **No third-party analytics vendor** | On for signed-in users |
-| **Product analytics events** (event name + allow-listed props: `day_complete`, `freeze_used`, `overall_streak`, `from`, `referred`; sanitised page URLs; UTM tags) | Marketing funnel (visit -> signup -> first practice -> retention) | **PostHog EU** (processor) | PostHog (service provider) | App: on; site: cookieless page views only |
+| **Product analytics events** (event name + allow-listed props: `day_complete`, `freeze_used`, `overall_streak`, `from`, `referred`; sanitised page URLs; UTM tags) | Marketing funnel (visit -> signup -> first practice -> retention) | **PostHog EU** (processor) | PostHog (service provider) | App: on; site: cookieless page views only (random visit id in sessionStorage, gone when the tab closes) |
 | **App-instance ID** (PostHog random `distinct_id`, the Supabase user id after sign-in) | Link a visit to the signup for attribution | PostHog EU | PostHog (service provider) | App only |
 | **Install referrer** (Android, Play's `referrer` string, utm_* only kept) | Which campaign link led to the install | Device + PostHog EU | PostHog (service provider) | Android, read once |
+| **`app_first_open` event** (install_utm_* + `existing_user` flag) | Install step of the funnel, joined to signups | PostHog EU | PostHog (service provider) | Native app, once per install |
 | **Crash/error reports** | Stability | **Sentry** | Sentry (processor) | Only if a crash occurs |
 | **Advertising ID / device identifiers** (Android only) | Serve interstitial ads | Not stored by us - on-device only | **Google AdMob** | Skipped for ad-free users; gated by UMP consent |
 
@@ -32,7 +33,7 @@ this in sync whenever data collection changes.
   sent). Project setting "discard client IP" should be on. The marketing site
   uses a cookieless counter (`site/funnel.js`), not the SDK. Deleting an account
   leaves only a random ID in PostHog; a scheduled PostHog person-deletion job is
-  Phase 0b.
+  Phase 0b. Every event carries `platform` (`web`/`android`/`ios`).
 - **Analytics is first-party.** Events go to our own `analytics_events` table.
   Props carry only event names + numbers/flags (e.g. `day_complete`,
   `overall_streak`) - never names, email, or practice content. RLS restricts

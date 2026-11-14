@@ -16,7 +16,22 @@ const KEY = import.meta.env.VITE_POSTHOG_KEY || DEFAULT_KEY
 // WebView has no CSP and its origin is https://localhost, so it talks to EU directly.
 export const apiHost = () => (Capacitor.isNativePlatform() ? 'https://eu.i.posthog.com' : '/ingest')
 
-export const ALLOWED_PROPS = ['day_complete', 'freeze_used', 'overall_streak', 'from', 'referred']
+export const ALLOWED_PROPS = [
+  'day_complete', 'freeze_used', 'overall_streak', 'from', 'referred',
+  // app_first_open: campaign tags from the Play install referrer + whether the
+  // device already had a signed-in account (an app update, not a new install).
+  'install_utm_source', 'install_utm_medium', 'install_utm_campaign', 'install_utm_content', 'install_utm_term',
+  'existing_user',
+]
+
+// 'web' | 'android' | 'ios' on every event, so dashboards split cleanly (the
+// Android app otherwise shows up as a Chrome WebView "browser").
+export const platform = () => (Capacitor.isNativePlatform() ? Capacitor.getPlatform() : 'web')
+
+export function withPlatform(event) {
+  if (event) event.properties = { ...event.properties, platform: platform() }
+  return event
+}
 
 export function allowProps(props = {}) {
   const out = {}
@@ -91,7 +106,7 @@ export function initAnalytics() {
       disable_web_experiments: true,
       advanced_disable_flags: true,
       disable_external_dependency_loading: true,
-      before_send: sanitizeEvent,
+      before_send: event => withPlatform(sanitizeEvent(event)),
     })
     ph = posthog
     for (const fn of queue.splice(0)) fn(ph)

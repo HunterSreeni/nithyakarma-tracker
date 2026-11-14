@@ -148,7 +148,7 @@ export function PrivacyPage() {
       <p>
         The marketing site at nithyakarma.org uses Cloudflare Web Analytics and a small cookieless
         PostHog counter for visit counts and campaign tags. Neither uses cookies or collects personal
-        information. In the app (web and Android) we use PostHog, hosted in the EU, to understand how
+        information; the counter keeps a random visit ID only until you close the browser tab. In the app (web and Android) we use PostHog, hosted in the EU, to understand how
         people find and use Nithyakarma. Events carry a random account ID and simple facts such as
         "a practice was marked" or "the day was completed", never your name, email, gender or which
         practices you do. On Android we read the Google Play install referrer once, to learn which

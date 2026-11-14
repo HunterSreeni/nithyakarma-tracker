@@ -10,11 +10,17 @@ import { queryClient } from './lib/queryClient'
 import { setupDataLifecycle } from './lib/dataLifecycle'
 import { initAnalytics, registerOnce } from './lib/posthog'
 import { getInstallAttribution } from './utils/installReferrer'
+import { trackFirstOpen } from './utils/firstOpen'
 
 initSentry()
 setupDataLifecycle()
 // Product analytics (PostHog EU); no-op outside production builds.
-if (initAnalytics()) getInstallAttribution().then(attr => { if (Object.keys(attr).length) registerOnce(attr) })
+if (initAnalytics()) {
+  getInstallAttribution().then(attr => {
+    if (Object.keys(attr).length) registerOnce(attr)
+    trackFirstOpen(attr)
+  })
+}
 
 function CrashFallback() {
   return (

@@ -6,11 +6,11 @@ const ph = vi.hoisted(() => ({
 }))
 vi.mock('posthog-js/dist/module.slim.no-external', () => ({ default: ph }))
 const native = vi.hoisted(() => ({ value: false }))
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => native.value } }))
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => native.value, getPlatform: () => (native.value ? 'android' : 'web') } }))
 
 import {
   allowProps, sanitizeUrl, sanitizeEvent, initAnalytics, capture, identifyUser, resetAnalytics,
-  registerOnce, isInternalEmail, apiHost, ALLOWED_PROPS, _resetForTests, _whenLoaded,
+  registerOnce, isInternalEmail, apiHost, ALLOWED_PROPS, _resetForTests, _whenLoaded, withPlatform,
 } from '../posthog'
 
 beforeEach(() => {
@@ -32,7 +32,11 @@ describe('allowProps', () => {
     expect(allowProps({ overall_streak: 0 })).toEqual({ overall_streak: 0 })
   })
   it('allow-list is exactly the agreed set', () => {
-    expect(ALLOWED_PROPS).toEqual(['day_complete', 'freeze_used', 'overall_streak', 'from', 'referred'])
+    expect(ALLOWED_PROPS).toEqual([
+      'day_complete', 'freeze_used', 'overall_streak', 'from', 'referred',
+      'install_utm_source', 'install_utm_medium', 'install_utm_campaign', 'install_utm_content', 'install_utm_term',
+      'existing_user',
+    ])
   })
 })
 
@@ -88,7 +92,8 @@ describe('initAnalytics', () => {
       capture_dead_clicks: false, rageclick: false, capture_exceptions: false, advanced_disable_flags: true,
       disable_external_dependency_loading: true, disable_web_experiments: true, capture_pageleave: false,
     })
-    expect(opts.before_send).toBe(sanitizeEvent)
+    const sent = opts.before_send({ event: '$pageview', properties: { $current_url: 'https://a.org/r/X?ref=1' } })
+    expect(sent.properties).toEqual({ $current_url: 'https://a.org/r/:code', platform: 'web' })
   })
   it('stays off outside production builds', () => {
     vi.stubEnv('PROD', false)
@@ -155,6 +160,15 @@ describe('capture / identify / reset before and after init', () => {
     resetAnalytics(); registerOnce({ install_utm_source: 'x' })
     expect(ph.reset).toHaveBeenCalledTimes(1)
     expect(ph.register_once).toHaveBeenCalledWith({ install_utm_source: 'x' })
+  })
+})
+
+describe('withPlatform', () => {
+  it('tags web and native events', () => {
+    expect(withPlatform({ properties: { a: 1 } }).properties).toEqual({ a: 1, platform: 'web' })
+    native.value = true
+    expect(withPlatform({}).properties).toEqual({ platform: 'android' })
+    expect(withPlatform(null)).toBeNull()
   })
 })
 

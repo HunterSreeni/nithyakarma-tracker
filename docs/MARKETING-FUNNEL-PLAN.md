@@ -71,7 +71,7 @@ site (nithyakarma.org) --UTM--> app (web / Android / Play Install Referrer)
 |---|---|---|
 | 1. Impression | Post published / reach | Meta Graph API insights |
 | 2. Visit | Landing or app page view with UTM | PostHog |
-| 3. Install | Play install with referrer | Play Install Referrer -> PostHog |
+| 3. Install | `app_first_open` (once per install; `existing_user=true` = an update, exclude) + install source | Play Install Referrer -> PostHog. Official counts: Play Console / App Store Connect |
 | 4. Signup | Account created, first-touch source attached | PostHog identify + `profiles` |
 | 5. Activation | First counting practice log | `practice_logs` |
 | 6. Habit / Retained | Active in days 7-13 / 28-34 after signup | `practice_logs` |
@@ -147,6 +147,11 @@ Implementation plan written 2026-11-14 (Codex-reviewed). Phase 0a ships as one P
   of the PostHog SDK, which is ~400 KB for a 5-page static site.
 - The app loads the PostHog "slim, no-external" build lazily (about 54 KB gzip,
   outside the startup bundle).
+- Added the same day: a `platform` property (`web`/`android`/`ios`) on every event, the
+  `app_first_open` install event, and a per-tab `$session_id` on the site counter
+  (PostHog Web Analytics needs it for sessions and bounce rate).
+- iOS (after Apple approval): no per-user install referrer exists; use App Store
+  Connect campaign links (`ct=`) for aggregate source counts.
 
 #### Phase 0b - Signals and cleanup (later PR)
 
