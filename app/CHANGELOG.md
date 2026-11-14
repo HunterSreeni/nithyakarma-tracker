@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.2.3...app-v1.3.0) (2026-11-14)
+
+
+### Features
+
+* **analytics:** platform on every event, app_first_open install event, site sessions ([26282b4](https://github.com/HunterSreeni/nithyakarma-tracker/commit/26282b4451906e1c160d9209643585ddb1401bac))
+* **analytics:** PostHog EU funnel tracking, cookieless site counter and Play install referrer ([673bfc5](https://github.com/HunterSreeni/nithyakarma-tracker/commit/673bfc5ab5560a34e2f41654ebe8496edbedaf8e))
+
 ## [1.2.3](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.2.2...app-v1.2.3) (2026-11-14)
 
 
