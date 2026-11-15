@@ -218,6 +218,9 @@ async function main() {
   if (!version) throw new Error(`${PKG} is not installed on the phone`)
   console.log(`Nithyakarma ${version} installed`)
   wifiWasOn = shell('settings', 'get', 'global', 'wifi_on').trim() !== '0'
+  // Keep whatever the phone logged BEFORE this run (e.g. an app update or a
+  // sign-out that happened earlier) instead of throwing it away, then start clean.
+  try { writeFileSync(join(OUT, 'logcat-before-run.txt'), adb('logcat', '-d', '-v', 'time')) } catch { /* best-effort */ }
   adb('logcat', '-c')
 
   const { main: startAppium } = await import('appium')
@@ -260,6 +263,8 @@ async function main() {
     await findOne('Today', { timeout: 30000, allowMany: true })
     return `app ${version}`
   })
+  // Every later step needs a signed-in app; stop instead of failing them all.
+  if (results.at(-1)?.status !== 'pass') throw new Error('not signed in - stopping the run')
 
   await step('Today tab', async () => { await tap('Today', { allowMany: true }); await driver.pause(1500); await assertNoErrorBanner() })
   for (const tab of ['Learning', 'History', 'Calendar', 'Profile']) {
