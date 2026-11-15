@@ -29,6 +29,7 @@ const LearningPage = lazyWithRetry(() => import('./components/LearningPage'))
 const RamayanamPage = lazyWithRetry(() => import('./components/RamayanamPage'))
 const KandamPage = lazyWithRetry(() => import('./components/KandamPage'))
 const DeviMahatmyamPage = lazyWithRetry(() => import('./components/DeviMahatmyamPage'))
+const BirthChartPage = lazyWithRetry(() => import('./components/BirthChartPage'))
 
 function Gate() {
   const { session, profile, profileStatus, refresh, loading, dataStatus, justOnboarded, clearJustOnboarded } = useAuth()
@@ -148,6 +149,7 @@ function Gate() {
               links and older push payloads still point here. */}
           <Route path="/referrals" element={<Navigate to="/profile" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/birth-chart" element={<BirthChartPage />} />
           <Route path="/ramayana-masam" element={<RamayanaMasamPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
