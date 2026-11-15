@@ -38,6 +38,25 @@ details): `REPORT.md`, a screenshot per step, `device-info.txt`,
 earlier update or sign-out can still be investigated), crash/JS-error
 lines from logcat, app memory (PSS) and timings.
 
+## Sideload test builds (before Play internal testing)
+
+Never sideload over a Play / Google-signed install (Play's integrity check then
+blocks the app). Instead:
+
+1. Uninstall the Play version from the test phone.
+2. Build a local debug APK with full logging (`CAP_DEBUG_LOGS=1` - logs tokens, so
+   only for this phone): `npm run build`, `CAP_DEBUG_LOGS=1 npx cap sync android`,
+   then `android/gradlew assembleDebug` with `JAVA_HOME` = JDK 21 and
+   `android/local.properties` = `sdk.dir=D:/AndroidSDK`; copy
+   `~/.secrets/nithyakarma/google-services.json` to `android/app/` (both git-ignored).
+3. `adb install` it, sign in by hand. For an update test, build again (the
+   versionCode is time-based) and `adb install -r` over it: same debug key, data kept.
+4. Logs: `adb logcat -v time | grep Capacitor`; WebView inspection via
+   `chrome://inspect` on the laptop.
+
+Verified 2026-11-15: an in-place debug update 235932037 -> 235932040 kept the
+signed-in session (screen, server session and logs agree).
+
 ## Gotchas found on the Redmi Go (Android 8.1 Go, WebView = Chrome 138)
 
 - WebView content is visible to UiAutomator as accessibility nodes, but CSS

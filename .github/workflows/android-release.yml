@@ -95,6 +95,9 @@ jobs:
       # Old Android WebViews (floor: Chrome 90) must be able to parse every chunk.
       - run: node scripts/check-build-syntax.mjs
       - run: npx cap sync android
+      # Play builds must never carry the local-debug logging (it logs tokens).
+      - name: Refuse debug logging in a release build
+        run: grep -q '"loggingBehavior": *"none"' android/app/src/main/assets/capacitor.config.json || { echo "::error::capacitor loggingBehavior is not 'none' (CAP_DEBUG_LOGS set?)"; exit 1; }
 
       - uses: actions/setup-java@v6
         with:
