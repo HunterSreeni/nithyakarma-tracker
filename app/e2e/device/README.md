@@ -33,7 +33,9 @@ sign out, test notification, ads). Wi-Fi is restored to its starting state on an
 exit, including Ctrl+C.
 
 Evidence goes to `reports/<timestamp>/` (git-ignored, it can show account
-details): `REPORT.md`, a screenshot per step, `device-info.txt`, crash/JS-error
+details): `REPORT.md`, a screenshot per step, `device-info.txt`,
+`logcat-before-run.txt` (whatever the phone logged before the run, kept so an
+earlier update or sign-out can still be investigated), crash/JS-error
 lines from logcat, app memory (PSS) and timings.
 
 ## Gotchas found on the Redmi Go (Android 8.1 Go, WebView = Chrome 138)
