@@ -11,6 +11,9 @@ vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => h.nativ
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ session: { user: { id: 'u1' } } }) }))
 vi.mock('../../utils/analytics', () => ({ track: (...a) => h.track(...a) }))
 vi.mock('../../utils/ads', () => ({ showRewardedVideo: (...a) => h.showRewardedVideo(...a) }))
+// The partial mock below loads the real download.js, which imports the Supabase
+// client; CI has no .env, so stub the client or the whole file fails to load.
+vi.mock('../../lib/supabase', () => ({ supabase: { rpc: vi.fn() } }))
 vi.mock('../../lib/jadhagam/download', async (orig) => ({
   canDownloadNow: (await orig()).canDownloadNow,
   downloadStatus: (...a) => h.downloadStatus(...a),
