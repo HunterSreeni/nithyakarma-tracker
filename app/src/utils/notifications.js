@@ -30,6 +30,13 @@ export async function scheduleAllReminders({ includeSandhya }) {
   if (perm.display !== 'granted') return false
 
   await cancelAllReminders()
+  // AI-DEV NOTE: Android gets every slot from the server FCM push (on time, and
+  // gated on day completion / slot already logged). These local alarms had no
+  // exact-alarm permission, so Android deferred them and they fired late as
+  // duplicates (Nov 2026 "wrong time" bug). On Android we only clear leftovers
+  // from older builds; local alarms remain the fallback where the app has no
+  // server push yet (iOS until APNs is wired up).
+  if (Capacitor.getPlatform() === 'android') return true
   const notifications = []
   if (includeSandhya) {
     for (const slot of Object.values(SLOT_CONFIG)) {
@@ -63,7 +70,8 @@ export async function cancelAllReminders() {
 // hasn't opted in. Sandhya slot reminders (100/200/300) are untouched - those
 // mark specific ritual times, not streak-at-risk.
 export async function suppressTodayNudgesIfScheduled() {
-  if (!Capacitor.isNativePlatform()) return
+  // AI-DEV NOTE: never reschedule local alarms on Android - see scheduleAllReminders.
+  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() === 'android') return
   const { LocalNotifications } = await import('@capacitor/local-notifications')
   const { notifications: pending } = await LocalNotifications.getPending()
   const pendingIds = new Set(pending.map(n => n.id))
