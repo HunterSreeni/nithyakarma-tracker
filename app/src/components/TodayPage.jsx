@@ -18,7 +18,6 @@ import ObservanceBanner from './ObservanceBanner'
 import ErrorBanner from './ErrorBanner'
 import PracticeIcon from '../utils/practiceIcons'
 import { track } from '../utils/analytics'
-import { showInterstitial } from '../utils/ads'
 import { isMilestone, maybeRequestReview } from '../utils/review'
 import { lazyWithRetry } from '../utils/lazyWithRetry'
 import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
@@ -90,12 +89,11 @@ export default function TodayPage() {
         is_sri_rudram: !!item.practice.is_sri_rudram,
         is_samidhadhanam: !!item.practice.is_samidhadhanam,
       })
-      // Ad fires here - after the verified save, BEFORE the celebration reward
-      // (Intent 0.2). At a streak milestone, ask for a review instead (Intent 1.4);
-      // never both, and never on a failed save (we are past submit()).
-      const milestone = justCompleted && isMilestone(result.overall_streak ?? 0)
-      const reviewed = milestone ? await maybeRequestReview() : false
-      if (!reviewed) await showInterstitial(profile)
+      // AI-DEV NOTE: no ad after marking a practice (Sreeni, 2026-11-18): marking is
+      // the daily habit and must stay ad-free. Ads are only an opt-in rewarded video
+      // for extra Jadhagam downloads. At a streak milestone, ask for a review
+      // (Intent 1.4), never on a failed save (we are past submit()).
+      if (justCompleted && isMilestone(result.overall_streak ?? 0)) await maybeRequestReview()
       const willCelebrate = justCompleted && (result.overall_streak ?? 0) >= 1
       const next = []
       if (willCelebrate) next.push({ type: 'celebration', data: { ...result, subjectName } })

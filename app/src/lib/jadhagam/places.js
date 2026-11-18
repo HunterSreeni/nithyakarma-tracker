@@ -6,6 +6,10 @@ import data from './places-in.json'
 export const PLACES_ATTRIBUTION = data.source
 export const INDIA_TZ = 'Asia/Kolkata'
 
+// Default calendar tradition for a birth place. The user can always change it:
+// a Kerala family living in Chennai still keeps a Kerala jathakam.
+export const traditionForPlace = (place) => (place?.state === 'Kerala' ? 'kerala' : 'tamil')
+
 const fold = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '')
 const index = data.places.map(([name, state, lat, lon]) => ({ name, state: data.states[state] || '', lat, lon, key: fold(name) }))
 

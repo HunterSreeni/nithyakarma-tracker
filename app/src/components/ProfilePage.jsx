@@ -10,7 +10,7 @@ import { streakState } from '../utils/streak'
 import { track } from '../utils/analytics'
 import { APP_VERSION } from '../version'
 import CopyLinkButton from './CopyLinkButton'
-import { deleteBirthDetails } from '../lib/jadhagam/storage'
+import { deleteAllCharts } from '../lib/jadhagam/storage'
 
 export default function ProfilePage() {
   const { session, profile, familyMembers, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount, signOut } = useAuth()
@@ -170,8 +170,8 @@ export default function ProfilePage() {
 
       <Link to="/birth-chart" className="card bc-entry">
         <span>
-          <span className="bc-entry-title">My birth chart</span>
-          <span className="greet-sub">Jadhagam: rasi and amsam charts, star and dasa periods</span>
+          <span className="bc-entry-title">Jadhagam (birth charts)</span>
+          <span className="greet-sub">For you and your family: rasi and amsam charts, star, panchangam and dasa periods</span>
         </span>
         <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
       </Link>
@@ -219,8 +219,8 @@ export default function ProfilePage() {
           try {
             const userId = session.user.id
             await deleteAccount()
-            // Birth details live only on this phone: remove them once the account is gone.
-            await deleteBirthDetails(userId).catch(() => {})
+            // Birth charts live only on this phone: remove them once the account is gone.
+            await deleteAllCharts(userId).catch(() => {})
           } catch (err) { setError(friendlyError(err)) }
         }}>
           <input className="field-input" style={{ marginTop: '0.7rem' }} value={confirmDelete}

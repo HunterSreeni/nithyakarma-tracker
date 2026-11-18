@@ -60,3 +60,22 @@ export function siderealPositions(utc, lat, lon) {
 
   return { positions: out, ayanamsa: ayanMean }
 }
+
+// Sidereal (Lahiri) longitude of one body at a Date. Used for panchangam values
+// and sankranti searches, where building the whole chart would be wasteful.
+export function siderealLon(name, utc) {
+  const t = MakeTime(utc)
+  const T = t.tt / 36525
+  const ayan = lahiriAyanamsa(T) + nutation(T).dpsi
+  const v = GeoVector(Body[name], t, true)
+  return norm360(SphereFromVector(RotateVector(Rotation_EQJ_ECT(t), v)).lon - ayan)
+}
+
+// Vakra (retrograde): the planet's longitude is falling at that moment.
+// Sun and Moon never are; Rahu and Ketu always are, so they are not marked.
+export function isRetrograde(name, utc) {
+  const day = 86400000
+  const before = siderealLon(name, new Date(utc.getTime() - day / 2))
+  const after = siderealLon(name, new Date(utc.getTime() + day / 2))
+  return ((after - before + 540) % 360) - 180 < 0
+}

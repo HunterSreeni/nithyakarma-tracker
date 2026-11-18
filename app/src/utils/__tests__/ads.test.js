@@ -5,21 +5,34 @@ vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => mockNative() },
 }))
 
-const admob = {
+// Rewarded video: listeners registered per event, fired by the test.
+const listeners = {}
+// Like Capacitor's real plugin proxy: any unknown method, including the .then a
+// Promise looks for when the plugin is returned from an async function, throws.
+const plugin = (methods) => new Proxy(methods, {
+  get: (t, k) => (k in t ? t[k] : k === 'then'
+    ? () => { throw new Error('"AdMob.then()" is not implemented on android') }
+    : undefined),
+})
+const admob = plugin({
   initialize: vi.fn(), prepareInterstitial: vi.fn(), showInterstitial: vi.fn(),
+  prepareRewardVideoAd: vi.fn(),
+  showRewardVideoAd: vi.fn(),
+  addListener: vi.fn(async (event, fn) => { listeners[event] = fn; return { remove: vi.fn(() => { delete listeners[event] }) } }),
   // Default: consent not required (typical non-EEA user) and ads allowed.
   requestConsentInfo: vi.fn(() => ({ status: 'NOT_REQUIRED', isConsentFormAvailable: false, canRequestAds: true })),
   showConsentForm: vi.fn(() => ({ status: 'OBTAINED', canRequestAds: true })),
-}
+})
 vi.mock('@capacitor-community/admob', () => ({
   AdMob: admob,
   MaxAdContentRating: { General: 'General' },
   AdmobConsentStatus: { NOT_REQUIRED: 'NOT_REQUIRED', REQUIRED: 'REQUIRED', OBTAINED: 'OBTAINED', UNKNOWN: 'UNKNOWN' },
+  RewardAdPluginEvents: { Rewarded: 'rewarded', Dismissed: 'dismissed', FailedToShow: 'failedToShow' },
 }))
 
 vi.mock('../analytics', () => ({ track: vi.fn() }))
 
-import { isAdFree, showInterstitial, adsAvailable, _resetAdSession } from '../ads'
+import { isAdFree, showInterstitial, adsAvailable, _resetAdSession, showRewardedVideo, rewardedAdUnit, TEST_REWARDED_ID } from '../ads'
 
 beforeEach(() => { vi.clearAllMocks(); _resetAdSession() })
 
@@ -113,5 +126,63 @@ describe('adsAvailable', () => {
     expect(adsAvailable()).toBe(false)
     mockNative.mockReturnValue(true)
     expect(adsAvailable()).toBe(true)
+  })
+})
+
+describe('showRewardedVideo', () => {
+  // An interstitial test above leaves consent permanently refused; start from "allowed".
+  beforeEach(() => {
+    admob.requestConsentInfo.mockReturnValue({ status: 'NOT_REQUIRED', isConsentFormAvailable: false, canRequestAds: true })
+    admob.showConsentForm.mockReturnValue({ status: 'OBTAINED', canRequestAds: true })
+  })
+  const play = (events) => {
+    admob.showRewardVideoAd.mockImplementation(async () => { for (const e of events) listeners[e]?.() })
+  }
+
+  it('is unavailable on web', async () => {
+    mockNative.mockReturnValue(false)
+    expect(await showRewardedVideo({ userId: 'u', grantId: 'g' })).toBe('unavailable')
+    expect(admob.prepareRewardVideoAd).not.toHaveBeenCalled()
+  })
+
+  it('sends the grant and user to Google for server-side verification', async () => {
+    mockNative.mockReturnValue(true)
+    play(['rewarded', 'dismissed'])
+    expect(await showRewardedVideo({ userId: 'u1', grantId: 'g1' })).toBe('rewarded')
+    expect(admob.prepareRewardVideoAd).toHaveBeenCalledWith({ ...rewardedAdUnit(), ssv: { userId: 'u1', customData: 'g1' } })
+    expect(Object.keys(listeners)).toEqual([]) // listeners removed afterwards
+  })
+
+  it('reports a video closed before the reward as dismissed', async () => {
+    mockNative.mockReturnValue(true)
+    play(['dismissed'])
+    expect(await showRewardedVideo({ userId: 'u1', grantId: 'g1' })).toBe('dismissed')
+  })
+
+  it('reports a failed show as unavailable', async () => {
+    mockNative.mockReturnValue(true)
+    play(['failedToShow'])
+    expect(await showRewardedVideo({ userId: 'u1', grantId: 'g1' })).toBe('unavailable')
+    admob.showRewardVideoAd.mockRejectedValueOnce(new Error('not prepared'))
+    expect(await showRewardedVideo({ userId: 'u1', grantId: 'g1' })).toBe('unavailable')
+  })
+
+  it('gives up instead of hanging when the ad listeners cannot be registered', async () => {
+    mockNative.mockReturnValue(true)
+    admob.addListener.mockRejectedValueOnce(new Error('bridge down'))
+    expect(await showRewardedVideo({ userId: 'u1', grantId: 'g1' })).toBe('unavailable')
+    expect(admob.showRewardVideoAd).not.toHaveBeenCalled()
+  })
+
+  it('shows nothing when consent forbids ads', async () => {
+    mockNative.mockReturnValue(true)
+    admob.requestConsentInfo.mockReturnValueOnce({ status: 'REQUIRED', isConsentFormAvailable: true, canRequestAds: false })
+    admob.showConsentForm.mockReturnValueOnce({ status: 'OBTAINED', canRequestAds: false })
+    expect(await showRewardedVideo({ userId: 'u1', grantId: 'g1' })).toBe('unavailable')
+    expect(admob.prepareRewardVideoAd).not.toHaveBeenCalled()
+  })
+
+  it('uses the Google test unit until the real rewarded unit is set', () => {
+    expect(rewardedAdUnit()).toEqual({ adId: TEST_REWARDED_ID, isTesting: true })
   })
 })

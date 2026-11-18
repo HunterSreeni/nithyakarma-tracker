@@ -3,7 +3,8 @@ import { track } from './analytics'
 
 // AI-DEV NOTE: Protected ad-gating logic. See AGENTS.md "AdMob / ads" - do not
 // change the dev/prod ad-unit split or ad_free_until honoring without
-// Sreeni's explicit instruction. Real ads stay blocked pre-production per
+// Sreeni's explicit instruction. The only ad shown today is the opt-in
+// rewarded video for an extra Jadhagam download (authorized 2026-11-18). Real ads stay blocked pre-production per
 // memory admob-ads-blocked-until-production; unblocking is Google's timing,
 // not a code change here.
 const INTERSTITIAL_ID = 'ca-app-pub-2677287550445019/1140728797'
@@ -47,28 +48,39 @@ export function isAdFree(profile, today = new Date()) {
   return new Date(profile.ad_free_until) >= new Date(today.toDateString())
 }
 
-// Show one interstitial. Called ONLY after submit_practice_log returned
-// {saved: true} and BEFORE the celebration reward (Intent 0.2). No-op on web,
-// for ad-free users, or once the per-session cap is spent.
+// AdMob SDK init + UMP consent, shared by every ad format. Resolves { AdMob }
+// when ads may be requested this session, null otherwise.
+// AI-DEV NOTE: wrapped in an object on purpose. Returning the Capacitor plugin
+// proxy itself from an async function makes the Promise look up its "then" method, which
+// throws "not implemented on android" and no ad ever shows.
+async function readyAdMob() {
+  const { AdMob, MaxAdContentRating, AdmobConsentStatus } = await import('@capacitor-community/admob')
+  if (!initialized) {
+    await AdMob.initialize({
+      initializeForTesting: isTesting,
+      // Family/devotional audience: only G-rated ads (never gambling, dating, etc.).
+      maxAdContentRating: MaxAdContentRating.General,
+    })
+    initialized = true
+  }
+  // Gate ads behind UMP consent (EEA/UK requirement). Resolved once per
+  // session; if the user declines or consent can't be obtained, no ad is ever
+  // shown this session.
+  if (adsAllowed === null) {
+    adsAllowed = await ensureConsent(AdMob, AdmobConsentStatus)
+  }
+  return adsAllowed ? { AdMob } : null
+}
+
+// AI-DEV NOTE: kept for a future, deliberate placement. Since 2026-11-18 nothing
+// calls it: no ad after marking a practice (see AGENTS.md "AdMob / ads").
+// No-op on web, for ad-free users, or once the per-session cap is spent.
 export async function showInterstitial(profile) {
   if (!adsAvailable() || isAdFree(profile) || shownThisSession) return false
   try {
-    const { AdMob, MaxAdContentRating, AdmobConsentStatus } = await import('@capacitor-community/admob')
-    if (!initialized) {
-      await AdMob.initialize({
-        initializeForTesting: isTesting,
-        // Family/devotional audience: only G-rated ads (never gambling, dating, etc.).
-        maxAdContentRating: MaxAdContentRating.General,
-      })
-      initialized = true
-    }
-    // Gate ads behind UMP consent (EEA/UK requirement). Resolved once per
-    // session; if the user declines or consent can't be obtained, no ad is ever
-    // shown this session.
-    if (adsAllowed === null) {
-      adsAllowed = await ensureConsent(AdMob, AdmobConsentStatus)
-    }
-    if (!adsAllowed) return false
+    const ready = await readyAdMob()
+    if (!ready) return false
+    const { AdMob } = ready
     await AdMob.prepareInterstitial({ adId: INTERSTITIAL_ID, isTesting })
     await AdMob.showInterstitial()
     shownThisSession = true
@@ -77,5 +89,57 @@ export async function showInterstitial(profile) {
   } catch (err) {
     console.warn('[ads] interstitial failed', err)
     return false
+  }
+}
+
+// Google's published test rewarded unit. Used in dev builds, and in every build
+// until the real rewarded unit exists (REWARDED_ID empty): test ads earn nothing
+// and are policy-safe to show.
+export const TEST_REWARDED_ID = 'ca-app-pub-3940256099942544/5224354917'
+// AI-DEV NOTE: set to the real AdMob rewarded unit (ca-app-pub-2677287550445019/...)
+// once Sreeni creates it with SSV pointing at the admob-ssv edge function. While
+// empty, the test unit plays and its SSV callback never arrives, so no real
+// rewarded download can be granted - the server only trusts Google's callback.
+const REWARDED_ID = ''
+
+export function rewardedAdUnit() {
+  const testing = isTesting || !REWARDED_ID
+  return { adId: testing ? TEST_REWARDED_ID : REWARDED_ID, isTesting: testing }
+}
+
+// Shows one rewarded video for a Jadhagam download. The grant id and user id
+// travel as SSV custom_data/user_id, so Google's signed callback to admob-ssv
+// can verify this exact grant. Resolves 'rewarded' (watched to the end),
+// 'dismissed' (closed early) or 'unavailable' (web, consent refused, no fill).
+// Never call it for ad-free users: their downloads are free.
+export async function showRewardedVideo({ userId, grantId }) {
+  if (!adsAvailable()) return 'unavailable'
+  let handles = []
+  try {
+    const ready = await readyAdMob()
+    if (!ready) return 'unavailable'
+    const { AdMob } = ready
+    const { RewardAdPluginEvents } = await import('@capacitor-community/admob')
+    const unit = rewardedAdUnit()
+    await AdMob.prepareRewardVideoAd({ ...unit, ssv: { userId, customData: grantId } })
+    // showRewardVideoAd() only settles when the reward is earned; a video closed
+    // early never settles it. So decide from the Rewarded/Dismissed events.
+    const outcome = await new Promise((resolve) => {
+      let rewarded = false
+      const add = (event, fn) => AdMob.addListener(event, fn).then((h) => handles.push(h))
+      Promise.all([
+        add(RewardAdPluginEvents.Rewarded, () => { rewarded = true }),
+        add(RewardAdPluginEvents.Dismissed, () => resolve(rewarded ? 'rewarded' : 'dismissed')),
+        add(RewardAdPluginEvents.FailedToShow, () => resolve('unavailable')),
+      ]).then(() => AdMob.showRewardVideoAd().catch(() => resolve('unavailable')),
+        () => resolve('unavailable')) // listeners could not be registered: never hang
+    })
+    track('rewarded_ad', { outcome })
+    return outcome
+  } catch (err) {
+    console.warn('[ads] rewarded video failed', err)
+    return 'unavailable'
+  } finally {
+    for (const h of handles) h.remove?.()
   }
 }

@@ -192,7 +192,7 @@ describe('TodayPage - empty-day activation (female / non-sandhya)', () => {
 })
 
 describe('TodayPage - ad timing (Intent 0.2 reorder)', () => {
-  it('fires the interstitial after a verified save, before the celebration', async () => {
+  it('never shows an ad after marking a practice', async () => {
     h.items = [{
       up: { id: 'up1', current_streak: 0, sequence_position: 0 },
       practice: { id: 5, name: 'Vishnu', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
@@ -201,18 +201,20 @@ describe('TodayPage - ad timing (Intent 0.2 reorder)', () => {
     h.submit.mockResolvedValue({ saved: true, day_complete: false, overall_streak: 1, practice_name: 'Vishnu' })
     render(<TodayPage />)
     fireEvent.click(screen.getByText('Mark Done'))
-    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+    await waitFor(() => expect(h.refresh).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 0))
+    expect(h.showInterstitial).not.toHaveBeenCalled()
   })
 })
 
-describe('TodayPage - native review prompt vs interstitial at a streak milestone', () => {
+describe('TodayPage - native review prompt at a streak milestone, never an ad', () => {
   const item = {
     up: { id: 'up1', current_streak: 0, sequence_position: 0 },
     practice: { id: 5, name: 'Vishnu', icon: '🕉', is_sandhyavandhanam: false, cadence: 'daily' },
     logs: [],
   }
 
-  it('asks for the in-app review instead of an ad when the milestone review is shown', async () => {
+  it('asks for the in-app review at a milestone', async () => {
     h.items = [item]
     h.isMilestone.mockReturnValue(true)
     h.maybeRequestReview.mockResolvedValue(true)
@@ -225,14 +227,15 @@ describe('TodayPage - native review prompt vs interstitial at a streak milestone
     expect(h.showInterstitial).not.toHaveBeenCalled()
   })
 
-  it('falls back to the interstitial when the review prompt was not shown', async () => {
+  it('shows no ad when the review prompt was not shown either', async () => {
     h.items = [item]
     h.isMilestone.mockReturnValue(true)
     h.maybeRequestReview.mockResolvedValue(false)
     h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 7, practice_streak: 7 })
     render(<TodayPage />)
     fireEvent.click(screen.getByText('Mark Done'))
-    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(screen.getByTestId('celebration')).toBeInTheDocument())
+    expect(h.showInterstitial).not.toHaveBeenCalled()
   })
 
   it('never asks for a review when the mark did not complete the day', async () => {
@@ -241,7 +244,8 @@ describe('TodayPage - native review prompt vs interstitial at a streak milestone
     h.submit.mockResolvedValue({ saved: true, day_complete: false, overall_streak: 7, practice_streak: 7 })
     render(<TodayPage />)
     fireEvent.click(screen.getByText('Mark Done'))
-    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+    await waitFor(() => expect(h.refresh).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 0))
     expect(h.maybeRequestReview).not.toHaveBeenCalled()
   })
 })
@@ -276,7 +280,8 @@ describe('TodayPage - celebration only from a verified RPC response', () => {
     h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 0, practice_streak: 1 })
     render(<TodayPage />)
     fireEvent.click(screen.getByText('Mark Done'))
-    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+    await waitFor(() => expect(h.refresh).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 0))
     expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
   })
 
@@ -285,7 +290,8 @@ describe('TodayPage - celebration only from a verified RPC response', () => {
     h.submit.mockResolvedValue({ saved: true, day_complete: false, overall_streak: 1, practice_streak: 1 })
     render(<TodayPage />)
     fireEvent.click(screen.getByText('Mark Done'))
-    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+    await waitFor(() => expect(h.refresh).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 0))
     expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
   })
 })
@@ -307,7 +313,8 @@ describe('TodayPage - any one practice completes the day (2026-08-02)', () => {
     h.submit.mockResolvedValue({ saved: true, day_complete: true, overall_streak: 5, practice_streak: 1 })
     render(<TodayPage />)
     fireEvent.click(screen.getByText('Mark Done'))
-    await waitFor(() => expect(h.showInterstitial).toHaveBeenCalled())
+    await waitFor(() => expect(h.refresh).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 0))
     expect(screen.queryByTestId('celebration')).not.toBeInTheDocument()
   })
 })

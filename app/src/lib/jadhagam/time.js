@@ -47,3 +47,10 @@ export function birthDetailsToUtc(d) {
   }
   return zonedToUtc({ year, month, day, hour, minute: d.minute }, d.place.tz, override)
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+// "1994-03-05" -> "5 Mar 1994", straight from the string so no time zone can shift it.
+export const formatBirthDate = (iso) => {
+  const [y, m, d] = iso.split('-').map(Number)
+  return `${d} ${MONTHS[m - 1]} ${y}`
+}

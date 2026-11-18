@@ -82,6 +82,7 @@ Protected implementation surfaces: `get_leaderboard` (`app/supabase/migrations/*
 ## AdMob / ads
 
 - Ad gating (`isTesting`/dev-mode bypass, interstitial frequency, ad-free-until honoring) lives in `app/src/utils/ads.js`. `ad_free_until` from a referral or purchase must always suppress ads client-side - never show an interstitial to a user with a future `ad_free_until`.
+- No ad of any kind after marking a practice (Sreeni, 2026-11-18): the Today page never calls `showInterstitial`. The only ad in the app is the opt-in rewarded video for an extra Jadhagam download; `ad_free_until` users never see it (their downloads are free).
 
 Protected implementation surfaces: `app/src/utils/ads.js`.
 
@@ -91,4 +92,4 @@ Protected implementation surfaces: `app/src/utils/ads.js`.
 - Only rules with `advance_notify = true` are eligible for the "in N days" heads-up push; routine monthly tithis (e.g. plain Amavasya) are deliberately excluded from that path.
 - Tamil Nadu vs. Kerala day-1 rules differ (aparahna vs. sunset) - see memory `panchangam-day1-rules`; do not unify them.
 
-Protected implementation surfaces: `app/supabase/migrations/*panchangam_observances*`, `*avani_avittam*`, `app/supabase/functions/_shared/observanceMatch.ts`, `app/src/utils/panchangamScript.js`.
+Protected implementation surfaces: `app/supabase/migrations/*panchangam_observances*`, `*avani_avittam*`, `app/supabase/functions/_shared/observanceMatch.ts`, `app/src/utils/panchangamScript.js`, and `app/src/lib/jadhagam/panchangam.js` (the Jadhagam's on-device solar month/date mirrors the same Tamil sunset / Kerala aparahna day-1 rules; its tests check every 2026-2027 day against `scripts/panchangam-*.json`).
