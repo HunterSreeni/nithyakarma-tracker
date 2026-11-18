@@ -5,7 +5,6 @@
 
 ### Bug Fixes
 
-* **deps:** Capacitor 8.4.3 for critical GHSA-rvm3-566m-v7fv + non-breaking audit fixes ([64a3994](https://github.com/HunterSreeni/nithyakarma-tracker/commit/64a3994826a2b3d0a1a8ef8358e67417841c131c))
 * **deps:** Capacitor 8.4.3 for GHSA-rvm3-566m-v7fv, plus non-breaking audit fixes ([510fd04](https://github.com/HunterSreeni/nithyakarma-tracker/commit/510fd040e432cf98b2dfd9aaad3b26320b189849))
 
 ## [1.4.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.3.1...app-v1.4.0) (2026-11-18)
