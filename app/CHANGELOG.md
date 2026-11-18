@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.3.1...app-v1.4.0) (2026-11-18)
+
+
+### Features
+
+* **jadhagam:** JPG and PDF downloads, one free a month, server-verified rewarded video ([df2abaf](https://github.com/HunterSreeni/nithyakarma-tracker/commit/df2abaf4aa56909868e13e00fb377d23dd801208))
+* **jadhagam:** on-device birth chart viewer ([0dccd8b](https://github.com/HunterSreeni/nithyakarma-tracker/commit/0dccd8b266861a8d25b94d7f93a19a87413f73fa))
+* **jadhagam:** saved charts, birth-day panchangam, "now" view, Malayalam ([de6620d](https://github.com/HunterSreeni/nithyakarma-tracker/commit/de6620d80f8cd6618b8098d89fee8ce6daf2dc8c))
+
+
+### Bug Fixes
+
+* **notifications:** stop late duplicate local reminders on Android ([678f0f2](https://github.com/HunterSreeni/nithyakarma-tracker/commit/678f0f2b1d33eb0cd5c34c4fb8a502f66613bdc3))
+
 ## [1.3.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.3.0...app-v1.3.1) (2026-11-14)
 
 
