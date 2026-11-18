@@ -82,6 +82,7 @@ Protected implementation surfaces: `get_leaderboard` (`app/supabase/migrations/*
 ## AdMob / ads
 
 - Ad gating (`isTesting`/dev-mode bypass, interstitial frequency, ad-free-until honoring) lives in `app/src/utils/ads.js`. `ad_free_until` from a referral or purchase must always suppress ads client-side - never show an interstitial to a user with a future `ad_free_until`.
+- No ad of any kind after marking a practice (Sreeni, 2026-11-18): the Today page never calls `showInterstitial`. The only ad in the app is the opt-in rewarded video for an extra Jadhagam download; `ad_free_until` users never see it (their downloads are free).
 
 Protected implementation surfaces: `app/src/utils/ads.js`.
 

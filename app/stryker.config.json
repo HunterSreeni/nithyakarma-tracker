@@ -12,6 +12,8 @@
     "src/utils/share.js",
     "src/lib/jadhagam/chart.js",
     "src/lib/jadhagam/dasa.js",
+    "src/lib/jadhagam/download.js",
+    "src/lib/jadhagam/exportFile.js",
     "src/lib/jadhagam/now.js",
     "src/lib/jadhagam/panchangam.js",
     "src/lib/jadhagam/storage.js",

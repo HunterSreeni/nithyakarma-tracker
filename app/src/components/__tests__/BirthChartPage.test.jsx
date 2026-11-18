@@ -19,6 +19,11 @@ vi.mock('../../hooks/useAuth', () => ({
   }),
 }))
 vi.mock('../../utils/analytics', () => ({ track: (...a) => h.track(...a) }))
+// The download card asks the server for the allowance; keep these tests offline.
+vi.mock('../../lib/jadhagam/download', () => ({
+  downloadStatus: async () => ({ ad_free: false, free_left: 1, video_credits: 0, next_free: '2026-12-01' }),
+  claimDownload: vi.fn(), startReward: vi.fn(), waitForVideoCredit: vi.fn(), canDownloadNow: () => true,
+}))
 
 import BirthChartPage from '../BirthChartPage'
 import { birthDetailsToUtc as toUtc, formatBirthDate } from '../../lib/jadhagam/time'

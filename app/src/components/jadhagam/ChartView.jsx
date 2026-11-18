@@ -8,6 +8,7 @@ import { PLACES_ATTRIBUTION } from '../../lib/jadhagam/places'
 import { birthPanchangam, tithiYogaKarana, localDate, WEEKDAYS, TAMIL_MONTHS, MALAYALAM_MONTHS } from '../../lib/jadhagam/panchangam'
 import { antarams, saturnNow, jupiterNow, chandrashtamam, nextStarBirthday, ageOn } from '../../lib/jadhagam/now'
 import { siderealLon } from '../../lib/jadhagam/astro'
+import DownloadCard from './DownloadCard'
 
 const GRAHA = Object.fromEntries(GRAHAS.map((g) => [g.key, g]))
 // English plus the script of the chart's tradition: Malayalam for Kerala, Tamil otherwise.
@@ -376,6 +377,8 @@ export default function ChartView({ details }) {
           <span className="bc-chip">Lagna: <b>{name(RASIS[chart.lagna])}</b></span>
         </div>
       </div>
+
+      <DownloadCard details={details} chart={chart} timeline={timeline} utc={utc} />
 
       <DisclaimerLine />
 

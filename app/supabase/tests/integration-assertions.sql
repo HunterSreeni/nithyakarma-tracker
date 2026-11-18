@@ -1153,6 +1153,79 @@ begin
     end if;
   end;
 
+  -- Jadhagam downloads (20261118100000, authorized 2026-11-18): one free download
+  -- a month, ad-free users free, extra downloads only after a Google-verified video.
+  declare
+    v_grant uuid;
+    v_other uuid;
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text, 'role', 'authenticated')::text, true);
+    update profiles set ad_free_until = null where id = v_uid;
+    delete from jadhagam_downloads where user_id = v_uid;
+    delete from jadhagam_reward_grants where user_id = v_uid;
+
+    r := jadhagam_download_status();
+    if (r->>'free_left')::int <> 1 or (r->>'ad_free')::boolean then raise exception 'FAIL: jadhagam start state %', r; end if;
+    r := claim_jadhagam_download('jpg');
+    if r->>'via' is distinct from 'free' then raise exception 'FAIL: first jadhagam download was not the free one: %', r; end if;
+    r := claim_jadhagam_download('pdf');
+    if (r->>'allowed')::boolean or r->>'reason' <> 'needs_video' then raise exception 'FAIL: second free jadhagam download allowed: %', r; end if;
+    if (jadhagam_download_status()->>'free_left')::int <> 0 then raise exception 'FAIL: free_left not used up'; end if;
+
+    -- A pending (unverified) grant buys nothing.
+    v_grant := start_jadhagam_reward();
+    r := claim_jadhagam_download('pdf');
+    if (r->>'allowed')::boolean then raise exception 'FAIL: an unverified video unlocked a download'; end if;
+    -- Only the grant's own user can verify it; a transaction id verifies once.
+    if verify_jadhagam_reward(v_grant, gen_random_uuid(), 'integ-tx-1') then raise exception 'FAIL: another user verified the grant'; end if;
+    if not verify_jadhagam_reward(v_grant, v_uid, 'integ-tx-1') then raise exception 'FAIL: a genuine verification was refused'; end if;
+    if verify_jadhagam_reward(v_grant, v_uid, 'integ-tx-1') then raise exception 'FAIL: a replayed callback verified again'; end if;
+    v_other := start_jadhagam_reward();
+    if verify_jadhagam_reward(v_other, v_uid, 'integ-tx-1') then raise exception 'FAIL: a reused transaction id verified another grant'; end if;
+    -- A stale pending grant (older than a day) cannot be verified, and is cleaned up.
+    update jadhagam_reward_grants set created_at = now() - interval '2 days' where id = v_other;
+    if verify_jadhagam_reward(v_other, v_uid, 'integ-tx-3') then raise exception 'FAIL: a stale grant was verified'; end if;
+    perform start_jadhagam_reward();
+    if exists (select 1 from jadhagam_reward_grants where id = v_other) then raise exception 'FAIL: stale pending grant not cleaned up'; end if;
+    if (jadhagam_download_status()->>'video_credits')::int <> 1 then raise exception 'FAIL: video credit not counted'; end if;
+    r := claim_jadhagam_download('pdf');
+    if r->>'via' is distinct from 'rewarded' then raise exception 'FAIL: verified video did not unlock a download: %', r; end if;
+    r := claim_jadhagam_download('jpg');
+    if (r->>'allowed')::boolean then raise exception 'FAIL: one video unlocked two downloads'; end if;
+
+    -- Ad-free users download free and keep their monthly free one untouched.
+    update profiles set ad_free_until = current_date + 5 where id = v_uid;
+    r := claim_jadhagam_download('pdf');
+    if r->>'via' is distinct from 'adfree' then raise exception 'FAIL: ad-free user was not downloading free: %', r; end if;
+    if not (jadhagam_download_status()->>'ad_free')::boolean then raise exception 'FAIL: status missed ad-free'; end if;
+    begin
+      perform claim_jadhagam_download('mp4');
+      raise exception 'FAIL: unknown download kind accepted';
+    exception when raise_exception then
+      if sqlerrm like 'FAIL:%' then raise; end if;
+    end;
+
+    -- Clients reach neither table nor the verify function directly.
+    execute 'set local role authenticated';
+    v_failed := false;
+    begin perform 1 from jadhagam_downloads limit 1;
+    exception when insufficient_privilege then v_failed := true; end;
+    if not v_failed then execute 'reset role'; raise exception 'FAIL: authenticated can read jadhagam_downloads'; end if;
+    v_failed := false;
+    begin perform verify_jadhagam_reward(v_other, v_uid, 'integ-tx-2');
+    exception when insufficient_privilege then v_failed := true; end;
+    execute 'reset role';
+    if not v_failed then raise exception 'FAIL: authenticated can call verify_jadhagam_reward'; end if;
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
+
+    -- Account deletion cascades (AGENTS.md "Account deletion").
+    if (select count(*) from pg_constraint c join pg_class t on t.oid = c.conrelid
+        where t.relname in ('jadhagam_downloads', 'jadhagam_reward_grants') and c.contype = 'f'
+          and c.confrelid = 'auth.users'::regclass and c.confdeltype = 'c') <> 2 then
+      raise exception 'FAIL: jadhagam tables do not cascade on account deletion';
+    end if;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;

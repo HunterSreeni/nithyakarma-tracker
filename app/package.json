@@ -33,6 +33,7 @@
     "astronomy-engine": "2.1.19",
     "driver.js": "^1.6.0",
     "html-to-image": "^1.11.13",
+    "jspdf": "4.2.1",
     "lucide-react": "^1.24.0",
     "pdfjs-dist": "^4.10.38",
     "posthog-js": "1.447.3",
