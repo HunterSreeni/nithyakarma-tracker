@@ -149,7 +149,7 @@ function Gate() {
               links and older push payloads still point here. */}
           <Route path="/referrals" element={<Navigate to="/profile" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/birth-chart" element={<BirthChartPage />} />
+          <Route path="/birth-chart/*" element={<BirthChartPage />} />
           <Route path="/ramayana-masam" element={<RamayanaMasamPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

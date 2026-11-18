@@ -1,39 +1,60 @@
 // Turns sidereal longitudes into what a Tamil jathagam shows: rasi, nakshatra and
 // pada, navamsa (amsam), whole-sign houses from the lagna, and boundary warnings.
-import { siderealPositions } from './astro'
+import { siderealPositions, isRetrograde } from './astro'
 
 export const RASIS = [
-  { en: 'Mesham', ta: 'மேஷம்' }, { en: 'Rishabam', ta: 'ரிஷபம்' }, { en: 'Mithunam', ta: 'மிதுனம்' },
-  { en: 'Kadagam', ta: 'கடகம்' }, { en: 'Simham', ta: 'சிம்மம்' }, { en: 'Kanni', ta: 'கன்னி' },
-  { en: 'Thulam', ta: 'துலாம்' }, { en: 'Viruchigam', ta: 'விருச்சிகம்' }, { en: 'Dhanusu', ta: 'தனுசு' },
-  { en: 'Magaram', ta: 'மகரம்' }, { en: 'Kumbam', ta: 'கும்பம்' }, { en: 'Meenam', ta: 'மீனம்' },
+  { en: 'Mesham', ta: 'மேஷம்', ml: 'മേടം' }, { en: 'Rishabam', ta: 'ரிஷபம்', ml: 'ഇടവം' }, { en: 'Mithunam', ta: 'மிதுனம்', ml: 'മിഥുനം' },
+  { en: 'Kadagam', ta: 'கடகம்', ml: 'കർക്കടകം' }, { en: 'Simham', ta: 'சிம்மம்', ml: 'ചിങ്ങം' }, { en: 'Kanni', ta: 'கன்னி', ml: 'കന്നി' },
+  { en: 'Thulam', ta: 'துலாம்', ml: 'തുലാം' }, { en: 'Viruchigam', ta: 'விருச்சிகம்', ml: 'വൃശ്ചികം' }, { en: 'Dhanusu', ta: 'தனுசு', ml: 'ധനു' },
+  { en: 'Magaram', ta: 'மகரம்', ml: 'മകരം' }, { en: 'Kumbam', ta: 'கும்பம்', ml: 'കുംഭം' }, { en: 'Meenam', ta: 'மீனம்', ml: 'മീനം' },
 ]
 
 export const NAKSHATRAS = [
-  { en: 'Ashwini', ta: 'அசுவினி' }, { en: 'Bharani', ta: 'பரணி' }, { en: 'Krittika', ta: 'கார்த்திகை' },
-  { en: 'Rohini', ta: 'ரோகிணி' }, { en: 'Mrigashira', ta: 'மிருகசீரிடம்' }, { en: 'Ardra', ta: 'திருவாதிரை' },
-  { en: 'Punarvasu', ta: 'புனர்பூசம்' }, { en: 'Pushya', ta: 'பூசம்' }, { en: 'Ashlesha', ta: 'ஆயில்யம்' },
-  { en: 'Magha', ta: 'மகம்' }, { en: 'Purva Phalguni', ta: 'பூரம்' }, { en: 'Uttara Phalguni', ta: 'உத்திரம்' },
-  { en: 'Hasta', ta: 'அஸ்தம்' }, { en: 'Chitra', ta: 'சித்திரை' }, { en: 'Swati', ta: 'சுவாதி' },
-  { en: 'Vishakha', ta: 'விசாகம்' }, { en: 'Anuradha', ta: 'அனுஷம்' }, { en: 'Jyeshtha', ta: 'கேட்டை' },
-  { en: 'Mula', ta: 'மூலம்' }, { en: 'Purva Ashadha', ta: 'பூராடம்' }, { en: 'Uttara Ashadha', ta: 'உத்திராடம்' },
-  { en: 'Shravana', ta: 'திருவோணம்' }, { en: 'Dhanishta', ta: 'அவிட்டம்' }, { en: 'Shatabhisha', ta: 'சதயம்' },
-  { en: 'Purva Bhadrapada', ta: 'பூரட்டாதி' }, { en: 'Uttara Bhadrapada', ta: 'உத்திரட்டாதி' }, { en: 'Revati', ta: 'ரேவதி' },
+  { en: 'Ashwini', ta: 'அசுவினி', ml: 'അശ്വതി' }, { en: 'Bharani', ta: 'பரணி', ml: 'ഭരണി' }, { en: 'Krittika', ta: 'கார்த்திகை', ml: 'കാർത്തിക' },
+  { en: 'Rohini', ta: 'ரோகிணி', ml: 'രോഹിണി' }, { en: 'Mrigashira', ta: 'மிருகசீரிடம்', ml: 'മകയിരം' }, { en: 'Ardra', ta: 'திருவாதிரை', ml: 'തിരുവാതിര' },
+  { en: 'Punarvasu', ta: 'புனர்பூசம்', ml: 'പുണർതം' }, { en: 'Pushya', ta: 'பூசம்', ml: 'പൂയം' }, { en: 'Ashlesha', ta: 'ஆயில்யம்', ml: 'ആയില്യം' },
+  { en: 'Magha', ta: 'மகம்', ml: 'മകം' }, { en: 'Purva Phalguni', ta: 'பூரம்', ml: 'പൂരം' }, { en: 'Uttara Phalguni', ta: 'உத்திரம்', ml: 'ഉത്രം' },
+  { en: 'Hasta', ta: 'அஸ்தம்', ml: 'അത്തം' }, { en: 'Chitra', ta: 'சித்திரை', ml: 'ചിത്തിര' }, { en: 'Swati', ta: 'சுவாதி', ml: 'ചോതി' },
+  { en: 'Vishakha', ta: 'விசாகம்', ml: 'വിശാഖം' }, { en: 'Anuradha', ta: 'அனுஷம்', ml: 'അനിഴം' }, { en: 'Jyeshtha', ta: 'கேட்டை', ml: 'തൃക്കേട്ട' },
+  { en: 'Mula', ta: 'மூலம்', ml: 'മൂലം' }, { en: 'Purva Ashadha', ta: 'பூராடம்', ml: 'പൂരാടം' }, { en: 'Uttara Ashadha', ta: 'உத்திராடம்', ml: 'ഉത്രാടം' },
+  { en: 'Shravana', ta: 'திருவோணம்', ml: 'തിരുവോണം' }, { en: 'Dhanishta', ta: 'அவிட்டம்', ml: 'അവിട്ടം' }, { en: 'Shatabhisha', ta: 'சதயம்', ml: 'ചതയം' },
+  { en: 'Purva Bhadrapada', ta: 'பூரட்டாதி', ml: 'പൂരുരുട്ടാതി' }, { en: 'Uttara Bhadrapada', ta: 'உத்திரட்டாதி', ml: 'ഉത്രട്ടാതി' }, { en: 'Revati', ta: 'ரேவதி', ml: 'രേവതി' },
 ]
 
-// Short Tamil forms are the ones hand-written jathagams use inside the grid.
+// Short Tamil forms are the ones hand-written jathagams use inside the grid; mlShort
+// are the Kerala grahanila letters (Ravi, Chandra, Kuja, Budha, Guru, Shukra, Manda,
+// Sarpa, Shikhi). AI-DEV NOTE: every Malayalam name here was checked by Sreeni on
+// 2026-11-18 against Kerala usage; change one only with a printed source.
 export const GRAHAS = [
-  { key: 'Lagna', en: 'Lagna', ta: 'லக்னம்', short: 'ல' },
-  { key: 'Sun', en: 'Sun', ta: 'சூரியன்', short: 'சூ' },
-  { key: 'Moon', en: 'Moon', ta: 'சந்திரன்', short: 'சந்' },
-  { key: 'Mars', en: 'Mars', ta: 'செவ்வாய்', short: 'செவ்' },
-  { key: 'Mercury', en: 'Mercury', ta: 'புதன்', short: 'பு' },
-  { key: 'Jupiter', en: 'Jupiter', ta: 'குரு', short: 'குரு' },
-  { key: 'Venus', en: 'Venus', ta: 'சுக்கிரன்', short: 'சுக்' },
-  { key: 'Saturn', en: 'Saturn', ta: 'சனி', short: 'சனி' },
-  { key: 'Rahu', en: 'Rahu', ta: 'ராகு', short: 'ரா' },
-  { key: 'Ketu', en: 'Ketu', ta: 'கேது', short: 'கே' },
+  { key: 'Lagna', abbr: 'La', en: 'Lagna', ta: 'லக்னம்', short: 'ல', ml: 'ലഗ്നം', mlShort: 'ല' },
+  { key: 'Sun', abbr: 'Su', en: 'Sun', ta: 'சூரியன்', short: 'சூ', ml: 'സൂര്യൻ', mlShort: 'ര' },
+  { key: 'Moon', abbr: 'Mo', en: 'Moon', ta: 'சந்திரன்', short: 'சந்', ml: 'ചന്ദ്രൻ', mlShort: 'ച' },
+  { key: 'Mars', abbr: 'Ma', en: 'Mars', ta: 'செவ்வாய்', short: 'செவ்', ml: 'ചൊവ്വ', mlShort: 'കു' },
+  { key: 'Mercury', abbr: 'Me', en: 'Mercury', ta: 'புதன்', short: 'பு', ml: 'ബുധൻ', mlShort: 'ബു' },
+  { key: 'Jupiter', abbr: 'Ju', en: 'Jupiter', ta: 'குரு', short: 'குரு', ml: 'വ്യാഴം', mlShort: 'ഗു' },
+  { key: 'Venus', abbr: 'Ve', en: 'Venus', ta: 'சுக்கிரன்', short: 'சுக்', ml: 'ശുക്രൻ', mlShort: 'ശു' },
+  { key: 'Saturn', abbr: 'Sa', en: 'Saturn', ta: 'சனி', short: 'சனி', ml: 'ശനി', mlShort: 'മ' },
+  { key: 'Rahu', abbr: 'Ra', en: 'Rahu', ta: 'ராகு', short: 'ரா', ml: 'രാഹു', mlShort: 'സ' },
+  { key: 'Ketu', abbr: 'Ke', en: 'Ketu', ta: 'கேது', short: 'கே', ml: 'കേതു', mlShort: 'ശി' },
 ]
+
+// Lord of each rasi, Mesham..Meenam (classical sign rulership).
+export const RASI_LORDS = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter']
+
+// AI-DEV NOTE: classical Parashari sign strength, shown labelled as such. Rahu and
+// Ketu get none (traditions disagree on their signs); Mercury in Kanni is both
+// exalted and own sign, and shows as exalted.
+const EXALTED = { Sun: 0, Moon: 1, Mars: 9, Mercury: 5, Jupiter: 3, Venus: 11, Saturn: 6 }
+const OWN = { Sun: [4], Moon: [3], Mars: [0, 7], Mercury: [2, 5], Jupiter: [8, 11], Venus: [1, 6], Saturn: [9, 10] }
+const MOVES_BACKWARD = ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
+
+export function dignity(key, rasi) {
+  if (!(key in EXALTED)) return null
+  if (EXALTED[key] === rasi) return 'exalted'
+  if ((EXALTED[key] + 6) % 12 === rasi) return 'debilitated'
+  if (OWN[key].includes(rasi)) return 'own'
+  return null
+}
 
 export const NAK_SPAN = 360 / 27
 const PADA_SPAN = NAK_SPAN / 4
@@ -65,6 +86,8 @@ export function buildChart({ utc, lat, lon }) {
     return {
       ...g, lon: L, rasi: rasiIndex(L), degInRasi: L % 30, navamsa: navamsaIndex(L),
       nakshatra: n.index, pada: n.pada, house: ((rasiIndex(L) - lagnaRasi + 12) % 12) + 1,
+      vakra: MOVES_BACKWARD.includes(g.key) && isRetrograde(g.key, utc),
+      dignity: dignity(g.key, rasiIndex(L)),
     }
   })
   const moon = nakshatraOf(positions.Moon)

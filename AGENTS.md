@@ -91,4 +91,4 @@ Protected implementation surfaces: `app/src/utils/ads.js`.
 - Only rules with `advance_notify = true` are eligible for the "in N days" heads-up push; routine monthly tithis (e.g. plain Amavasya) are deliberately excluded from that path.
 - Tamil Nadu vs. Kerala day-1 rules differ (aparahna vs. sunset) - see memory `panchangam-day1-rules`; do not unify them.
 
-Protected implementation surfaces: `app/supabase/migrations/*panchangam_observances*`, `*avani_avittam*`, `app/supabase/functions/_shared/observanceMatch.ts`, `app/src/utils/panchangamScript.js`.
+Protected implementation surfaces: `app/supabase/migrations/*panchangam_observances*`, `*avani_avittam*`, `app/supabase/functions/_shared/observanceMatch.ts`, `app/src/utils/panchangamScript.js`, and `app/src/lib/jadhagam/panchangam.js` (the Jadhagam's on-device solar month/date mirrors the same Tamil sunset / Kerala aparahna day-1 rules; its tests check every 2026-2027 day against `scripts/panchangam-*.json`).
