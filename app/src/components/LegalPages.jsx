@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 
-const EFFECTIVE = '11 July 2026'
+const EFFECTIVE = '15 November 2026'
 const CONTACT = 'support@nithyakarma.org'
 
 function LegalShell({ title, children }) {
@@ -50,7 +50,9 @@ export function TermsPage() {
         The practice list and reminders are provided for your convenience. Nithyakarma is a tracker,
         not a religious authority, and does not guarantee scriptural or ritual completeness or
         correctness. For the correct way to perform any anushtanam, please follow your acharya,
-        family elders, or sampradaya.
+        family elders, or sampradaya. The birth chart screen applies published astronomical
+        and traditional rules to the details you enter. Astrology is not science: the chart is not
+        a fact or a prediction, and must not be the basis for marriage, health, money or legal decisions.
       </p>
 
       <h3>Acceptable use</h3>
@@ -105,6 +107,10 @@ export function PrivacyPage() {
           (read from your device's clock setting, not your location) so reminders and your daily
           streak follow your own day rather than a server's.</li>
         <li><b>Notifications:</b> your reminder preference and push tokens for web/Android.</li>
+        <li><b>Birth details (optional):</b> if you open My birth chart, the date, time and place of
+          birth you enter are saved only on your phone. They are never sent to us, to our analytics
+          or to anyone else, are not included in device backups, and you can delete them on that
+          screen. Deleting the app or your account removes them too.</li>
         <li><b>Advertising (Android only):</b> when ads are shown, Google AdMob uses your device's advertising ID and similar identifiers to serve ads. Ads are skipped entirely for ad-free users.</li>
       </ul>
 

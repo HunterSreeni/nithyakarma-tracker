@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockNative = vi.fn()
+const mockPlatform = vi.fn(() => 'ios')
 vi.mock('@capacitor/core', () => ({
-  Capacitor: { isNativePlatform: () => mockNative() },
+  Capacitor: { isNativePlatform: () => mockNative(), getPlatform: () => mockPlatform() },
 }))
 
 const local = {
@@ -17,6 +18,7 @@ import { scheduleAllReminders, cancelAllReminders, suppressTodayNudgesIfSchedule
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockPlatform.mockReturnValue('ios')
   local.requestPermissions.mockResolvedValue({ display: 'granted' })
   local.getPending.mockResolvedValue({ notifications: [] })
 })
@@ -29,7 +31,23 @@ describe('scheduleAllReminders', () => {
     expect(local.schedule).not.toHaveBeenCalled()
   })
 
-  it('schedules 3 sandhya slots + nudge + last-call for male users', async () => {
+  it('on Android only clears leftover local alarms - server FCM push sends every slot', async () => {
+    mockNative.mockReturnValue(true)
+    mockPlatform.mockReturnValue('android')
+    const ok = await scheduleAllReminders({ includeSandhya: true })
+    expect(ok).toBe(true)
+    expect(local.cancel).toHaveBeenCalledWith({ notifications: [100, 200, 300, 400, 500].map(id => ({ id })) })
+    expect(local.schedule).not.toHaveBeenCalled()
+  })
+
+  it('on Android still respects denied notification permission', async () => {
+    mockNative.mockReturnValue(true)
+    mockPlatform.mockReturnValue('android')
+    local.requestPermissions.mockResolvedValue({ display: 'denied' })
+    expect(await scheduleAllReminders({ includeSandhya: true })).toBe(false)
+  })
+
+  it('schedules 3 sandhya slots + nudge + last-call for male users (no-push native fallback)', async () => {
     mockNative.mockReturnValue(true)
     const ok = await scheduleAllReminders({ includeSandhya: true })
     expect(ok).toBe(true)
@@ -84,6 +102,14 @@ describe('cancelAllReminders', () => {
 })
 
 describe('suppressTodayNudgesIfScheduled', () => {
+  it('never reschedules leftover nudges on Android', async () => {
+    mockNative.mockReturnValue(true)
+    mockPlatform.mockReturnValue('android')
+    local.getPending.mockResolvedValue({ notifications: [{ id: 400 }, { id: 500 }] })
+    await suppressTodayNudgesIfScheduled()
+    expect(local.schedule).not.toHaveBeenCalled()
+  })
+
   it('no-ops when notifications were never enabled (nothing pending)', async () => {
     mockNative.mockReturnValue(true)
     local.getPending.mockResolvedValue({ notifications: [{ id: 100 }, { id: 200 }, { id: 300 }] })

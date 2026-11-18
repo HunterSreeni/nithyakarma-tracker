@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Flame, Check, Gift } from 'lucide-react'
+import { Flame, Check, Gift, ChevronRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { friendlyError } from '../utils/friendlyError'
 import NotificationSettings from './NotificationSettings'
@@ -10,6 +10,7 @@ import { streakState } from '../utils/streak'
 import { track } from '../utils/analytics'
 import { APP_VERSION } from '../version'
 import CopyLinkButton from './CopyLinkButton'
+import { deleteBirthDetails } from '../lib/jadhagam/storage'
 
 export default function ProfilePage() {
   const { session, profile, familyMembers, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount, signOut } = useAuth()
@@ -167,6 +168,14 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      <Link to="/birth-chart" className="card bc-entry">
+        <span>
+          <span className="bc-entry-title">My birth chart</span>
+          <span className="greet-sub">Jadhagam: rasi and amsam charts, star and dasa periods</span>
+        </span>
+        <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
+      </Link>
+
       {profile.gender === 'male' && (
         <div className="card">
           <h2 className="card-h">Marital status</h2>
@@ -207,7 +216,12 @@ export default function ProfilePage() {
         </div>
         <form onSubmit={async e => {
           e.preventDefault()
-          try { await deleteAccount() } catch (err) { setError(friendlyError(err)) }
+          try {
+            const userId = session.user.id
+            await deleteAccount()
+            // Birth details live only on this phone: remove them once the account is gone.
+            await deleteBirthDetails(userId).catch(() => {})
+          } catch (err) { setError(friendlyError(err)) }
         }}>
           <input className="field-input" style={{ marginTop: '0.7rem' }} value={confirmDelete}
             onChange={e => setConfirmDelete(e.target.value)} placeholder={email} />
