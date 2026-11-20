@@ -92,18 +92,16 @@ export async function showInterstitial(profile) {
   }
 }
 
-// Google's published test rewarded unit. Used in dev builds, and in every build
-// until the real rewarded unit exists (REWARDED_ID empty): test ads earn nothing
-// and are policy-safe to show.
+// Google's published test rewarded unit, used in dev builds: test ads earn
+// nothing and are policy-safe to show.
 export const TEST_REWARDED_ID = 'ca-app-pub-3940256099942544/5224354917'
-// AI-DEV NOTE: set to the real AdMob rewarded unit (ca-app-pub-2677287550445019/...)
-// once Sreeni creates it with SSV pointing at the admob-ssv edge function. While
-// empty, the test unit plays and its SSV callback never arrives, so no real
-// rewarded download can be granted - the server only trusts Google's callback.
-const REWARDED_ID = ''
+// AI-DEV NOTE: the real "Jadhagam_extra_download" rewarded unit (created by Sreeni
+// 2026-11-20) with server-side verification pointing at the admob-ssv edge
+// function. The same id is in app_config.admob_rewarded_ad_unit, which admob-ssv
+// checks callbacks against; change both together.
+export const REWARDED_ID = 'ca-app-pub-2677287550445019/3600927444'
 
-export function rewardedAdUnit() {
-  const testing = isTesting || !REWARDED_ID
+export function rewardedAdUnit(testing = isTesting) {
   return { adId: testing ? TEST_REWARDED_ID : REWARDED_ID, isTesting: testing }
 }
 
