@@ -32,7 +32,7 @@ vi.mock('@capacitor-community/admob', () => ({
 
 vi.mock('../analytics', () => ({ track: vi.fn() }))
 
-import { isAdFree, showInterstitial, adsAvailable, _resetAdSession, showRewardedVideo, rewardedAdUnit, TEST_REWARDED_ID } from '../ads'
+import { isAdFree, showInterstitial, adsAvailable, _resetAdSession, showRewardedVideo, rewardedAdUnit, TEST_REWARDED_ID, REWARDED_ID } from '../ads'
 
 beforeEach(() => { vi.clearAllMocks(); _resetAdSession() })
 
@@ -182,7 +182,9 @@ describe('showRewardedVideo', () => {
     expect(admob.prepareRewardVideoAd).not.toHaveBeenCalled()
   })
 
-  it('uses the Google test unit until the real rewarded unit is set', () => {
-    expect(rewardedAdUnit()).toEqual({ adId: TEST_REWARDED_ID, isTesting: true })
+  it('plays the Google test unit in dev builds and the real unit in release builds', () => {
+    expect(rewardedAdUnit(true)).toEqual({ adId: TEST_REWARDED_ID, isTesting: true })
+    expect(rewardedAdUnit(false)).toEqual({ adId: 'ca-app-pub-2677287550445019/3600927444', isTesting: false })
+    expect(REWARDED_ID).toBe('ca-app-pub-2677287550445019/3600927444')
   })
 })
