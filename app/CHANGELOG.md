@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.4.1...app-v1.5.0) (2026-11-20)
+
+
+### Features
+
+* **ads:** real Jadhagam_extra_download rewarded unit for release builds ([1dbfd5f](https://github.com/HunterSreeni/nithyakarma-tracker/commit/1dbfd5fd405a9517f7205a39b1791a0910073ce8))
+* **ads:** use the real Jadhagam_extra_download rewarded unit in release builds ([ef901e7](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ef901e7f82e3ec1488a19e9760f6f218fc17c07a))
+
 ## [1.4.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.4.0...app-v1.4.1) (2026-11-18)
 
 
