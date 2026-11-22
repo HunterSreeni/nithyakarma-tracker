@@ -1,0 +1,74 @@
+# AI-DEV NOTE: UNSIGNED iOS compile check only (Sreeni, 2026-11-22). Nobody on the
+# team has a Mac, so this macOS runner is how we learn that the iOS project and
+# every Capacitor plugin still build. It produces no IPA and uses no signing
+# material; the signed TestFlight upload will be a separate manual workflow, like
+# android-release. Free for this public repo.
+name: ios-build (unsigned)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to build
+        required: true
+        default: main
+  pull_request:
+    paths:
+      - app/ios/**
+      - app/package.json
+      - app/package-lock.json
+      - app/capacitor.config.ts
+      - .github/workflows/ios-build.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+
+      # Regenerates ios/App/CapApp-SPM/Package.swift and copies the web build in.
+      - run: npx cap sync ios
+
+      # AI-DEV NOTE: `cap sync` run on Windows writes Package.swift paths with
+      # backslashes, which Xcode on macOS cannot resolve. The sync above rewrote it
+      # the macOS way, so any difference means a Windows copy was committed.
+      - name: Package.swift must match what Capacitor generates on macOS
+        run: |
+          git diff --exit-code -- ios/App/CapApp-SPM/Package.swift \
+            || { echo "::error::Committed Package.swift is stale, run npx cap sync ios and commit it with forward slashes"; exit 1; }
+
+      - run: xcodebuild -version
+
+      - name: Build the App target without signing
+        working-directory: app/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            build

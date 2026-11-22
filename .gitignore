@@ -40,3 +40,10 @@ malayalam-panchangam/
 
 # Stray secret file - never commit
 google-secret.txt
+
+# Apple signing / push keys and the iOS Firebase config. Live only in
+# ~/.secrets/nithyakarma and repository secrets, never in this public repo.
+*.p8
+*.p12
+*.mobileprovision
+GoogleService-Info.plist
