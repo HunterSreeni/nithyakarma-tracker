@@ -22,6 +22,14 @@ let currentUserId = null
 let listenersReady = false
 // Last token saved for currentUserId, so sign-out can drop just THIS device.
 let currentToken = null
+// AI-DEV NOTE: registerFCM() resolves only once the device token is SAVED, not
+// when registration merely starts. On iOS the token arrives 2-3 s after
+// register() (APNs, then Firebase swaps it for an FCM token); returning early
+// let the pref flip on and the first-run test push run before any row existed
+// ("No active notification subscription found", TestFlight 2026-11-22).
+// Settled by the next saveToken() or registrationError.
+let pendingRegistration = null
+const TOKEN_TIMEOUT_MS = 20000
 
 // Distinct from the scheduled-reminder ids (100-500) in utils/notifications.js -
 // this one just relays whatever push just arrived, so re-using it across
@@ -34,16 +42,28 @@ const nativePushPlatform = () =>
     ? Capacitor.getPlatform() : null
 
 async function saveToken(token) {
-  if (!currentUserId) return
+  const pending = pendingRegistration
+  pendingRegistration = null
+  if (!currentUserId) { pending?.reject(new Error('Push registration was cancelled')); return }
   currentToken = token
   // AI-DEV NOTE: no client-side "reclaim" delete here - RLS scopes it to our
   // own rows, so it never removed a previous account's row for this token
   // (the duplicate-push bug). The push_subscriptions_single_owner trigger
   // hands the token to this account server-side on insert.
-  const { error } = await supabase.from('push_subscriptions').upsert({
-    user_id: currentUserId, endpoint: token, platform: nativePushPlatform(),
-  }, { onConflict: 'user_id,endpoint' })
-  if (error) console.warn('[push] failed to save FCM token', error.message)
+  let error
+  try {
+    ({ error } = await supabase.from('push_subscriptions').upsert({
+      user_id: currentUserId, endpoint: token, platform: nativePushPlatform(),
+    }, { onConflict: 'user_id,endpoint' }))
+  } catch (err) {
+    error = err
+  }
+  if (error) {
+    console.warn('[push] failed to save FCM token', error.message)
+    pending?.reject(new Error('Could not save this device for push'))
+    return
+  }
+  pending?.resolve()
 }
 
 async function ensureListeners(PushNotifications) {
@@ -53,6 +73,9 @@ async function ensureListeners(PushNotifications) {
   await PushNotifications.addListener('registration', (data) => { saveToken(data.value) })
   await PushNotifications.addListener('registrationError', (err) => {
     console.warn('[push] FCM registration error', err?.error)
+    const pending = pendingRegistration
+    pendingRegistration = null
+    pending?.reject(new Error('Push registration failed'))
   })
   // Tap on a delivered push -> bring app to the URL from the data payload.
   await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
@@ -90,7 +113,23 @@ export async function checkFCMPermission() {
   return status.receive
 }
 
-export async function registerFCM(userId) {
+// AI-DEV NOTE: one registration at a time per account. The plugin's events carry
+// no attempt id, so two overlapping register() calls (mount self-heal + a toggle
+// tap) could settle each other's wait; the second caller shares the first's.
+let inFlight = null
+let inFlightUser = null
+
+export function registerFCM(userId) {
+  if (inFlight && inFlightUser === userId) return inFlight
+  inFlightUser = userId
+  const attempt = registerOnce(userId).finally(() => {
+    if (inFlight === attempt) { inFlight = null; inFlightUser = null }
+  })
+  inFlight = attempt
+  return attempt
+}
+
+async function registerOnce(userId) {
   const platform = nativePushPlatform()
   if (!platform) return
   currentUserId = userId
@@ -116,7 +155,23 @@ export async function registerFCM(userId) {
   }
 
   await ensureListeners(PushNotifications)
-  await PushNotifications.register()
+  // A newer call supersedes an older one still waiting for its token.
+  pendingRegistration?.reject(new Error('Push registration was superseded'))
+  let timer
+  let mine
+  const saved = new Promise((resolve, reject) => {
+    mine = { resolve, reject }
+    pendingRegistration = mine
+    timer = setTimeout(() => reject(new Error('Timed out waiting for the push token')), TOKEN_TIMEOUT_MS)
+  })
+  saved.catch(() => {}) // register() may throw first; never leave this rejection unhandled
+  try {
+    await PushNotifications.register()
+    await saved
+  } finally {
+    clearTimeout(timer)
+    if (pendingRegistration === mine) pendingRegistration = null
+  }
 }
 
 export async function unregisterFCM(userId) {

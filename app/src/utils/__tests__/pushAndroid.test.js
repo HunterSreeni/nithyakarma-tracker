@@ -20,7 +20,7 @@ const push = {
   checkPermissions: vi.fn().mockResolvedValue({ receive: 'granted' }),
   requestPermissions: vi.fn().mockResolvedValue({ receive: 'granted' }),
   createChannel: vi.fn().mockResolvedValue(undefined),
-  register: vi.fn().mockResolvedValue(undefined),
+  register: vi.fn(),
   addListener: vi.fn((event, cb) => { listeners[event] = cb; return Promise.resolve({ remove: vi.fn() }) }),
 }
 vi.mock('@capacitor/push-notifications', () => ({ PushNotifications: push }))
@@ -34,7 +34,17 @@ import { registerFCM, unregisterFCM, releaseFCMToken, checkFCMPermission } from 
 // past its internal awaits (delete-then-upsert) before asserting on it.
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
+// Like the real plugin: register() resolves at once and the token follows as a
+// separate 'registration' event (on iOS, seconds later).
+const autoToken = () => {
+  push.register.mockImplementation(() => {
+    setTimeout(() => listeners.registration?.({ value: 'token-auto' }), 0)
+    return Promise.resolve()
+  })
+}
+
 beforeEach(() => {
+  autoToken()
   upsert.mockClear(); match.mockClear(); eq.mockClear(); neq.mockClear()
   push.createChannel.mockClear(); push.register.mockClear(); push.addListener.mockClear()
   push.checkPermissions.mockClear(); push.requestPermissions.mockClear()
@@ -77,14 +87,73 @@ describe('registerFCM', () => {
     )
   })
 
-  it('logs instead of throwing when the token upsert fails', async () => {
+  it('fails registration (so the toggle never flips on) when the token cannot be saved', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     upsert.mockResolvedValueOnce({ error: { message: 'RLS violation' } })
-    await registerFCM('u1')
-    listeners.registration({ value: 'token-A' })
-    await flush()
+    await expect(registerFCM('u1')).rejects.toThrow('Could not save this device for push')
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('save FCM token'), 'RLS violation')
     warn.mockRestore()
+  })
+
+  it('only resolves once the token is saved, not when register() returns (iOS race)', async () => {
+    push.register.mockImplementation(() => Promise.resolve()) // token arrives later
+    let done = false
+    const p = registerFCM('u1').then(() => { done = true })
+    await flush()
+    expect(push.register).toHaveBeenCalled()
+    expect(done).toBe(false)
+    expect(upsert).not.toHaveBeenCalled()
+    listeners.registration({ value: 'late-ios-token' })
+    await p
+    expect(done).toBe(true)
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ endpoint: 'late-ios-token' }), { onConflict: 'user_id,endpoint' },
+    )
+  })
+
+  it('rejects with a save error when the upsert itself throws', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    upsert.mockRejectedValueOnce(new Error('network down'))
+    await expect(registerFCM('u1')).rejects.toThrow('Could not save this device for push')
+    warn.mockRestore()
+  })
+
+  it('shares one registration between overlapping calls for the same account', async () => {
+    const a = registerFCM('u1')
+    const b = registerFCM('u1')
+    expect(b).toBe(a)
+    await a
+    expect(push.register).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects when the platform reports a registration error', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    push.register.mockImplementation(() => {
+      setTimeout(() => listeners.registrationError({ error: 'no APNs token' }), 0)
+      return Promise.resolve()
+    })
+    await expect(registerFCM('u1')).rejects.toThrow('Push registration failed')
+    expect(upsert).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('gives up after 20 s without a token instead of hanging the toggle', async () => {
+    vi.useFakeTimers()
+    try {
+      push.register.mockImplementation(() => Promise.resolve())
+      const p = registerFCM('u1')
+      const assertion = expect(p).rejects.toThrow('Timed out waiting for the push token')
+      await vi.advanceTimersByTimeAsync(20000)
+      await assertion
+      // a late token afterwards is still saved (rotation path), without throwing
+      listeners.registration({ value: 'very-late-token' })
+      await vi.runAllTimersAsync()
+      expect(upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ endpoint: 'very-late-token' }), { onConflict: 'user_id,endpoint' },
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('is a no-op on web', async () => {
