@@ -3,7 +3,10 @@ import { render, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import axe from 'axe-core'
 
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }))
+const platform = vi.hoisted(() => ({ name: 'web' }))
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { isNativePlatform: () => platform.name !== 'web', getPlatform: () => platform.name },
+}))
 
 // Color contrast is verified manually (jsdom can't compute it). Everything
 // else must pass.
@@ -29,6 +32,22 @@ describe('accessibility (axe-core, WCAG 2.1 AA subset)', () => {
     const { default: AuthPage } = await import('../AuthPage')
     const { container } = render(<MemoryRouter><AuthPage /></MemoryRouter>)
     expect(await seriousViolations(container, STANDALONE_CONFIG)).toEqual([])
+  })
+
+  it('AuthPage on iPhone, with the Sign in with Apple button', async () => {
+    platform.name = 'ios'
+    try {
+      vi.resetModules()
+      vi.doMock('../../hooks/useAuth', () => ({
+        useAuth: () => ({ signInGoogle: vi.fn(), signInApple: vi.fn(), signInEmail: vi.fn(), signUpEmail: vi.fn() }),
+      }))
+      const { default: AuthPage } = await import('../AuthPage')
+      const { container, getByRole } = render(<MemoryRouter><AuthPage /></MemoryRouter>)
+      expect(getByRole('button', { name: 'Sign in with Apple' })).toBeInTheDocument()
+      expect(await seriousViolations(container, STANDALONE_CONFIG)).toEqual([])
+    } finally {
+      platform.name = 'web'
+    }
   })
 
   it('Terms & Conditions page', async () => {

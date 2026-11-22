@@ -10,6 +10,7 @@ import { useDataLifecycle } from './useDataLifecycle'
 import { cancelAllReminders } from '../utils/notifications'
 import { releaseFCMToken } from '../utils/pushAndroid'
 import { releaseWebPushEndpoint } from '../utils/webPush'
+import { signInWithApple, revokeAppleBeforeDelete, APPLE_MANUAL_REVOKE_NOTE, APPLE_NOTE_KEY } from '../utils/appleAuth'
 
 const AuthContext = createContext(null)
 
@@ -246,6 +247,9 @@ export function AuthProvider({ children }) {
       options: { redirectTo: Capacitor.isNativePlatform() ? NATIVE_OAUTH_REDIRECT : window.location.origin },
     })
 
+  // iPhone only (the button is hidden elsewhere). See utils/appleAuth.js.
+  const signInApple = () => signInWithApple(supabase)
+
   const signInEmail = (email, password, captchaToken) =>
     supabase.auth.signInWithPassword({ email, password, options: { captchaToken } })
   const signUpEmail = (email, password, captchaToken) =>
@@ -383,15 +387,26 @@ export function AuthProvider({ children }) {
   // Deletes the auth user, which cascades to the profile and all owned rows
   // (family_members, user_practices, logs, referrals). Removes the identity
   // itself, not just the profile row. Then sign out.
+  // AI-DEV NOTE: Apple users first get their Apple tokens revoked (TN3194,
+  // authorized by Sreeni 2026-11-22). Closing Apple's sheet throws
+  // AppleSignInCanceled and nothing is deleted; a failed revoke still deletes
+  // and leaves AuthPage a note to remove the app in iPhone Settings.
+  // delete_account itself is unchanged. If the revoke succeeds but delete_account
+  // then fails, the error shows and a retry works: Apple keeps the same user id,
+  // so signing in with Apple again still reaches this same account.
   const deleteAccount = async () => {
+    const apple = await revokeAppleBeforeDelete(supabase, session?.user)
     const { error } = await supabase.rpc('delete_account')
     if (error) throw error
+    if (apple === 'manual') {
+      try { sessionStorage.setItem(APPLE_NOTE_KEY, APPLE_MANUAL_REVOKE_NOTE) } catch { /* private mode */ }
+    }
     await signOut()
   }
 
   const value = {
     session, profile, profileStatus, familyMembers, selectedMember, setSelectedMember, loading,
-    signInGoogle, signInEmail, signUpEmail, signOut, resetPassword, updatePassword,
+    signInGoogle, signInApple, signInEmail, signUpEmail, signOut, resetPassword, updatePassword,
     createProfile, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount,
     // called by TodayPage after every mark (incl. yesterday Sandhya)
     refresh: () => { if (!session) return; invalidateLeaderboard(); return loadProfile(session) },

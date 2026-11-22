@@ -301,6 +301,9 @@ Legend: ✅ covered · ⚠️ covered but manual-only / CI-excluded / caveat · 
 | Session revalidates on native resume / web visibilitychange | Unit (`useAuth.test.jsx`) | ✅ |
 | `getSession()` rejecting still resolves `loading=false` (24h-idle stuck-loading regression) | Unit | ✅ |
 | Session-expiry mid-`submit()` shows a raw Supabase message, not `friendlyError()`'s copy | - | ⬜ (see Known Gaps) |
+| **2026-11-22: Sign in with Apple, iPhone only.** Button hidden on Android/web, placed above Google on iOS, "Sign up with Apple" in signup mode, not gated on Turnstile; closing Apple's sheet shows no error; real failures show | Unit (`AuthPage.test.jsx`) | ✅ |
+| Apple gets the SHA-256 nonce, Supabase the raw nonce + ID token; first-sign-in name saved to `full_name` once for onboarding | Unit (`appleAuth.test.js`) | ✅ |
+| Real Apple sign-in on an iPhone (TestFlight), Share My Email and Hide My Email | Manual (iPhone) | ⬜ needs the TestFlight build |
 
 ### Onboarding
 | Case | Layer | Status |
@@ -543,6 +546,9 @@ messaging.
 | **2026-11-09 (M2):** a user cannot delete only their own profile row (stopped referral re-farming via cascade); `delete_account` still cascades | Integration(§27) + E2E(W, `journey.spec.js` delete step) | ✅ |
 | **2026-11-09 (L1):** remove an anushtanam = soft archive; `submit_practice_log` refuses new logs on an archived row, restore re-enables it | Integration(§25) + E2E(W, `journey.spec.js` remove/re-add) | ✅ |
 | Delete flow: type-email-to-confirm gate, returns to auth | E2E(W, `journey.spec.js`) | ⚠️ manual-gate only |
+| **2026-11-22: Apple account delete (TN3194).** Revoke runs before `delete_account`; closing Apple's sheet deletes nothing; failed revoke still deletes and the login screen shows the iPhone Settings note once | Unit (`useAuth.test.jsx`, `ProfilePage.test.jsx`, `appleAuth.test.js`, `AuthPage.test.jsx`) | ✅ |
+| `apple-revoke`: ES256 client secret, Apple ID token signature/iss/aud/exp checked, only the caller's own Apple `sub` is revoked, failures reported not hidden | Deno (`_shared/appleRevoke.test.ts`) | ✅ |
+| Real revoke against Apple from an iPhone (Apple account disappears from Settings > Sign in with Apple) | Manual (iPhone) | ⬜ needs the TestFlight build + Apple key secrets |
 | Referral reward copy is static, doesn't reflect the server-side 5/24h cap | - | ⬜ |
 | ~~Referrals list paints from a localStorage cache~~ | - | ➖ **removed 2026-08-23 (Intent 2.11)** - the Referrals page and `referralsCache` are deleted; the Profile invite card is the whole feature |
 | `/referrals` redirects to `/profile` so existing share links and push payloads do not 404 | - | ⬜ no route-level test yet |

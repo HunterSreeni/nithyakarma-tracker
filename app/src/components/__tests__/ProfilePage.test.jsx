@@ -11,16 +11,18 @@ const h = vi.hoisted(() => ({
   updateProfile: vi.fn(() => Promise.resolve()),
   familyMembers: [],
   addFamilyMember: vi.fn(),
+  session: { user: { email: 'ravi@example.com' } },
+  deleteAccount: vi.fn(),
 }))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
-    session: { user: { email: 'ravi@example.com' } },
+    session: h.session,
     profile: h.profile,
     familyMembers: h.familyMembers,
     updateProfile: h.updateProfile,
     addFamilyMember: h.addFamilyMember,
     removeFamilyMember: vi.fn(),
-    deleteAccount: vi.fn(),
+    deleteAccount: h.deleteAccount,
     signOut: vi.fn(),
   }),
 }))
@@ -28,14 +30,50 @@ vi.mock('../NotificationSettings', () => ({ default: () => null }))
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
 
 import ProfilePage from '../ProfilePage'
+import { AppleSignInCanceled } from '../../utils/appleAuth'
 
 beforeEach(() => {
   h.updateProfile = vi.fn(() => Promise.resolve())
   h.profile.panchangam_tradition = 'tamil'
   h.familyMembers = []
+  h.session = { user: { email: 'ravi@example.com' } }
+  h.deleteAccount = vi.fn(() => Promise.resolve())
 })
 
 const renderPage = () => render(<MemoryRouter><ProfilePage /></MemoryRouter>)
+
+describe('ProfilePage account deletion with Sign in with Apple', () => {
+  const confirmDelete = () => {
+    fireEvent.change(screen.getByPlaceholderText('ravi@example.com'), { target: { value: 'ravi@example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: /Delete my account/ }))
+  }
+
+  it('tells Apple users that Apple will ask them to confirm', () => {
+    h.session = { user: { email: 'ravi@example.com', identities: [{ provider: 'apple', id: '001.a.1' }] } }
+    renderPage()
+    expect(screen.getByText(/Apple will then ask you to confirm once more/)).toBeInTheDocument()
+  })
+
+  it('says nothing about Apple to everyone else', () => {
+    renderPage()
+    expect(screen.queryByText(/Apple will then ask/)).not.toBeInTheDocument()
+  })
+
+  it('closing Apple\'s sheet cancels quietly, with no error', async () => {
+    h.deleteAccount = vi.fn(() => Promise.reject(new AppleSignInCanceled()))
+    renderPage()
+    confirmDelete()
+    await waitFor(() => expect(h.deleteAccount).toHaveBeenCalled())
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('still reports a real deletion failure', async () => {
+    h.deleteAccount = vi.fn(() => Promise.reject(Object.assign(new Error('boom'), { userFacing: true })))
+    renderPage()
+    confirmDelete()
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+  })
+})
 
 describe('ProfilePage panchangam tradition preference', () => {
   it('shows Tamil selected by default', () => {

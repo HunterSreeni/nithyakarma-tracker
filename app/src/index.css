@@ -439,6 +439,9 @@ a.verse-card { text-decoration: none; color: inherit; }
 .auth-sub { color: var(--text-2); font-size: 0.8rem; font-weight: 300; margin-bottom: 1.8rem; }
 .auth-card { width: 100%; max-width: 380px; background: #fff; border-radius: 18px; padding: 1.6rem 1.4rem; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
 .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; border: 1.5px solid var(--warm); border-radius: 100px; padding: 11px; font-weight: 700; font-size: 0.8rem; }
+/* Sign in with Apple (iPhone only): black style, same size as Google, placed first. */
+.btn-apple { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 0.6rem; background: #000; color: #fff; border: 1.5px solid #000; border-radius: 100px; padding: 11px; font-weight: 700; font-size: 0.8rem; }
+.btn-apple:disabled { opacity: 0.6; }
 .auth-or { text-align: center; color: var(--text-2); font-size: 0.68rem; margin: 1rem 0; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'Sora', sans-serif; }
 .btn-auth { width: 100%; margin-top: 0.9rem; background: var(--action); color: #fff; border: none; border-radius: 100px; padding: 11px; font-weight: 700; font-size: 0.8rem; }
 .auth-switch { text-align: center; font-size: 0.74rem; color: var(--text-2); margin-top: 1rem; }
