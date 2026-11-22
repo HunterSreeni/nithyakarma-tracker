@@ -1236,6 +1236,34 @@ begin
     end if;
   end;
 
+  -- Update prompts (app_min_versions, 2026-11-22): both platforms seeded,
+  -- readable by app roles, writable by nobody but the service role.
+  declare
+    v_n int;
+    v_failed boolean;
+  begin
+    select count(*) into v_n from app_min_versions where platform in ('android', 'ios');
+    if v_n <> 2 then raise exception 'FAIL: app_min_versions is not seeded for android and ios'; end if;
+    if has_table_privilege('anon', 'public.app_min_versions', 'insert')
+       or has_table_privilege('anon', 'public.app_min_versions', 'update')
+       or has_table_privilege('anon', 'public.app_min_versions', 'delete')
+       or has_table_privilege('authenticated', 'public.app_min_versions', 'insert')
+       or has_table_privilege('authenticated', 'public.app_min_versions', 'update')
+       or has_table_privilege('authenticated', 'public.app_min_versions', 'delete') then
+      raise exception 'FAIL: app roles can write app_min_versions';
+    end if;
+    if not has_table_privilege('service_role', 'public.app_min_versions', 'update') then
+      raise exception 'FAIL: service_role cannot update app_min_versions';
+    end if;
+    if not has_table_privilege('anon', 'public.app_min_versions', 'select') then
+      raise exception 'FAIL: anon cannot read app_min_versions (the check runs before sign-in)';
+    end if;
+    v_failed := false;
+    begin update app_min_versions set required_version = '1.2' where platform = 'ios';
+    exception when check_violation then v_failed := true; end;
+    if not v_failed then raise exception 'FAIL: app_min_versions accepted a non x.y.z version'; end if;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;

@@ -454,6 +454,10 @@ yesterday-backdate (Sandhya-exclusive in the RPC, same as Rudram).
 | iOS schedules no local alarms (like Android), only clears leftovers 100-500; 21:30 last call gone on both | Unit (`notifications.test.js`) | ✅ |
 | `registerFCM` waits for the token to be saved before resolving (iOS race behind the first-run "No active notification subscription found"); rejects on registration error, failed save, or 20 s timeout | Unit (`pushAndroid.test.js`) | ✅ |
 | iPhone: tapping a text field does not zoom the page (16px fields on iOS only) | Manual (TestFlight) | ⬜ |
+| Update prompts: strict x.y.z compare, required beats suggested, fail open (query error, offline, no row, no app version), web never checks | Unit (`appUpdate.test.js`) | ✅ |
+| Update prompts: checked at start-up and on return to foreground, stale answers ignored, card dismiss lasts the session, blocking screen has store + support links and no dismiss | Unit (`useAppUpdate.test.jsx`), a11y | ✅ |
+| `app_min_versions` seeded for both platforms, readable by anon, not writable by app roles, x.y.z enforced | Integration | ✅ |
+| Raise `suggested_version` / `required_version` on staging-like data and see the card / blocking screen on a device, store button opens the store app | Manual (TestFlight + Android) | ⬜ |
 | `push_subscriptions.platform` accepts `ios`, still rejects unknown platforms | Integration(N) | ✅ |
 | FCM message keeps the Android `reminders` channel and adds the APNs default sound | Unit (`fcmMessage.test.ts`) | ✅ |
 | iOS push end to end on a real iPhone (permission, token saved as `ios`, reminder + test push, foreground banner, tap opens app) | Manual (TestFlight, step 5) | ⬜ |

@@ -50,6 +50,13 @@ describe('accessibility (axe-core, WCAG 2.1 AA subset)', () => {
     }
   })
 
+  it('Update required screen', async () => {
+    const { UpdateRequired } = await import('../UpdatePrompts')
+    const update = { installed: '1.5.0', target: '1.10.1', storeUrl: 'https://apps.apple.com/app/id6837318179', storeName: 'the App Store' }
+    const { container } = render(<UpdateRequired update={update} />)
+    expect(await seriousViolations(container, STANDALONE_CONFIG)).toEqual([])
+  })
+
   it('Terms & Conditions page', async () => {
     const { TermsPage } = await import('../LegalPages')
     const { container } = render(<MemoryRouter><TermsPage /></MemoryRouter>)

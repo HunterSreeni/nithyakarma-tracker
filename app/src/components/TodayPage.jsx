@@ -22,6 +22,7 @@ import { isMilestone, maybeRequestReview } from '../utils/review'
 import { lazyWithRetry } from '../utils/lazyWithRetry'
 import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
 import { friendlyError } from '../utils/friendlyError'
+import { UpdateCard } from './UpdatePrompts'
 
 // Deferred - pulls in driver.js, which only the first-run tour ever needs.
 const GuidedTour = lazyWithRetry(() => import('./GuidedTour'))
@@ -129,6 +130,7 @@ export default function TodayPage() {
 
   return (
     <>
+      <UpdateCard />
       <div className="eyebrow">{dateLine}</div>
       <h1 className="greet">Namaskaram, {subjectName.split(' ')[0]}</h1>
       <div className="greet-sub">

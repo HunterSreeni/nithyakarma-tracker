@@ -457,6 +457,21 @@ a.verse-card { text-decoration: none; color: inherit; }
 
 /* Onboarding value-prop intro */
 .onboard-intro { width: 100%; max-width: 380px; }
+.update-required { width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.update-required .oi-title { margin: 1.1rem 0 0; }
+.update-required .oi-sub { margin: 0.5rem 0 0; line-height: 1.5; }
+.update-versions { font-size: 0.75rem; color: var(--text-2); margin: 0.75rem 0 0; }
+.update-ic { width: 36px; height: 36px; border-radius: 10px; background: var(--saffron-100); color: var(--action); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.update-ic-lg { width: 64px; height: 64px; border-radius: 18px; }
+.update-store-btn { display: flex; align-items: center; justify-content: center; min-height: 44px; text-decoration: none; box-sizing: border-box; }
+.update-required .update-store-btn { margin-top: 1.5rem; min-height: 48px; }
+.update-help { display: flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 0.5rem; font-weight: 600; font-size: 0.8rem; color: var(--action); }
+.update-card { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 0.9rem; }
+.update-card-body { flex: 1; min-width: 0; }
+.update-card-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.95rem; }
+.update-card-sub { font-size: 0.8rem; color: var(--text-2); margin-top: 3px; line-height: 1.4; }
+.update-card .update-store-btn { display: inline-flex; margin-top: 0.6rem; }
+.update-dismiss { width: 44px; height: 44px; margin: -10px -10px 0 0; border: none; background: none; color: var(--text-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .oi-title { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 700; text-align: center; color: var(--ink); }
 .oi-sub { color: var(--text-2); text-align: center; font-size: 0.86rem; margin: 0.4rem 0 1.3rem; }
 .oi-points { display: flex; flex-direction: column; gap: 0.8rem; }

@@ -90,6 +90,13 @@ Protected implementation surfaces: `get_leaderboard` (`app/supabase/migrations/*
 
 Protected implementation surfaces: `app/src/utils/ads.js`.
 
+## Update prompts
+
+- `public.app_min_versions` (one row per `android`/`ios`) drives two prompts in the native app, compared against the INSTALLED native version (`App.getInfo`), never `package.json`: below `suggested_version` a dismissible Today-page card, below `required_version` a blocking screen shown before anything else, sign-in included. Both default to `0.0.0`; raise them with SQL (service role) only, `required_version` only for a build that truly breaks (a hard update wall is an App Store review risk). Fail open: offline, no row, or a malformed version never blocks. The web app never checks. It is a nudge, not enforcement: old builds can still call the API.
+- `release.yml` builds Android and iOS from one resolved commit and refuses to start when `app/package.json` and the Android `versionName` differ.
+
+Protected implementation surfaces: `app/src/utils/appUpdate.js`, `app/src/hooks/useAppUpdate.js`, `app/supabase/migrations/*app_min_versions*`.
+
 ## Panchangam / observance calendar
 
 - Observance/tharpanam matching (`bestMatch`/`bestAdvanceMatch` in `observanceMatch.ts`) is priority-then-specificity ordered and category-scoped (`tharpanam` vs. `observance` never cross-match). `day_offset` on a rule means "check the neighboring day's panchangam row, fire on the candidate day" - do not reinterpret it as shifting which day the notification is dated.
