@@ -117,6 +117,16 @@ Deno.test("checks the ad unit against the configured rewarded unit", () => {
   assert(!adUnitMatches(null, "1234567890"))
 })
 
+Deno.test("ad unit list: Android and iOS units both reward, nothing else does", () => {
+  const both = "ca-app-pub-2677287550445019/3600927444, ca-app-pub-2677287550445019/4791412117"
+  assert(adUnitMatches("3600927444", both))
+  assert(adUnitMatches("4791412117", both))
+  assert(adUnitMatches("ca-app-pub-2677287550445019/4791412117", both))
+  assert(!adUnitMatches("1140728797", both))
+  assert(!adUnitMatches("", both))
+  assert(!adUnitMatches("3600927444", ",, ca-app-pub-2677287550445019/4791412117 ,"))
+})
+
 Deno.test("needs a grant id, a user id and a transaction id", () => {
   assertEquals(grantFields(new URLSearchParams(body({ custom_data: "" }))), null)
   assertEquals(grantFields(new URLSearchParams(body({ user_id: "not-a-uuid" }))), null)

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockNative = vi.fn()
+const mockPlatform = vi.fn(() => 'android')
 vi.mock('@capacitor/core', () => ({
-  Capacitor: { isNativePlatform: () => mockNative() },
+  Capacitor: { isNativePlatform: () => mockNative(), getPlatform: () => mockPlatform() },
 }))
 
 // Rewarded video: listeners registered per event, fired by the test.
@@ -32,7 +33,7 @@ vi.mock('@capacitor-community/admob', () => ({
 
 vi.mock('../analytics', () => ({ track: vi.fn() }))
 
-import { isAdFree, showInterstitial, adsAvailable, _resetAdSession, showRewardedVideo, rewardedAdUnit, TEST_REWARDED_ID, REWARDED_ID } from '../ads'
+import { isAdFree, showInterstitial, adsAvailable, _resetAdSession, showRewardedVideo, rewardedAdUnit, TEST_REWARDED_ID, REWARDED_ID, TEST_REWARDED_ID_IOS, REWARDED_ID_IOS } from '../ads'
 
 beforeEach(() => { vi.clearAllMocks(); _resetAdSession() })
 
@@ -186,5 +187,18 @@ describe('showRewardedVideo', () => {
     expect(rewardedAdUnit(true)).toEqual({ adId: TEST_REWARDED_ID, isTesting: true })
     expect(rewardedAdUnit(false)).toEqual({ adId: 'ca-app-pub-2677287550445019/3600927444', isTesting: false })
     expect(REWARDED_ID).toBe('ca-app-pub-2677287550445019/3600927444')
+  })
+
+  it('uses the iOS units on iPhone: Google iOS test unit in dev, the real iOS unit in release', () => {
+    expect(rewardedAdUnit(true, 'ios')).toEqual({ adId: 'ca-app-pub-3940256099942544/1712485313', isTesting: true })
+    expect(rewardedAdUnit(false, 'ios')).toEqual({ adId: 'ca-app-pub-2677287550445019/4791412117', isTesting: false })
+    expect(TEST_REWARDED_ID_IOS).toBe('ca-app-pub-3940256099942544/1712485313')
+    expect(REWARDED_ID_IOS).toBe('ca-app-pub-2677287550445019/4791412117')
+  })
+
+  it('asks the platform when none is passed, so an iPhone plays the iOS unit', () => {
+    mockPlatform.mockReturnValueOnce('ios')
+    expect(rewardedAdUnit(false)).toEqual({ adId: REWARDED_ID_IOS, isTesting: false })
+    expect(rewardedAdUnit(false)).toEqual({ adId: REWARDED_ID, isTesting: false })
   })
 })

@@ -123,11 +123,16 @@ export async function verifySsv(cb: SsvCallback, keys: KeyMap): Promise<boolean>
 
 // AdMob reports the ad unit as its numeric id; config may hold the full
 // "ca-app-pub-XXX/NNN" form. Empty expectation means "any of our ad units".
+// AI-DEV NOTE: config is a comma-separated list since iOS got its own rewarded
+// unit (2026-11-22): Android .../3600927444 and iOS .../4791412117. A unit not
+// on the list never rewards.
 export function adUnitMatches(reported: string | null, expected: string | undefined): boolean {
-  if (!expected) return true;
+  if (!expected?.trim()) return true;
   if (!reported) return false;
-  const want = expected.includes("/") ? expected.split("/").pop() : expected;
-  return reported === want || reported === expected;
+  return expected.split(",").map((e) => e.trim()).filter(Boolean).some((entry) => {
+    const want = entry.includes("/") ? entry.split("/").pop() : entry;
+    return reported === want || reported === entry;
+  });
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
