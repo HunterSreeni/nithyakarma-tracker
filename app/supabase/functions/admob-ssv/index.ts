@@ -61,6 +61,12 @@ Deno.serve(async (req: Request) => {
     console.error("[admob-ssv] app_config read failed", { code: cfgErr.code });
     return text("Config unavailable", 500);
   }
+  // A missing or blank unit list is a config fault, not "any unit": 500 so
+  // Google retries once it is fixed, instead of a silent 200 with no reward.
+  if (!cfg?.value?.trim()) {
+    console.error("[admob-ssv] admob_rewarded_ad_unit is missing or blank");
+    return text("Config unavailable", 500);
+  }
   if (!adUnitMatches(cb.params.get("ad_unit"), cfg?.value ?? undefined)) {
     console.warn("[admob-ssv] unexpected ad unit", { adUnit: cb.params.get("ad_unit") });
     return text("ok"); // genuine Google callback, just not ours to reward: don't make it retry

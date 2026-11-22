@@ -95,14 +95,23 @@ export async function showInterstitial(profile) {
 // Google's published test rewarded unit, used in dev builds: test ads earn
 // nothing and are policy-safe to show.
 export const TEST_REWARDED_ID = 'ca-app-pub-3940256099942544/5224354917'
+export const TEST_REWARDED_ID_IOS = 'ca-app-pub-3940256099942544/1712485313'
 // AI-DEV NOTE: the real "Jadhagam_extra_download" rewarded unit (created by Sreeni
 // 2026-11-20) with server-side verification pointing at the admob-ssv edge
 // function. The same id is in app_config.admob_rewarded_ad_unit, which admob-ssv
 // checks callbacks against; change both together.
 export const REWARDED_ID = 'ca-app-pub-2677287550445019/3600927444'
+// AI-DEV NOTE: iOS has its own rewarded unit ("Jadhagam_extra_download_ios",
+// created by Sreeni 2026-11-22, same SSV URL). app_config.admob_rewarded_ad_unit
+// lists both units; add any new unit there too or admob-ssv never rewards it.
+export const REWARDED_ID_IOS = 'ca-app-pub-2677287550445019/4791412117'
 
-export function rewardedAdUnit(testing = isTesting) {
-  return { adId: testing ? TEST_REWARDED_ID : REWARDED_ID, isTesting: testing }
+export function rewardedAdUnit(testing = isTesting, platform = Capacitor.getPlatform()) {
+  const ios = platform === 'ios'
+  const adId = testing
+    ? (ios ? TEST_REWARDED_ID_IOS : TEST_REWARDED_ID)
+    : (ios ? REWARDED_ID_IOS : REWARDED_ID)
+  return { adId, isTesting: testing }
 }
 
 // Shows one rewarded video for a Jadhagam download. The grant id and user id

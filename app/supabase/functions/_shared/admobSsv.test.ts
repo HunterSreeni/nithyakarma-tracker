@@ -110,11 +110,23 @@ Deno.test("decodes URL-safe base64 with or without padding", () => {
 })
 
 Deno.test("checks the ad unit against the configured rewarded unit", () => {
-  assert(adUnitMatches("1234567890", undefined))
+  assert(!adUnitMatches("1234567890", undefined))
+  assert(!adUnitMatches("1234567890", ""))
+  assert(!adUnitMatches("1234567890", " , "))
   assert(adUnitMatches("1234567890", "ca-app-pub-2677287550445019/1234567890"))
   assert(adUnitMatches("1234567890", "1234567890"))
   assert(!adUnitMatches("999", "ca-app-pub-2677287550445019/1234567890"))
   assert(!adUnitMatches(null, "1234567890"))
+})
+
+Deno.test("ad unit list: Android and iOS units both reward, nothing else does", () => {
+  const both = "ca-app-pub-2677287550445019/3600927444, ca-app-pub-2677287550445019/4791412117"
+  assert(adUnitMatches("3600927444", both))
+  assert(adUnitMatches("4791412117", both))
+  assert(adUnitMatches("ca-app-pub-2677287550445019/4791412117", both))
+  assert(!adUnitMatches("1140728797", both))
+  assert(!adUnitMatches("", both))
+  assert(!adUnitMatches("3600927444", ",, ca-app-pub-2677287550445019/4791412117 ,"))
 })
 
 Deno.test("needs a grant id, a user id and a transaction id", () => {

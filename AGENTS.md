@@ -85,6 +85,7 @@ Protected implementation surfaces: `get_leaderboard` (`app/supabase/migrations/*
 
 - Ad gating (`isTesting`/dev-mode bypass, interstitial frequency, ad-free-until honoring) lives in `app/src/utils/ads.js`. `ad_free_until` from a referral or purchase must always suppress ads client-side - never show an interstitial to a user with a future `ad_free_until`.
 - No ad of any kind after marking a practice (Sreeni, 2026-11-18): the Today page never calls `showInterstitial`. The only ad in the app is the opt-in rewarded video for an extra Jadhagam download; `ad_free_until` users never see it (their downloads are free).
+- Android and iOS each have their own rewarded unit (`REWARDED_ID`, `REWARDED_ID_IOS`, 2026-11-22). `app_config.admob_rewarded_ad_unit` is a comma-separated list of every rewarded unit, and `admob-ssv` rewards only units on it, so a new unit goes into that list before any build uses it. iOS never shows an App Tracking Transparency prompt.
 
 Protected implementation surfaces: `app/src/utils/ads.js`.
 

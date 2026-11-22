@@ -256,9 +256,13 @@ running things manually.** Nothing in CI would catch a regression in either area
 18. **Streaks & tiers** - per-practice + overall streak continuity/reset; freeze
     credits (consumed on exactly-1-day gap, capped by tier, topped up on tier-up);
     tiers Shishya -> Sadhaka -> Yogi -> Rishi -> Brahmarishi.
-19. **Ads** - Android-only interstitial, once per app session, skipped when
-    ad-free or when the in-app-review prompt already fired this mark; G-rated;
-    never blocks/depends on the celebration flow.
+19. **Ads** - only the opt-in rewarded video for an extra Jadhagam download
+    (no ad after marking a practice since 2026-11-18); G-rated; never for
+    ad-free users. Android and iOS use their own rewarded unit, Google test units
+    in dev (`ads.test.js`); `admob-ssv` rewards only units listed in
+    `app_config.admob_rewarded_ad_unit` (`admobSsv.test.ts`). iOS has no ATT
+    prompt. Manual on iPhone (TestFlight): rewarded video plays and the download
+    unlocks after the SSV callback.
 20. **Resilience / error states** - offline, network error, expired session, RLS
     denial, PostgREST failure - handled inconsistently across call sites (see Known
     Gaps: `friendlyError()` is not used everywhere it plausibly should be).
