@@ -111,6 +111,13 @@
 body { font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; background: var(--paper); color: var(--ink); }
 button { font-family: 'DM Sans', sans-serif; cursor: pointer; }
 input, select { font-family: 'DM Sans', sans-serif; }
+/* AI-DEV NOTE: iOS (iPhone app and Safari) zooms the whole page in when a text
+   field under 16px gets focus (TestFlight, 2026-11-22). 16px on iOS only stops
+   that without blocking pinch-zoom; Android and desktop keep the design sizes.
+   -webkit-touch-callout is supported only by iOS/iPadOS WebKit. */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
+}
 
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 

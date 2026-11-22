@@ -452,6 +452,8 @@ yesterday-backdate (Sandhya-exclusive in the RPC, same as Rudram).
 | Foreground-received push manually re-raised as a local notification (Android) | Unit | ✅ |
 | **2026-11-22: iOS push via FCM.** iPhone registers through the same plugin, skips the Android channel, saves its token as `ios`, does not re-raise foreground pushes (iOS shows them); disable deletes only `ios` rows | Unit (`pushAndroid.test.js`) | ✅ |
 | iOS schedules no local alarms (like Android), only clears leftovers 100-500; 21:30 last call gone on both | Unit (`notifications.test.js`) | ✅ |
+| `registerFCM` waits for the token to be saved before resolving (iOS race behind the first-run "No active notification subscription found"); rejects on registration error, failed save, or 20 s timeout | Unit (`pushAndroid.test.js`) | ✅ |
+| iPhone: tapping a text field does not zoom the page (16px fields on iOS only) | Manual (TestFlight) | ⬜ |
 | `push_subscriptions.platform` accepts `ios`, still rejects unknown platforms | Integration(N) | ✅ |
 | FCM message keeps the Android `reminders` channel and adds the APNs default sound | Unit (`fcmMessage.test.ts`) | ✅ |
 | iOS push end to end on a real iPhone (permission, token saved as `ios`, reminder + test push, foreground banner, tap opens app) | Manual (TestFlight, step 5) | ⬜ |
