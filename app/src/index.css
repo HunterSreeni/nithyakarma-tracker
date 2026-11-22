@@ -117,6 +117,13 @@ input, select { font-family: 'DM Sans', sans-serif; }
    -webkit-touch-callout is supported only by iOS/iPadOS WebKit. */
 @supports (-webkit-touch-callout: none) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
+  /* AI-DEV NOTE: iOS draws the date input as a native control with its own
+     intrinsic width that ignores width:100%, so the Jadhagam date of birth
+     field ran past its card on iPhone (TestFlight 1.11.0, 2026-11-22). This
+     makes it a normal block that shrinks to its container; tapping it still
+     opens the native date picker. */
+  input[type="date"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; }
+  input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; }
 }
 
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }

@@ -75,7 +75,8 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # webkit: the iphone-webkit project runs e2e/mobile-layout.spec.js.
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
