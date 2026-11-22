@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.10.0...app-v1.10.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* **push:** wait for the saved token before turning notifications on; stop iOS field zoom ([3ad7e57](https://github.com/HunterSreeni/nithyakarma-tracker/commit/3ad7e57678b1f296f549a4b39560fdbe55ce04b3))
+* **push:** wait for the saved token before turning notifications on; stop iOS field zoom ([1360f77](https://github.com/HunterSreeni/nithyakarma-tracker/commit/1360f779460f739d7fb30613231b72475816fcbd))
+
 ## [1.10.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.9.0...app-v1.10.0) (2026-11-22)
 
 
