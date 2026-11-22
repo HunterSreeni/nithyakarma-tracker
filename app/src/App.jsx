@@ -6,6 +6,8 @@ import AuthPage from './components/AuthPage'
 import Layout from './components/Layout'
 import TodayPage from './components/TodayPage'
 import { lazyWithRetry } from './utils/lazyWithRetry'
+import { useAppUpdate, startAppUpdateChecks } from './hooks/useAppUpdate'
+import { UpdateRequired } from './components/UpdatePrompts'
 
 // Deferred: only fetched when actually navigated to, keeping them out of the
 // initial bundle everyone downloads just to see Today.
@@ -35,6 +37,7 @@ function Gate() {
   const { session, profile, profileStatus, refresh, loading, dataStatus, justOnboarded, clearJustOnboarded } = useAuth()
   const { pathname } = useLocation()
   useAnalyticsIdentity(session)
+  const update = useAppUpdate()
   // Cheap watchdog for the one loading state that fully blanks the app: if
   // something upstream still manages to hang despite the guards in useAuth,
   // don't leave the user staring at a spinner forever.
@@ -73,6 +76,10 @@ function Gate() {
     const t = setTimeout(() => setStuck(true), STUCK_TIMEOUT_MS)
     return () => clearTimeout(t)
   }, [loading])
+  // AI-DEV NOTE: a build below app_min_versions.required_version is blocked
+  // before anything else, sign-in included (see utils/appUpdate.js).
+  if (update.status === 'required') return <UpdateRequired update={update} />
+  if (update.status === 'checking') return <div className="spinner-wrap">Loading...</div>
   if (loading) {
     if (stuck) {
       return (
@@ -159,6 +166,7 @@ function Gate() {
 }
 
 export default function App() {
+  useEffect(() => { startAppUpdateChecks() }, [])
   return (
     <BrowserRouter>
       <AuthProvider>
