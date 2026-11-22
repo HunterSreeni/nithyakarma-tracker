@@ -35,8 +35,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
@@ -47,6 +45,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- AI-DEV NOTE: HTTPS and OS crypto only, which is exempt; skips the export-compliance question on every TestFlight upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<false/>
 	<!-- AI-DEV NOTE: AdMob iOS app (Sreeni, 2026-11-22). No App Tracking Transparency: the app never asks to track, so there is deliberately no NSUserTrackingUsageDescription. SKAdNetworkItems is Google's list from developers.google.com/admob/ios/3p-skadnetworks (updated 2026-01-30). -->
