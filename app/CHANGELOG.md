@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.11.0...app-v1.11.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* keep the iOS date of birth field inside its card, add a phone layout check ([ba77169](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ba77169893f2620c6f0cd1b1fcdf697db299ff2d))
+* keep the iOS date of birth field inside its card, add a phone layout check ([d6a2fd9](https://github.com/HunterSreeni/nithyakarma-tracker/commit/d6a2fd9e0ef0cae95a08c9cba2b752cdc97f9aba))
+
 ## [1.11.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.10.1...app-v1.11.0) (2026-11-22)
 
 
