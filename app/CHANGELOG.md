@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.9.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.8.0...app-v1.9.0) (2026-11-22)
+
+
+### Features
+
+* **ios:** AdMob rewarded video on iPhone with its own ad unit ([2fc0dae](https://github.com/HunterSreeni/nithyakarma-tracker/commit/2fc0dae0fae27cab0a1fce585d0409caffd71850))
+* **ios:** AdMob rewarded video on iPhone with its own ad unit ([7f30feb](https://github.com/HunterSreeni/nithyakarma-tracker/commit/7f30febdd709b804eba864612bb70dadd39246bf))
+
+
+### Bug Fixes
+
+* **admob-ssv:** fail closed when the rewarded ad unit list is missing or blank ([3542243](https://github.com/HunterSreeni/nithyakarma-tracker/commit/354224359eba5105c41319f90778dad30ebd48a9))
+
 ## [1.8.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.7.0...app-v1.8.0) (2026-11-22)
 
 
