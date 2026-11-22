@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.6.0...app-v1.7.0) (2026-11-22)
+
+
+### Features
+
+* **ios:** Sign in with Apple on iPhone, with Apple token revoke on account deletion ([3023d09](https://github.com/HunterSreeni/nithyakarma-tracker/commit/3023d096167a5ab679dc0e9a59f01b2e94595a9b))
+* **ios:** Sign in with Apple on iPhone, with Apple token revoke on account deletion ([7e2f6d1](https://github.com/HunterSreeni/nithyakarma-tracker/commit/7e2f6d1b338976add5de4d8c87bc398cab48f6e9))
+
 ## [1.6.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.5.0...app-v1.6.0) (2026-11-22)
 
 
