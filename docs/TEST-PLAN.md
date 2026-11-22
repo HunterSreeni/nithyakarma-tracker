@@ -19,7 +19,7 @@ claims for a meaningful slice of this suite.
 | Code | Surface | How tested |
 |---|---|---|
 | W | Web desktop (Chromium) | Playwright e2e + manual |
-| Mw | Mobile web (responsive < 768px) | Manual (no dedicated Playwright mobile-viewport project configured) |
+| Mw | Mobile web (responsive < 768px) | Playwright `iphone-webkit` + `iphone-chromium` projects run `mobile-layout.spec.js` (no sideways overflow, fields inside their cards) on 8 pages; everything else manual |
 | A | Android native (Capacitor, API 24-36) | adb-driven shell scripts (crash-only assertions) + manual on emulator/device |
 
 Capacitor wraps the same React build for Android as a WebView - there is no separate
@@ -161,6 +161,7 @@ automatic coverage than exists. Three parallel jobs on every PR and push to `mai
 
 **What the `e2e` job's filter actually leaves running:**
 - `auth-negative.spec.js` - **runs in CI**, no seed needed.
+- `mobile-layout.spec.js` - **runs in CI** (added 2026-11-22) at iPhone 13 width in WebKit and Chromium: sign-in, Today, Profile, Jadhagam new-chart form, Calendar, History, Sabha, Learning. Fails on any sideways page overflow or a form field outside its card. Playwright WebKit is not iOS Safari: it does not draw iOS's native date control and has no `-webkit-touch-callout`, so the iOS-only CSS block in `index.css` is not exercised. That needs the planned iOS Simulator check on the macOS runner (not built yet).
 - `auth-signout.spec.js` - not destructive-tagged, but self-skips (`test.skip`) because `E2E_UI_EMAIL`/`E2E_UI_PASSWORD` are not among CI's secrets. **Effectively never runs in CI.**
 - `referral.spec.js` - not destructive-tagged, but self-skips because `E2E_REFERRAL_THROWAWAY_PASSWORD`/`E2E_REFERRER_CODE` are unset in CI. **Effectively never runs in CI.**
 - `journey.spec.js`, `journey-female.spec.js` - excluded by the `@destructive` grep. **Manual pre-release gate only.** These are the only specs that exercise Sandhyavandhanam end-to-end, family-member add, delete-account, and leaderboard opt-in persistence at the UI layer.
