@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.5.0...app-v1.6.0) (2026-11-22)
+
+
+### Features
+
+* **ios:** add the Capacitor iOS project and an unsigned macOS build check ([4ea47bc](https://github.com/HunterSreeni/nithyakarma-tracker/commit/4ea47bceddba036e294e221438a1aaf9c3959d70))
+* **ios:** add the Capacitor iOS project and an unsigned macOS build check ([6ad4201](https://github.com/HunterSreeni/nithyakarma-tracker/commit/6ad42018f426d25418df9a6bdfdc5f8d061749f6))
+
 ## [1.5.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.4.1...app-v1.5.0) (2026-11-20)
 
 
