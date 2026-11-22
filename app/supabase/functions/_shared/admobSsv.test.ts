@@ -110,7 +110,9 @@ Deno.test("decodes URL-safe base64 with or without padding", () => {
 })
 
 Deno.test("checks the ad unit against the configured rewarded unit", () => {
-  assert(adUnitMatches("1234567890", undefined))
+  assert(!adUnitMatches("1234567890", undefined))
+  assert(!adUnitMatches("1234567890", ""))
+  assert(!adUnitMatches("1234567890", " , "))
   assert(adUnitMatches("1234567890", "ca-app-pub-2677287550445019/1234567890"))
   assert(adUnitMatches("1234567890", "1234567890"))
   assert(!adUnitMatches("999", "ca-app-pub-2677287550445019/1234567890"))
