@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
   const results = [];
   let sent = 0;
   for (const sub of subs) {
-    const ok = sub.platform === "android"
+    const ok = (sub.platform === "android" || sub.platform === "ios")
       ? await sendFCM(admin, config, sub.endpoint, title, body, "test")
       : await sendWebPush(admin, config, sub, title, body);
     if (ok) sent++;

@@ -13,7 +13,13 @@ const config: CapacitorConfig = {
   // USB test phone, see app/e2e/device/README.md) turns full logging back on for
   // detailed on-device testing. It does log tokens, so it must never be set for a
   // Play/CI build; the default stays 'none'.
-  loggingBehavior: process.env.CAP_DEBUG_LOGS === '1' ? 'debug' : 'none'
+  loggingBehavior: process.env.CAP_DEBUG_LOGS === '1' ? 'debug' : 'none',
+  plugins: {
+    // AI-DEV NOTE: iOS only. Without this a push that lands while the app is open
+    // is not shown at all (the default is badge only). Android ignores it and
+    // re-raises foreground pushes itself in utils/pushAndroid.js.
+    PushNotifications: { presentationOptions: ['banner', 'list', 'sound'] },
+  },
 };
 
 export default config;

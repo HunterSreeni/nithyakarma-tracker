@@ -1,5 +1,7 @@
 import UIKit
 import Capacitor
+import FirebaseCore
+import FirebaseMessaging
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,8 +9,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // AI-DEV NOTE: iOS push goes through Firebase (FCM), like Android, so the
+        // server's one FCM sender serves both. Needs GoogleService-Info.plist in
+        // the bundle (gitignored; CI writes it from a secret).
+        FirebaseApp.configure()
         return true
+    }
+
+    // AI-DEV NOTE: hand Apple's device token to Firebase and give the push plugin
+    // the FCM token instead. The plugin passes a String object through as the
+    // 'registration' value unchanged (Data would be hex-encoded as an APNs token,
+    // which the FCM sender cannot use). FirebaseAppDelegateProxyEnabled is NO in
+    // Info.plist because this does the mapping by hand.
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Messaging.messaging().apnsToken = deviceToken
+        Messaging.messaging().token { token, error in
+            if let token = token {
+                NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: token)
+            } else {
+                NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+            }
+        }
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

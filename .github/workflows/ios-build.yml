@@ -63,6 +63,22 @@ jobs:
           git diff --exit-code -- ios/App/CapApp-SPM/Package.swift \
             || { echo "::error::Committed Package.swift is stale, run npx cap sync ios and commit it with forward slashes"; exit 1; }
 
+      # AI-DEV NOTE: GoogleService-Info.plist is gitignored (public repo) but the
+      # App target bundles it for Firebase push, so the build fails without one.
+      # The real file comes from a secret; a PR run without secrets (Dependabot)
+      # gets a placeholder, which compiles but could never send or receive a push.
+      - name: Write GoogleService-Info.plist
+        env:
+          IOS_GOOGLE_SERVICE_INFO_PLIST_B64: ${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST_B64 }}
+        run: |
+          if [ -n "$IOS_GOOGLE_SERVICE_INFO_PLIST_B64" ]; then
+            echo "$IOS_GOOGLE_SERVICE_INFO_PLIST_B64" | base64 -d > ios/App/App/GoogleService-Info.plist
+            plutil -lint ios/App/App/GoogleService-Info.plist
+          else
+            echo "::warning::IOS_GOOGLE_SERVICE_INFO_PLIST_B64 not set, using a placeholder plist"
+            printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<plist version="1.0"><dict/></plist>' > ios/App/App/GoogleService-Info.plist
+          fi
+
       - run: xcodebuild -version
 
       - name: Build the App target without signing

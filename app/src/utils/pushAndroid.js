@@ -5,8 +5,13 @@ import { supabase } from '../lib/supabase'
 // "Notifications & reminders" - do not change without Sreeni's explicit
 // instruction; this is the surface behind a prior push-notification prod
 // incident (memory nithyakarma-push-fixes-2026-07).
-// FCM push for Android (ported from Sandhyavandhanam, hardened).
-// Requires google-services.json in android/app/.
+// FCM push for Android (ported from Sandhyavandhanam, hardened) and iOS.
+// Requires google-services.json in android/app/ and GoogleService-Info.plist in
+// ios/App/App/.
+// AI-DEV NOTE: iOS uses the same plugin and the same FCM token as Android
+// (AppDelegate.swift swaps Apple's APNs token for the FCM one), so the server
+// sends to both with sendFCM; rows are saved with platform 'ios' (Sreeni,
+// 2026-11-22).
 
 // Kept at module scope so the FCM token is saved even when it *rotates* long
 // after the initial register() call. FCM refreshes tokens periodically; if we
@@ -23,6 +28,11 @@ let currentToken = null
 // receives is fine (each call replaces the last unactioned one).
 const FOREGROUND_PUSH_ID = 600
 
+const PUSH_PLATFORMS = ['android', 'ios']
+const nativePushPlatform = () =>
+  (Capacitor.isNativePlatform() && PUSH_PLATFORMS.includes(Capacitor.getPlatform()))
+    ? Capacitor.getPlatform() : null
+
 async function saveToken(token) {
   if (!currentUserId) return
   currentToken = token
@@ -31,7 +41,7 @@ async function saveToken(token) {
   // (the duplicate-push bug). The push_subscriptions_single_owner trigger
   // hands the token to this account server-side on insert.
   const { error } = await supabase.from('push_subscriptions').upsert({
-    user_id: currentUserId, endpoint: token, platform: 'android',
+    user_id: currentUserId, endpoint: token, platform: nativePushPlatform(),
   }, { onConflict: 'user_id,endpoint' })
   if (error) console.warn('[push] failed to save FCM token', error.message)
 }
@@ -53,7 +63,10 @@ async function ensureListeners(PushNotifications) {
   // backgrounded - in the foreground it hands the payload to this event and
   // shows nothing on its own, so a reminder that lands while the app is open
   // used to look like it silently did nothing. Raise it ourselves.
+  // AI-DEV NOTE: Android only. iOS already shows it (presentationOptions in
+  // capacitor.config.ts), so re-raising there would show it twice.
   await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+    if (Capacitor.getPlatform() !== 'android') return
     try {
       const { LocalNotifications } = await import('@capacitor/local-notifications')
       await LocalNotifications.schedule({
@@ -71,14 +84,15 @@ async function ensureListeners(PushNotifications) {
 // self-heal so a stale checked box doesn't silently re-trigger a permission
 // dialog the user never asked for.
 export async function checkFCMPermission() {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return 'granted'
+  if (!nativePushPlatform()) return 'granted'
   const { PushNotifications } = await import('@capacitor/push-notifications')
   const status = await PushNotifications.checkPermissions()
   return status.receive
 }
 
 export async function registerFCM(userId) {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return
+  const platform = nativePushPlatform()
+  if (!platform) return
   currentUserId = userId
 
   const { PushNotifications } = await import('@capacitor/push-notifications')
@@ -91,24 +105,27 @@ export async function registerFCM(userId) {
   // The edge function sends android.notification.channel_id = "reminders".
   // On Android 8+ a push to a non-existent channel is silently dropped, so the
   // channel MUST exist on the device before any push arrives.
-  await PushNotifications.createChannel({
-    id: 'reminders',
-    name: 'Reminders',
-    description: 'Daily anushtanam reminders',
-    importance: 5,
-    visibility: 1,
-  }).catch(() => { /* older Android / non-fatal */ })
+  if (platform === 'android') {
+    await PushNotifications.createChannel({
+      id: 'reminders',
+      name: 'Reminders',
+      description: 'Daily anushtanam reminders',
+      importance: 5,
+      visibility: 1,
+    }).catch(() => { /* older Android / non-fatal */ })
+  }
 
   await ensureListeners(PushNotifications)
   await PushNotifications.register()
 }
 
 export async function unregisterFCM(userId) {
-  if (!Capacitor.isNativePlatform()) return
+  const platform = nativePushPlatform()
+  if (!platform) return
   currentUserId = null // stop persisting rotated tokens once disabled
   currentToken = null
   await supabase.from('push_subscriptions').delete()
-    .match({ user_id: userId, platform: 'android' })
+    .match({ user_id: userId, platform })
 }
 
 // Sign-out cleanup: drop only this device's row (the account may still want
