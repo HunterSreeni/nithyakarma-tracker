@@ -150,7 +150,7 @@ jobs:
           plutil -p "$RUNNER_TEMP/archive-entitlements.plist"
           plutil -extract aps-environment raw "$RUNNER_TEMP/archive-entitlements.plist" > /dev/null \
             || { echo "::error::archive has no aps-environment entitlement"; exit 1; }
-          plutil -extract com.apple.developer.applesignin xml1 -o - "$RUNNER_TEMP/archive-entitlements.plist" | grep -q Default \
+          [ "$(/usr/libexec/PlistBuddy -c "Print :com.apple.developer.applesignin:0" "$RUNNER_TEMP/archive-entitlements.plist")" = "Default" ] \
             || { echo "::error::archive has no Sign in with Apple entitlement"; exit 1; }
 
       - name: Export a signed IPA (cloud-managed distribution signing)
@@ -195,7 +195,7 @@ jobs:
           plutil -p "$RUNNER_TEMP/entitlements.plist"
           [ "$(plutil -extract aps-environment raw "$RUNNER_TEMP/entitlements.plist")" = "production" ] \
             || { echo "::error::IPA is not signed with aps-environment=production"; exit 1; }
-          plutil -extract com.apple.developer.applesignin xml1 -o - "$RUNNER_TEMP/entitlements.plist" | grep -q Default \
+          [ "$(/usr/libexec/PlistBuddy -c "Print :com.apple.developer.applesignin:0" "$RUNNER_TEMP/entitlements.plist")" = "Default" ] \
             || { echo "::error::Sign in with Apple entitlement missing"; exit 1; }
           [ "$(plutil -extract CFBundleIdentifier raw "$APP/Info.plist")" = "org.nithyakarma.app" ] \
             || { echo "::error::unexpected bundle id"; exit 1; }
