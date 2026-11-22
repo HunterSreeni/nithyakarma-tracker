@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.10.1...app-v1.11.0) (2026-11-22)
+
+
+### Features
+
+* update prompts driven by a server-side minimum version ([ea8df9c](https://github.com/HunterSreeni/nithyakarma-tracker/commit/ea8df9c0279c9a4beb7dc9c3203602ab56f113cf))
+
 ## [1.10.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.10.0...app-v1.10.1) (2026-11-22)
 
 
