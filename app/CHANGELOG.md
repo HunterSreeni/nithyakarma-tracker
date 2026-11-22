@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.9.0...app-v1.10.0) (2026-11-22)
+
+
+### Features
+
+* **ios:** app icon, splash, privacy manifest, iPhone-only portrait ([fcd08f6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/fcd08f6c03ce5123d4e21c66e44b232f43ab5f69))
+* **ios:** release prep and a manual signed TestFlight workflow ([c022b56](https://github.com/HunterSreeni/nithyakarma-tracker/commit/c022b56d27403a41816200a8b3b53be4c467bd84))
+
 ## [1.9.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.8.0...app-v1.9.0) (2026-11-22)
 
 
