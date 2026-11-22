@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.7.0...app-v1.8.0) (2026-11-22)
+
+
+### Features
+
+* **ios:** push reminders on iPhone through FCM, same as Android ([bac104f](https://github.com/HunterSreeni/nithyakarma-tracker/commit/bac104fbfe41f2faaeb00c7cc69e50e7320592ef))
+* **ios:** push reminders on iPhone through FCM, same as Android ([f32ae7a](https://github.com/HunterSreeni/nithyakarma-tracker/commit/f32ae7a24c3415a6d09a0055e4d3453e952a6e4f))
+
 ## [1.7.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.6.0...app-v1.7.0) (2026-11-22)
 
 
