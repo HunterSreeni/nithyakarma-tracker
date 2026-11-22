@@ -1,11 +1,13 @@
 # AI-DEV NOTE: signed iOS build, MANUAL only (Sreeni, 2026-11-22), like
 # android-release. Runs in the "ios-release" environment, which must have Sreeni
 # as a required reviewer: it holds an App Store Connect Admin API key. Signing is
-# Xcode's automatic signing through that key. The archive is built UNSIGNED
-# (development signing would create a new Apple Development certificate on every
-# throwaway runner, and Apple caps those); the export signs it once with Apple's
-# cloud-managed distribution certificate (no certificate or profile stored
-# here). Both modes export and
+# Xcode's automatic signing through that key. The archive is AD-HOC signed
+# (identity "-"): development signing would create a new Apple Development
+# certificate on every throwaway runner, and Apple caps those, while a fully
+# unsigned archive carries no entitlements, so the export shipped an app without
+# push or Sign in with Apple (first dry run, 2026-11-22). The export re-signs it
+# once with Apple's cloud-managed distribution certificate, keeping the archive's
+# entitlements (no certificate or profile stored here). Both modes export and
 # check the IPA; "testflight" then uploads that same IPA to App Store Connect.
 name: ios-release (manual)
 
@@ -129,16 +131,27 @@ jobs:
 
       - run: xcodebuild -version
 
-      - name: Archive (unsigned)
+      - name: Archive (ad-hoc signed, entitlements embedded)
         working-directory: app/ios/App
         run: |
           xcodebuild -project App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" \
-            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="-" PROVISIONING_PROFILE_SPECIFIER="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO \
             MARKETING_VERSION="${{ steps.version.outputs.version }}" \
             CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
             archive
+
+      - name: Archive must carry the push and Sign in with Apple entitlements
+        run: |
+          APP="$ARCHIVE/Products/Applications/App.app"
+          codesign -d --entitlements - --xml "$APP" > "$RUNNER_TEMP/archive-entitlements.plist"
+          plutil -p "$RUNNER_TEMP/archive-entitlements.plist"
+          plutil -extract aps-environment raw "$RUNNER_TEMP/archive-entitlements.plist" > /dev/null \
+            || { echo "::error::archive has no aps-environment entitlement"; exit 1; }
+          plutil -extract com.apple.developer.applesignin xml1 -o - "$RUNNER_TEMP/archive-entitlements.plist" | grep -q Default \
+            || { echo "::error::archive has no Sign in with Apple entitlement"; exit 1; }
 
       - name: Export a signed IPA (cloud-managed distribution signing)
         working-directory: app/ios/App
@@ -178,7 +191,8 @@ jobs:
           [ ${#APPS[@]} -eq 1 ] || { echo "::error::expected exactly one .app in the IPA"; exit 1; }
           APP="${APPS[0]}"
           codesign --verify --strict "$APP"
-          codesign -d --entitlements :- "$APP" > "$RUNNER_TEMP/entitlements.plist"
+          codesign -d --entitlements - --xml "$APP" > "$RUNNER_TEMP/entitlements.plist"
+          plutil -p "$RUNNER_TEMP/entitlements.plist"
           [ "$(plutil -extract aps-environment raw "$RUNNER_TEMP/entitlements.plist")" = "production" ] \
             || { echo "::error::IPA is not signed with aps-environment=production"; exit 1; }
           plutil -extract com.apple.developer.applesignin xml1 -o - "$RUNNER_TEMP/entitlements.plist" | grep -q Default \
