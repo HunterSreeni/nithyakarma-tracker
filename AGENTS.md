@@ -71,7 +71,9 @@ Protected implementation surfaces: `check_sandhya_eligibility` (`app/supabase/mi
 
 - `delete_account` deletes the `auth.users` row directly; every owned row (profile, family members, practice logs, streak events, push subscriptions, referrals, etc.) must cascade via `on delete cascade`, not app-level cleanup. A new table that stores `owner_id`/`user_id` without a cascading FK silently orphans rows here - this has bitten the project before (see `docs/ROADMAP.md`'s temple-visit schema note).
 
-Protected implementation surfaces: `delete_account` (`app/supabase/migrations/*delete_account*`).
+- Sign in with Apple users (iPhone only, native `signInWithIdToken`, no web flow) get their Apple tokens revoked before `delete_account` runs (Apple TN3194, authorized by Sreeni 2026-11-22): the app asks Apple for a fresh authorization code and the `apple-revoke` edge function exchanges it, checks the verified Apple `sub` is the caller's own Apple identity, and revokes. Closing Apple's sheet aborts the deletion. A failed revoke never blocks deletion: the account is still deleted and the login screen tells the user to remove the app in iPhone Settings. `delete_account` itself is unchanged.
+
+Protected implementation surfaces: `delete_account` (`app/supabase/migrations/*delete_account*`), `deleteAccount` and `revokeAppleBeforeDelete` (`app/src/hooks/useAuth.jsx`, `app/src/utils/appleAuth.js`), `app/supabase/functions/apple-revoke/`, `app/supabase/functions/_shared/appleRevoke.ts`.
 
 ## Leaderboard / Sabha
 

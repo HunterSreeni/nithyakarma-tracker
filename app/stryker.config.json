@@ -5,6 +5,7 @@
   "plugins": ["@stryker-mutator/vitest-runner"],
   "mutate": [
     "src/utils/ads.js",
+    "src/utils/appleAuth.js",
     "src/utils/pushAndroid.js",
     "src/utils/notifications.js",
     "src/utils/webPush.js",

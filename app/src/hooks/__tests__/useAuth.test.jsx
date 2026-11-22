@@ -32,7 +32,14 @@ vi.mock('../../lib/supabase', () => ({
       },
     },
     from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }), order: () => Promise.resolve({ data: [] }) }) }) })),
+    rpc: (...a) => rpc(...a),
   },
+}))
+const rpc = vi.fn().mockResolvedValue({ data: null, error: null })
+const revokeAppleBeforeDelete = vi.fn().mockResolvedValue('none')
+vi.mock('../../utils/appleAuth', async (importOriginal) => ({
+  ...(await importOriginal()),
+  revokeAppleBeforeDelete: (...a) => revokeAppleBeforeDelete(...a),
 }))
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
 const cancelAllReminders = vi.fn().mockResolvedValue(undefined)
@@ -449,5 +456,49 @@ describe('Google Sign-In', () => {
     await waitFor(() => expect(mockAddListener).toHaveBeenCalledWith('appUrlOpen', expect.any(Function)))
     urlOpenCb({ url: 'org.nithyakarma.app://some-other-path' })
     expect(setSession).not.toHaveBeenCalled()
+  })
+})
+
+describe('deleteAccount with Sign in with Apple', () => {
+  const appleSession = { user: { id: 'u1', identities: [{ provider: 'apple', id: '001.a.1' }] } }
+  async function signedIn() {
+    getSession.mockResolvedValue({ data: { session: appleSession } })
+    const hook = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(hook.result.current.session?.user?.id).toBe('u1'))
+    return hook
+  }
+
+  beforeEach(() => {
+    sessionStorage.clear()
+    rpc.mockResolvedValue({ data: null, error: null })
+  })
+
+  it('revokes Apple access first, then deletes the account and signs out', async () => {
+    const order = []
+    revokeAppleBeforeDelete.mockImplementation(async () => { order.push('revoke'); return 'revoked' })
+    rpc.mockImplementation(async (name) => { order.push(name); return { data: null, error: null } })
+    signOut.mockImplementation(async () => { order.push('signOut'); return { error: null } })
+    const { result } = await signedIn()
+    await act(() => result.current.deleteAccount())
+    expect(order).toEqual(['revoke', 'delete_account', 'signOut'])
+    expect(revokeAppleBeforeDelete.mock.calls[0][1]).toEqual(appleSession.user)
+    expect(sessionStorage.getItem('nk_apple_manual_revoke')).toBeNull()
+  })
+
+  it('deletes nothing when the user closes Apple\'s sheet', async () => {
+    const { AppleSignInCanceled } = await import('../../utils/appleAuth')
+    revokeAppleBeforeDelete.mockRejectedValueOnce(new AppleSignInCanceled())
+    const { result } = await signedIn()
+    await expect(act(() => result.current.deleteAccount())).rejects.toBeInstanceOf(AppleSignInCanceled)
+    expect(rpc).not.toHaveBeenCalled()
+    expect(signOut).not.toHaveBeenCalled()
+  })
+
+  it('still deletes when Apple access cannot be revoked, and leaves the Settings note for the login screen', async () => {
+    revokeAppleBeforeDelete.mockResolvedValueOnce('manual')
+    const { result } = await signedIn()
+    await act(() => result.current.deleteAccount())
+    expect(rpc).toHaveBeenCalledWith('delete_account')
+    expect(sessionStorage.getItem('nk_apple_manual_revoke')).toMatch(/Sign in with Apple/)
   })
 })

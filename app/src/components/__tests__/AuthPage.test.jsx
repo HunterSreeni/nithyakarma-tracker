@@ -7,8 +7,15 @@ const signInGoogle = vi.fn()
 const signInEmail = vi.fn().mockResolvedValue({ error: null })
 const signUpEmail = vi.fn().mockResolvedValue({ error: null })
 const resetPassword = vi.fn().mockResolvedValue({ error: null })
+const signInApple = vi.fn().mockResolvedValue({ error: null })
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ signInGoogle, signInEmail, signUpEmail, resetPassword }),
+  useAuth: () => ({ signInGoogle, signInApple, signInEmail, signUpEmail, resetPassword }),
+}))
+// The Apple button is iPhone-only; each test picks the platform.
+const appleAvailable = vi.fn(() => false)
+vi.mock('../../utils/appleAuth', async (importOriginal) => ({
+  ...(await importOriginal()),
+  appleSignInAvailable: () => appleAvailable(),
 }))
 // Real Turnstile needs a live Cloudflare widget/network round trip - not
 // available in jsdom. Mock it as always-verified so submit stays enabled,
@@ -24,6 +31,65 @@ import AuthPage from '../AuthPage'
 
 beforeEach(() => {
   vi.clearAllMocks()
+  appleAvailable.mockReturnValue(false)
+  sessionStorage.clear()
+})
+
+describe('AuthPage: Sign in with Apple', () => {
+  it('shows no Apple button on Android and web', () => {
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    expect(screen.queryByText(/with Apple/)).not.toBeInTheDocument()
+  })
+
+  it('on iPhone puts Sign in with Apple first, above Google', () => {
+    appleAvailable.mockReturnValue(true)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    const apple = screen.getByRole('button', { name: 'Sign in with Apple' })
+    const google = screen.getByRole('button', { name: /Continue with Google/ })
+    expect(apple.compareDocumentPosition(google) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('says Sign up with Apple in create-account mode', () => {
+    appleAvailable.mockReturnValue(true)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    fireEvent.click(screen.getByText('Create account'))
+    expect(screen.getByRole('button', { name: 'Sign up with Apple' })).toBeInTheDocument()
+  })
+
+  it('signs in with Apple without waiting for the captcha', async () => {
+    appleAvailable.mockReturnValue(true)
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in with Apple' }))
+    await waitFor(() => expect(signInApple).toHaveBeenCalledTimes(1))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('stays quiet when the user closes Apple\'s sheet', async () => {
+    appleAvailable.mockReturnValue(true)
+    signInApple.mockResolvedValueOnce({ canceled: true })
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in with Apple' }))
+    await waitFor(() => expect(signInApple).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Sign in with Apple' })).not.toBeDisabled())
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows a real Apple sign-in failure', async () => {
+    appleAvailable.mockReturnValue(true)
+    signInApple.mockResolvedValueOnce({ error: new Error('Apple said no') })
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in with Apple' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Apple said no')
+  })
+
+  it('shows the remove-in-Settings note once after deleting an Apple account', () => {
+    sessionStorage.setItem('nk_apple_manual_revoke', 'Your account is deleted. Remove it in Settings.')
+    const { unmount } = render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    expect(screen.getByText('Your account is deleted. Remove it in Settings.')).toBeInTheDocument()
+    unmount()
+    render(<MemoryRouter><AuthPage /></MemoryRouter>)
+    expect(screen.queryByText('Your account is deleted. Remove it in Settings.')).not.toBeInTheDocument()
+  })
 })
 
 describe('AuthPage', () => {

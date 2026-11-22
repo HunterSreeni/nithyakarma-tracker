@@ -11,6 +11,7 @@ import { track } from '../utils/analytics'
 import { APP_VERSION } from '../version'
 import CopyLinkButton from './CopyLinkButton'
 import { deleteAllCharts } from '../lib/jadhagam/storage'
+import { AppleSignInCanceled, hasAppleIdentity } from '../utils/appleAuth'
 
 export default function ProfilePage() {
   const { session, profile, familyMembers, updateProfile, addFamilyMember, removeFamilyMember, deleteAccount, signOut } = useAuth()
@@ -213,6 +214,7 @@ export default function ProfilePage() {
         <div className="dz-sub">
           Deleting your account removes your profile, all family member profiles, every log,
           streak, and leaderboard entry - permanently. Type your email address to confirm.
+          {hasAppleIdentity(session?.user) && ' Apple will then ask you to confirm once more, so we can remove our access to your Apple Account.'}
         </div>
         <form onSubmit={async e => {
           e.preventDefault()
@@ -221,7 +223,11 @@ export default function ProfilePage() {
             await deleteAccount()
             // Birth charts live only on this phone: remove them once the account is gone.
             await deleteAllCharts(userId).catch(() => {})
-          } catch (err) { setError(friendlyError(err)) }
+          } catch (err) {
+            // Closed Apple's confirm sheet: nothing was deleted, nothing to report.
+            if (err instanceof AppleSignInCanceled) return
+            setError(friendlyError(err))
+          }
         }}>
           <input className="field-input" style={{ marginTop: '0.7rem' }} value={confirmDelete}
             onChange={e => setConfirmDelete(e.target.value)} placeholder={email} />
