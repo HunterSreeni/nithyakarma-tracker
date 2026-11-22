@@ -1,0 +1,83 @@
+# AI-DEV NOTE: one manual release for both stores (Sreeni, 2026-11-22), so
+# Android and iOS always ship the SAME commit and version. The ref is resolved to
+# a commit SHA once, here, and both builds check out that SHA (a branch could
+# move between two separate checkouts). It refuses to start when the Android
+# versionName and app/package.json disagree. The iOS half still waits for the
+# ios-release environment approval. Promotion (Play production, App Store
+# submission) stays manual in the two consoles. The concurrency group differs
+# from the two called workflows' own groups, which they still keep, so a
+# combined run can never wait on itself.
+name: release (Android + iOS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to release
+        required: true
+        default: main
+      android_track:
+        description: Upload Android to Google Play? (internal testing only)
+        type: choice
+        options: [none, internal]
+        default: none
+      ios_upload:
+        description: Upload iOS to TestFlight?
+        type: choice
+        options: [none, testflight]
+        default: none
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-both-stores
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Resolve the commit and check the versions agree
+        id: resolve
+        shell: bash
+        run: |
+          SHA=$(git rev-parse HEAD)
+          PKG=$(node -p "require('./app/package.json').version")
+          GRADLE=$(sed -n 's/.*def appVersionName = "\([^"]*\)".*/\1/p' app/android/app/build.gradle)
+          echo "ref ${{ inputs.ref }} -> $SHA"
+          echo "package.json $PKG, Android versionName $GRADLE"
+          [ -n "$GRADLE" ] || { echo "::error::could not read appVersionName from build.gradle"; exit 1; }
+          [ "$PKG" = "$GRADLE" ] || { echo "::error::app/package.json ($PKG) and Android versionName ($GRADLE) differ"; exit 1; }
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "version=$PKG" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Release $PKG"
+            echo "Commit \`$SHA\` (from \`${{ inputs.ref }}\`)"
+            echo "- Android: ${{ inputs.android_track }}"
+            echo "- iOS: ${{ inputs.ios_upload }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  android:
+    needs: prepare
+    uses: ./.github/workflows/android-release.yml
+    with:
+      ref: ${{ needs.prepare.outputs.sha }}
+      play_track: ${{ inputs.android_track }}
+    secrets: inherit
+
+  ios:
+    needs: prepare
+    uses: ./.github/workflows/ios-release.yml
+    with:
+      ref: ${{ needs.prepare.outputs.sha }}
+      upload: ${{ inputs.ios_upload }}
+    secrets: inherit

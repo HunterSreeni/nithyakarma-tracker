@@ -21,6 +21,16 @@ on:
         type: choice
         options: [none, internal]
         default: none
+  # Called by release.yml so Android and iOS build the same commit.
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+      play_track:
+        type: string
+        required: false
+        default: none
 
 permissions:
   contents: read
