@@ -87,11 +87,30 @@ describe('registerFCM', () => {
     warn.mockRestore()
   })
 
-  it('is a no-op off-Android', async () => {
+  it('is a no-op on web', async () => {
+    mockNative.mockReturnValue(false); mockPlatform.mockReturnValue('web')
+    await registerFCM('u1')
+    expect(push.register).not.toHaveBeenCalled()
+  })
+
+  it('on iOS registers without an Android channel and saves the token as ios', async () => {
     mockPlatform.mockReturnValue('ios')
     await registerFCM('u1')
-    // register not called this run (createChannel from earlier tests is cleared per-file scope)
-    expect(push.register).not.toHaveBeenCalled()
+    expect(push.createChannel).not.toHaveBeenCalled()
+    expect(push.register).toHaveBeenCalled()
+    listeners.registration({ value: 'fcm-ios-token' })
+    await flush()
+    expect(upsert).toHaveBeenCalledWith(
+      { user_id: 'u1', endpoint: 'fcm-ios-token', platform: 'ios' }, { onConflict: 'user_id,endpoint' },
+    )
+  })
+
+  it('on iOS does not re-raise a foreground push (iOS shows it itself)', async () => {
+    mockPlatform.mockReturnValue('ios')
+    await registerFCM('u1')
+    await listeners.pushNotificationReceived({ title: 'Reminder', body: 'Time for sandhya' })
+    await flush()
+    expect(localSchedule).not.toHaveBeenCalled()
   })
 
   it('raises a local notification for a push received while foregrounded', async () => {
@@ -114,6 +133,18 @@ describe('unregisterFCM', () => {
     listeners.registration({ value: 'token-C' })
     await flush()
     expect(upsert).not.toHaveBeenCalled()
+  })
+
+  it("on iOS deletes only this platform's rows", async () => {
+    mockPlatform.mockReturnValue('ios')
+    await unregisterFCM('u1')
+    expect(match).toHaveBeenCalledWith({ user_id: 'u1', platform: 'ios' })
+  })
+
+  it('is a no-op on web', async () => {
+    mockNative.mockReturnValue(false); mockPlatform.mockReturnValue('web')
+    await unregisterFCM('u1')
+    expect(match).not.toHaveBeenCalled()
   })
 })
 
@@ -204,10 +235,15 @@ describe('checkFCMPermission', () => {
     expect(push.requestPermissions).not.toHaveBeenCalled()
   })
 
-  it('reports granted off-Android so web never self-heals into FCM', async () => {
+  it('returns the current status on iOS without prompting', async () => {
     mockPlatform.mockReturnValue('ios')
-    await expect(checkFCMPermission()).resolves.toBe('granted')
-    mockNative.mockReturnValue(false)
+    push.checkPermissions.mockResolvedValueOnce({ receive: 'prompt' })
+    await expect(checkFCMPermission()).resolves.toBe('prompt')
+    expect(push.requestPermissions).not.toHaveBeenCalled()
+  })
+
+  it('reports granted on web so it never self-heals into FCM', async () => {
+    mockNative.mockReturnValue(false); mockPlatform.mockReturnValue('web')
     await expect(checkFCMPermission()).resolves.toBe('granted')
     expect(push.checkPermissions).not.toHaveBeenCalled()
   })

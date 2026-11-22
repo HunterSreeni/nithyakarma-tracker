@@ -16,6 +16,8 @@ const SLOT_CONFIG = {
 const NUDGE = { id: 400, hour: 20, minute: 0, title: 'Your streak is waiting', body: 'Namaskaram! Today\'s anushtanams are not all marked yet. 2 minutes is all it takes.' }
 const LAST_CALL = { id: 500, hour: 21, minute: 30, title: 'Last call before midnight', body: 'Mark today\'s anushtanam to keep your streak moving. Missed yesterday\'s Sandhya? You can still backfill it today.' }
 
+const SERVER_PUSH_PLATFORMS = ['android', 'ios']
+
 function dailyAt(hour, minute) {
   const at = new Date()
   at.setHours(hour, minute, 0, 0)
@@ -34,9 +36,11 @@ export async function scheduleAllReminders({ includeSandhya }) {
   // gated on day completion / slot already logged). These local alarms had no
   // exact-alarm permission, so Android deferred them and they fired late as
   // duplicates (Nov 2026 "wrong time" bug). On Android we only clear leftovers
-  // from older builds; local alarms remain the fallback where the app has no
-  // server push yet (iOS until APNs is wired up).
-  if (Capacitor.getPlatform() === 'android') return true
+  // from older builds. iOS gets the same server push through FCM since
+  // 2026-11-22 (Sreeni), so it schedules none either; the 21:30 local last call
+  // is gone on both. Local alarms remain only for a native platform with no
+  // server push.
+  if (SERVER_PUSH_PLATFORMS.includes(Capacitor.getPlatform())) return true
   const notifications = []
   if (includeSandhya) {
     for (const slot of Object.values(SLOT_CONFIG)) {
@@ -70,8 +74,8 @@ export async function cancelAllReminders() {
 // hasn't opted in. Sandhya slot reminders (100/200/300) are untouched - those
 // mark specific ritual times, not streak-at-risk.
 export async function suppressTodayNudgesIfScheduled() {
-  // AI-DEV NOTE: never reschedule local alarms on Android - see scheduleAllReminders.
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() === 'android') return
+  // AI-DEV NOTE: never reschedule local alarms on Android/iOS - see scheduleAllReminders.
+  if (!Capacitor.isNativePlatform() || SERVER_PUSH_PLATFORMS.includes(Capacitor.getPlatform())) return
   const { LocalNotifications } = await import('@capacitor/local-notifications')
   const { notifications: pending } = await LocalNotifications.getPending()
   const pendingIds = new Set(pending.map(n => n.id))

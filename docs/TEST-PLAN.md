@@ -446,6 +446,11 @@ yesterday-backdate (Sandhya-exclusive in the RPC, same as Rudram).
 | FCM token saved on first registration and on rotation; stale-account token reclaimed | Unit (`pushAndroid.test.js`) | ✅ |
 | `reminders` notification channel created | Unit | ✅ |
 | Foreground-received push manually re-raised as a local notification (Android) | Unit | ✅ |
+| **2026-11-22: iOS push via FCM.** iPhone registers through the same plugin, skips the Android channel, saves its token as `ios`, does not re-raise foreground pushes (iOS shows them); disable deletes only `ios` rows | Unit (`pushAndroid.test.js`) | ✅ |
+| iOS schedules no local alarms (like Android), only clears leftovers 100-500; 21:30 last call gone on both | Unit (`notifications.test.js`) | ✅ |
+| `push_subscriptions.platform` accepts `ios`, still rejects unknown platforms | Integration(N) | ✅ |
+| FCM message keeps the Android `reminders` channel and adds the APNs default sound | Unit (`fcmMessage.test.ts`) | ✅ |
+| iOS push end to end on a real iPhone (permission, token saved as `ios`, reminder + test push, foreground banner, tap opens app) | Manual (TestFlight, step 5) | ⬜ |
 | Web push subscription reclaimed from a different account before upserting (shared-device safety) | Unit (`webPush.test.js`) | ✅ |
 | Missing `VITE_VAPID_PUBLIC_KEY` throws instead of silently no-opping (past prod incident) | Unit | ✅ |
 | Delivery dedup unique constraint `(user_id, reminder_date, slot, endpoint)` | Integration(§6) | ✅ |

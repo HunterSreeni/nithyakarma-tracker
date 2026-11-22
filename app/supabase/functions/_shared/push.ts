@@ -8,8 +8,7 @@
 // AI-DEV NOTE: pinned - web-push 4.0.0 (2026-11-06) is ESM with no default
 // export; an unpinned import broke send-reminders at boot (503) on redeploy.
 import webpush from "npm:web-push@3.6.7";
-
-export const APP_URL = "https://app.nithyakarma.org";
+import { APP_URL, fcmMessage } from "./fcmMessage.ts";
 
 export async function loadConfig(admin: any): Promise<Record<string, string>> {
   const { data, error } = await admin.from("app_config").select("key, value");
@@ -79,14 +78,7 @@ export async function sendFCM(
     const res = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: {
-          token,
-          notification: { title, body },
-          android: { priority: "high", notification: { channel_id: "reminders", color: "#FF9933" } },
-          data: { url: APP_URL, slot },
-        },
-      }),
+      body: JSON.stringify(fcmMessage(token, title, body, slot)),
     });
     if (res.ok) return true;
     const err = await res.json();

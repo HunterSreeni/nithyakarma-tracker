@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockNative = vi.fn()
-const mockPlatform = vi.fn(() => 'ios')
+// 'electron' stands in for a native platform with no server push - the only
+// case that still gets local alarms now that Android and iOS both use FCM.
+const mockPlatform = vi.fn(() => 'electron')
 vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => mockNative(), getPlatform: () => mockPlatform() },
 }))
@@ -18,7 +20,7 @@ import { scheduleAllReminders, cancelAllReminders, suppressTodayNudgesIfSchedule
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockPlatform.mockReturnValue('ios')
+  mockPlatform.mockReturnValue('electron')
   local.requestPermissions.mockResolvedValue({ display: 'granted' })
   local.getPending.mockResolvedValue({ notifications: [] })
 })
@@ -34,6 +36,15 @@ describe('scheduleAllReminders', () => {
   it('on Android only clears leftover local alarms - server FCM push sends every slot', async () => {
     mockNative.mockReturnValue(true)
     mockPlatform.mockReturnValue('android')
+    const ok = await scheduleAllReminders({ includeSandhya: true })
+    expect(ok).toBe(true)
+    expect(local.cancel).toHaveBeenCalledWith({ notifications: [100, 200, 300, 400, 500].map(id => ({ id })) })
+    expect(local.schedule).not.toHaveBeenCalled()
+  })
+
+  it('on iOS only clears leftover local alarms too - server FCM push since 2026-11-22', async () => {
+    mockNative.mockReturnValue(true)
+    mockPlatform.mockReturnValue('ios')
     const ok = await scheduleAllReminders({ includeSandhya: true })
     expect(ok).toBe(true)
     expect(local.cancel).toHaveBeenCalledWith({ notifications: [100, 200, 300, 400, 500].map(id => ({ id })) })
@@ -107,6 +118,15 @@ describe('suppressTodayNudgesIfScheduled', () => {
     mockPlatform.mockReturnValue('android')
     local.getPending.mockResolvedValue({ notifications: [{ id: 400 }, { id: 500 }] })
     await suppressTodayNudgesIfScheduled()
+    expect(local.schedule).not.toHaveBeenCalled()
+  })
+
+  it('never reschedules leftover nudges on iOS', async () => {
+    mockNative.mockReturnValue(true)
+    mockPlatform.mockReturnValue('ios')
+    local.getPending.mockResolvedValue({ notifications: [{ id: 400 }, { id: 500 }] })
+    await suppressTodayNudgesIfScheduled()
+    expect(local.getPending).not.toHaveBeenCalled()
     expect(local.schedule).not.toHaveBeenCalled()
   })
 

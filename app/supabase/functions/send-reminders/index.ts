@@ -228,7 +228,9 @@ Deno.serve(async (req: Request) => {
     }
     if (!deliveryId) return "skipped";
 
-    const ok = sub.platform === "android"
+    // AI-DEV NOTE: iOS rows hold an FCM token too (AppDelegate.swift), so both
+    // native platforms go through sendFCM.
+    const ok = (sub.platform === "android" || sub.platform === "ios")
       ? await sendFCM(supabase, config, sub.endpoint, title, body, slot)
       : await sendWebPush(supabase, config, sub, title, body);
     const { error: finalizeError } = await supabase.from("notification_deliveries").update(ok ? {

@@ -464,6 +464,16 @@ begin
       raise exception 'FAIL: RLS-scoped re-register did not take the device back (rows=%, owner=%)', v_n, v_owner;
     end if;
     perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
+    -- iPhones save their FCM token as platform 'ios' (2026-11-22); anything
+    -- else outside web/android/ios is still rejected.
+    insert into push_subscriptions (user_id, endpoint, platform) values (v_uid, v_other_endpoint || '-ios', 'ios');
+    v_failed := false;
+    begin
+      insert into push_subscriptions (user_id, endpoint, platform) values (v_uid, v_other_endpoint || '-x', 'windows');
+    exception when check_violation then
+      v_failed := true;
+    end;
+    if not v_failed then raise exception 'FAIL: unknown push platform was accepted'; end if;
     -- the trigger function must not be directly callable by app roles
     if has_function_privilege('authenticated', 'public.push_subscriptions_single_owner()', 'execute')
        or has_function_privilege('anon', 'public.push_subscriptions_single_owner()', 'execute') then
