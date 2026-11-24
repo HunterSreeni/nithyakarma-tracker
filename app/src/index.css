@@ -121,7 +121,8 @@ input, select { font-family: 'DM Sans', sans-serif; }
      intrinsic width that ignores width:100%, so the Jadhagam date of birth
      field ran past its card on iPhone (TestFlight 1.11.0, 2026-11-22). This
      makes it a normal block that shrinks to its container; tapping it still
-     opens the native date picker. */
+     opens the native date picker. Not enough on its own when the input has
+     padding - see the .bc-date-field note. */
   input[type="date"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; }
   input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; }
 }
@@ -664,6 +665,15 @@ a.verse-card { text-decoration: none; color: inherit; }
 .bc-entry { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; text-decoration: none; color: var(--ink); min-height: 56px; }
 .bc-entry > span { display: grid; gap: 2px; }
 .bc-entry-title { font-weight: 700; font-size: 0.9rem; }
+/* AI-DEV NOTE: iOS WebKit works out width:100% wrong for a date input that has
+   padding, so the date of birth field ran past its card on iPhone (WebKit bug
+   301648, still open on iOS 26.5; TestFlight 1.11.1, 2026-11-24). The padding and
+   border live on this wrapper and the input itself has none; overflow:hidden
+   clips anything the native control still draws outside. Do not move the
+   padding back onto the input. */
+.bc-date-field { overflow: hidden; min-width: 0; }
+.bc-date-field:focus-within { border-color: var(--saffron-400); box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.35); }
+.bc-date-field input { display: block; width: 100%; min-width: 0; max-width: 100%; padding: 0; border: 0; margin: 0; background: transparent; font-size: inherit; color: inherit; outline: none; }
 .bc-time { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .bc-time .field-input { width: 4.2rem; text-align: center; }
 .bc-ampm { flex: 1; min-width: 9rem; margin: 0; }
