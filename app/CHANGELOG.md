@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.11.1...app-v1.11.2) (2026-11-24)
+
+
+### Bug Fixes
+
+* move the date of birth field's padding off the iOS date input ([36ca7d3](https://github.com/HunterSreeni/nithyakarma-tracker/commit/36ca7d3f4736071c05b8bb76288d2540ea563d2c))
+* move the date of birth field's padding off the iOS date input ([b52a6c6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/b52a6c6f7b0a487f9c333ff3111b4d1ca904e215))
+
 ## [1.11.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.11.0...app-v1.11.1) (2026-11-22)
 
 
