@@ -67,6 +67,14 @@ jobs:
     # the job fast instead. 20 min is generous headroom over a normal run
     # (npm ci + browser install + build + the non-destructive e2e suite).
     timeout-minutes: 20
+    # AI-DEV NOTE: run inside the official Playwright image so the browsers
+    # and their system packages are already there. Installing WebKit's apt
+    # deps on the runner hit the 20-minute timeout twice on PR #195
+    # (2026-11-24, the runner's Ubuntu mirror served ~10 s per package). The
+    # tag must match the @playwright/test version in app/package-lock.json;
+    # bump both together.
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -75,8 +83,6 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
-      # webkit: the iphone-webkit project runs e2e/mobile-layout.spec.js.
-      - run: npx playwright install --with-deps chromium webkit
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
