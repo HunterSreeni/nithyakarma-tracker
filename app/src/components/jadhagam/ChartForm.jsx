@@ -81,7 +81,11 @@ export default function ChartForm({ initial, defaultWhose = 'self', selfName, fa
 
       <div className="card">
         <label className="field-label" htmlFor="bc-date">Date of birth</label>
-        <input id="bc-date" className="field-input" type="date" value={date} max="2100-12-31" min="1900-01-01" onChange={(e) => setDate(e.target.value)} />
+        {/* AI-DEV NOTE: the wrapper carries the field's padding and border, not the
+            input - see the bc-date-field note in index.css (iOS WebKit bug 301648). */}
+        <div className="field-input bc-date-field">
+          <input id="bc-date" type="date" value={date} max="2100-12-31" min="1900-01-01" onChange={(e) => setDate(e.target.value)} />
+        </div>
 
         <label className="field-label" htmlFor="bc-hour">Time of birth</label>
         <div className="bc-time">
