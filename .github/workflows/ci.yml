@@ -82,7 +82,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: app/package-lock.json
-      - run: npm ci
+      # --ignore-scripts: the Playwright image has no make/g++, so the native
+      # swisseph-v2 build fails. Only the panchangam unit tests and generator
+      # use it, never e2e; the other install scripts are core-js's banner and
+      # macOS-only fsevents.
+      - run: npm ci --ignore-scripts
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
