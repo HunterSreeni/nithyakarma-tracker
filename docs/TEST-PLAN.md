@@ -257,6 +257,10 @@ running things manually.** Nothing in CI would catch a regression in either area
 18. **Streaks & tiers** - per-practice + overall streak continuity/reset; freeze
     credits (consumed on exactly-1-day gap, capped by tier, topped up on tier-up);
     tiers Shishya -> Sadhaka -> Yogi -> Rishi -> Brahmarishi.
+19a. **Jadhagam on iPhone** - hidden in the iPhone app for the first App Store
+    submission (2026-11-26): no Profile card, no `/birth-chart` route, so no ad
+    either (`features.test.js`, `ProfilePage.test.jsx`). Android and web keep it.
+    Manual on iPhone: Profile shows no Jadhagam card; Android still does.
 19. **Ads** - only the opt-in rewarded video for an extra Jadhagam download
     (no ad after marking a practice since 2026-11-18); G-rated; never for
     ad-free users. Android and iOS use their own rewarded unit, Google test units

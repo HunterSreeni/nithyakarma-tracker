@@ -8,6 +8,7 @@ import TodayPage from './components/TodayPage'
 import { lazyWithRetry } from './utils/lazyWithRetry'
 import { useAppUpdate, startAppUpdateChecks } from './hooks/useAppUpdate'
 import { UpdateRequired } from './components/UpdatePrompts'
+import { JADHAGAM_ENABLED } from './utils/features'
 
 // Deferred: only fetched when actually navigated to, keeping them out of the
 // initial bundle everyone downloads just to see Today.
@@ -156,7 +157,7 @@ function Gate() {
               links and older push payloads still point here. */}
           <Route path="/referrals" element={<Navigate to="/profile" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/birth-chart/*" element={<BirthChartPage />} />
+          {JADHAGAM_ENABLED && <Route path="/birth-chart/*" element={<BirthChartPage />} />}
           <Route path="/ramayana-masam" element={<RamayanaMasamPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

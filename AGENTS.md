@@ -88,6 +88,8 @@ Protected implementation surfaces: `get_leaderboard` (`app/supabase/migrations/*
 - No ad of any kind after marking a practice (Sreeni, 2026-11-18): the Today page never calls `showInterstitial`. The only ad in the app is the opt-in rewarded video for an extra Jadhagam download; `ad_free_until` users never see it (their downloads are free).
 - Android and iOS each have their own rewarded unit (`REWARDED_ID`, `REWARDED_ID_IOS`, 2026-11-22). `app_config.admob_rewarded_ad_unit` is a comma-separated list of every rewarded unit, and `admob-ssv` rewards only units on it, so a new unit goes into that list before any build uses it. iOS never shows an App Tracking Transparency prompt.
 
+- The Jadhagam is left out of the iPhone app (`JADHAGAM_ENABLED` in `app/src/utils/features.js`, Sreeni, 2026-11-26) for the first App Store submission (guideline 4.3(b) astrology risk), so iOS currently shows no ads at all. It is a fixed platform check, never a remote switch: bringing it back is a new submitted build that names it in the review notes.
+
 Protected implementation surfaces: `app/src/utils/ads.js`.
 
 ## Update prompts
