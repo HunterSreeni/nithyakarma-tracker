@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { SEEDING_CONFIGURED, seedSession } from './helpers/session.js'
+import { SEEDING_CONFIGURED, seedSession, familyMemberIds } from './helpers/session.js'
 
 // Family-member (child) coverage on the preserved, stable e2e account (see
 // memory: e2e-account-keep - kept as-is until Play Store release). This spec
@@ -35,7 +35,7 @@ test.describe('Family member (child) - Sandhyavandhanam + yesterday catch-up', (
       'CI must provide SUPABASE_SERVICE_ROLE_KEY and E2E_UI_EMAIL for session seeding',
     ).toBe(true)
 
-    await seedSession(page)
+    const { user } = await seedSession(page)
     await page.goto('/')
     await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible({ timeout: 15000 })
 
@@ -46,12 +46,18 @@ test.describe('Family member (child) - Sandhyavandhanam + yesterday catch-up', (
     // actually render first, otherwise this check runs against an empty list
     // and a real leftover slips through, accumulating a new child every run.
     await expect(page.getByRole('button', { name: '+ Add family member' })).toBeVisible({ timeout: 15000 })
-    const leftover = page.locator('.fam-row', { hasText: CHILD_NAME })
-    if (await leftover.count()) {
+    // Leftovers from an earlier failed run, counted in the database (the
+    // source of truth), removed through the UI one at a time, each removal
+    // confirmed in the database and the list reloaded before the next.
+    const leftovers = (await familyMemberIds(user.id, CHILD_NAME)).length
+    for (let left = leftovers; left > 0; left--) {
       page.once('dialog', d => d.accept())
-      await leftover.getByRole('button', { name: 'Remove' }).click()
-      await expect(leftover).toHaveCount(0, { timeout: 15000 })
+      await page.locator('.fam-row', { hasText: CHILD_NAME }).first().getByRole('button', { name: 'Remove' }).click()
+      await expect.poll(async () => (await familyMemberIds(user.id, CHILD_NAME)).length, { timeout: 15000 }).toBe(left - 1)
+      await page.reload()
+      await expect(page.getByRole('button', { name: '+ Add family member' })).toBeVisible({ timeout: 15000 })
     }
+    await expect(page.locator('.fam-row', { hasText: CHILD_NAME })).toHaveCount(0)
 
     await page.getByRole('button', { name: '+ Add family member' }).click()
     await page.getByLabel("Child's name").fill(CHILD_NAME)
@@ -123,7 +129,14 @@ test.describe('Family member (child) - Sandhyavandhanam + yesterday catch-up', (
       await expect(fixture).toHaveCount(1, { timeout: 15000 })
       page.once('dialog', d => d.accept())
       await fixture.getByRole('button', { name: 'Remove' }).click()
-      await expect(fixture).toHaveCount(0, { timeout: 15000 })
+      // Check the deletion where it actually happens - in the database - then
+      // reload so the list is read fresh. Waiting on the in-memory list to
+      // re-render was flaky on CI (run 45817517520): the row was already gone
+      // server-side while the screen still showed it 15s later.
+      await expect.poll(() => familyMemberIds(user.id, CHILD_NAME), { timeout: 15000 }).toEqual([])
+      await page.reload()
+      await expect(page.locator('.fam-row').first()).toBeVisible({ timeout: 15000 })
+      await expect(fixture).toHaveCount(0)
     }
   })
 })
