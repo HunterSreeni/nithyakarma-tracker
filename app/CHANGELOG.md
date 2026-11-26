@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.12.0...app-v1.13.0) (2026-11-26)
+
+
+### Features
+
+* report or hide a name on the Sabha leaderboard ([601a132](https://github.com/HunterSreeni/nithyakarma-tracker/commit/601a132dca96f2d259c6960fecced658a69028a6))
+* report or hide a name on the Sabha leaderboard ([64faebc](https://github.com/HunterSreeni/nithyakarma-tracker/commit/64faebc4044597e71d4e2d9479a527443727f338))
+
 ## [1.12.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.11.2...app-v1.12.0) (2026-11-26)
 
 
