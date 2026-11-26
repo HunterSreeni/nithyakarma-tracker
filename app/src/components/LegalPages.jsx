@@ -100,18 +100,19 @@ export function PrivacyPage() {
 
       <h3>What we collect</h3>
       <ul>
-        <li><b>Account:</b> your email and password (handled by our auth provider; the password is stored only as a secure hash).</li>
+        <li><b>Account:</b> your email and password (handled by our auth provider; the password is stored only as a secure hash), or, if you use Sign in with Apple on iPhone, the email Apple shares with us (which can be Apple's private relay address) and your Apple user ID.</li>
         <li><b>Profile:</b> display name and gender (used only to offer gender-appropriate practices such as Sandhyavandhanam), plus your streaks, punya points, tier and referral code.</li>
         <li><b>Family members you add:</b> name, gender, upanayanam status and opt-in flags.</li>
         <li><b>Practice data:</b> which anushtanams you track, your daily logs, and your timezone
           (read from your device's clock setting, not your location) so reminders and your daily
           streak follow your own day rather than a server's.</li>
-        <li><b>Notifications:</b> your reminder preference and push tokens for web/Android.</li>
+        <li><b>Notifications:</b> your reminder preference and push tokens for web, Android and iPhone.</li>
         <li><b>Birth details (optional):</b> if you open My birth chart, the date, time and place of
           birth you enter are saved only on your phone. They are never sent to us, to our analytics
-          or to anyone else, are not included in device backups, and you can delete them on that
-          screen. Deleting the app or your account removes them too.</li>
-        <li><b>Advertising (Android only):</b> when ads are shown, Google AdMob uses your device's advertising ID and similar identifiers to serve ads. Ads are skipped entirely for ad-free users.</li>
+          or to anyone else, and you can delete them on that screen. On Android they are not
+          included in device backups. On iPhone they can be part of your own iCloud or computer
+          backup of the phone, which we cannot access. Deleting the app removes them.</li>
+        <li><b>Advertising (Android and iPhone):</b> the only ad is an optional short video you can choose to watch for an extra birth chart download. When it plays, Google AdMob uses device identifiers and an approximate location worked out from your IP address to serve and measure it. On Android this can include the advertising ID; on iPhone we never ask for tracking permission, so iOS does not share the advertising ID with AdMob. Ad-free users never see it.</li>
       </ul>
 
       <h3>How we use it</h3>
@@ -123,9 +124,10 @@ export function PrivacyPage() {
       <h3>Who processes your data</h3>
       <ul>
         <li><b>Supabase</b> - authentication and database hosting.</li>
-        <li><b>Firebase Cloud Messaging (Google)</b> - delivering Android push reminders.</li>
-        <li><b>Google AdMob</b> - ads on Android only (skipped when ad-free); AdMob may use device identifiers per Google's policies. On first use we ask for consent where required (EEA/UK), and you can review or change that choice.</li>
-        <li><b>Sentry</b> - anonymous crash and error reports to keep the app stable (no IP addresses or personal data).</li>
+        <li><b>Firebase Cloud Messaging (Google)</b> - delivering push reminders on Android and iPhone (on iPhone through Apple Push Notification service).</li>
+        <li><b>Apple</b> - Sign in with Apple on iPhone. When you delete your account we also ask Apple to revoke Nithyakarma's access to your Apple ID.</li>
+        <li><b>Google AdMob</b> - the optional rewarded video on Android and iPhone (skipped when ad-free); AdMob may use device identifiers and approximate location per Google's policies. On first use we ask for consent where required (EEA/UK), and you can review or change that choice.</li>
+        <li><b>Sentry</b> - anonymous crash, error and performance reports to keep the app stable (no IP addresses or personal data).</li>
         <li><b>PostHog (EU servers)</b> - product analytics: which screens are visited, how people found us (campaign tags) and whether key steps happen, for example a practice being marked. Events are tied to a random account ID (the same pseudonymous ID our database uses), never your name or email, and never include which practices you do or your gender.</li>
         <li><b>WhatsApp</b> - the "share" button simply opens a WhatsApp link with text you choose; we do not send your data to WhatsApp ourselves.</li>
       </ul>
@@ -133,14 +135,15 @@ export function PrivacyPage() {
       <h3>Leaderboards</h3>
       <p>
         If you appear on a leaderboard, other members can see your display name, tier and streak.
-        You can hide yourself any time from Profile → Privacy. Children's entries (Bala Sabha) show
+        You can hide yourself any time from Profile → Community. Children's entries (Bala Sabha) show
         first name only and require parent opt-in.
       </p>
 
       <h3>Deleting your data</h3>
       <p>
         You can delete your account any time from Profile → Danger zone. This permanently removes
-        your profile, family-member profiles, all logs, streaks and leaderboard entries.
+        your profile, family-member profiles, all logs, streaks and leaderboard entries. If you
+        signed in with Apple, we also revoke Nithyakarma's access to your Apple ID.
       </p>
 
       <h3>Security &amp; children</h3>
@@ -154,7 +157,7 @@ export function PrivacyPage() {
       <p>
         The marketing site at nithyakarma.org uses Cloudflare Web Analytics and a small cookieless
         PostHog counter for visit counts and campaign tags. Neither uses cookies or collects personal
-        information; the counter keeps a random visit ID only until you close the browser tab. In the app (web and Android) we use PostHog, hosted in the EU, to understand how
+        information; the counter keeps a random visit ID only until you close the browser tab. In the app (web, Android and iPhone) we use PostHog, hosted in the EU, to understand how
         people find and use Nithyakarma. Events carry a random account ID and simple facts such as
         "a practice was marked" or "the day was completed", never your name, email, gender or which
         practices you do. PostHog uses your IP address once, when an event arrives, to work out your
