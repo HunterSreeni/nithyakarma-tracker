@@ -85,3 +85,15 @@ async function mintSession(email) {
 
   return verified.session
 }
+
+// Reads the database directly (service role), so a spec can check what the
+// server really holds instead of guessing from how long the UI takes to catch
+// up. Returns the ids of the account's family members with this exact name.
+export async function familyMemberIds(parentId, name) {
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const { data, error } = await admin.from('family_members').select('id').eq('parent_id', parentId).eq('name', name)
+  if (error) throw new Error(`family_members read failed: ${error.message}`)
+  return data.map(r => r.id)
+}
