@@ -393,6 +393,9 @@ a.verse-card { text-decoration: none; color: inherit; }
 .tier-sadhaka { background: #dbeafe; color: #1d4ed8; }
 .tier-shishya { background: var(--cream); color: var(--text-2); }
 .tier-brahmarishi { background: #fef3c7; color: #92400e; }
+.lb-more { flex-shrink: 0; width: 44px; height: 44px; margin: -0.5rem -0.6rem -0.5rem 0; display: flex; align-items: center; justify-content: center; background: none; border: none; border-radius: 10px; color: var(--text-2); }
+.lb-more:focus-visible { outline: 2px solid var(--saffron-400); }
+.sabha-show-all { display: inline; width: auto; margin: 0; padding: 0 0.3rem; min-height: 32px; }
 .lb-score { font-weight: 700; font-size: 0.8rem; text-align: right; }
 .lb-score .u { display: flex; align-items: center; justify-content: flex-end; gap: 2px; font-family: 'Sora', sans-serif; font-size: 0.52rem; color: var(--text-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
 

@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Award, Flame } from 'lucide-react'
+import { Award, Flame, MoreHorizontal } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { tierClass } from '../utils/tiers'
 import ErrorBanner from './ErrorBanner'
 import { friendlyError } from '../utils/friendlyError'
 import { queryClient, withDeadline, unwrap } from '../lib/queryClient'
+import { getHiddenNames, hideName, showAllNames } from '../utils/sabhaHidden'
+import SabhaReportModal from './SabhaReportModal'
 
 const SCOPES = [
   { key: 'week', label: 'Week', scope: 'global', period: 'week' },
@@ -30,7 +32,28 @@ export default function SabhaPage() {
       'Sabha leaderboard',
     )) ?? [],
   }, queryClient)
-  const rows = query.data ?? []
+  const [hidden, setHidden] = useState([])
+  const [reporting, setReporting] = useState(null)
+  const [notice, setNotice] = useState('')
+  useEffect(() => {
+    let live = true
+    getHiddenNames(profile.id).then(list => { if (live) setHidden(list) })
+    return () => { live = false }
+  }, [profile.id])
+  // Your own rows (you, your children) are never hidden. Hiding only removes a
+  // row from view: ranks and the Hall stay the server's, so allRows keeps them.
+  const allRows = query.data ?? []
+  const rows = allRows.filter(r => r.is_me || !hidden.includes(r.subject_id))
+  const hiddenCount = allRows.length - rows.length
+  const onHide = async (subjectId, how) => {
+    setHidden(await hideName(profile.id, subjectId))
+    setReporting(null)
+    setNotice(how === 'reported' ? "Reported. Thank you - we'll review it." : 'Hidden from your Sabha.')
+  }
+  const showAll = async () => {
+    setHidden(await showAllNames(profile.id))
+    setNotice('')
+  }
   const error = query.error ? friendlyError(query.error) : ''
 
   // Community is opt-in (default hidden) - the nav tab is already gone when
@@ -51,9 +74,7 @@ export default function SabhaPage() {
     )
   }
 
-  const hall = rows[0]
-  const myRow = rows.find(r => r.is_me)
-  const myRank = myRow ? rows.indexOf(myRow) + 1 : null
+  const hall = rows.includes(allRows[0]) ? allRows[0] : null
   const initials = (n) => n.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
 
   return (
@@ -94,17 +115,23 @@ export default function SabhaPage() {
               </div>
             </div>
           )}
-          {rows.map((r, i) => <Row key={r.subject_id} r={r} rank={i + 1} initials={initials} />)}
-          {myRow && myRank > rows.length && <Row r={myRow} rank={myRank} initials={initials} />}
+          {rows.map(r => <Row key={r.subject_id} r={r} rank={allRows.indexOf(r) + 1} initials={initials} onMore={setReporting} />)}
           {query.isFetching && <div className="greet-sub" role="status">Refreshing...</div>}
           {error && <ErrorBanner message={error} onRetry={() => query.refetch()} />}
         </>
       )}
+      {notice && <div className="greet-sub" role="status">{notice}</div>}
+      {hiddenCount > 0 && (
+        <div className="greet-sub">
+          Hidden names: {hiddenCount} <button type="button" className="btn-plain sabha-show-all" onClick={showAll}>Show</button>
+        </div>
+      )}
+      {reporting && <SabhaReportModal row={reporting} onClose={() => setReporting(null)} onHide={onHide} />}
     </>
   )
 }
 
-function Row({ r, rank, initials }) {
+function Row({ r, rank, initials, onMore }) {
   return (
     <div className={`lb-row ${r.is_me ? 'me' : ''}`}>
       <div className={`lb-rank ${rank <= 3 ? `r${rank}` : ''}`}>{rank}</div>
@@ -114,6 +141,11 @@ function Row({ r, rank, initials }) {
         <span className={`tier-badge ${tierClass(r.tier)}`}>{r.tier}</span>
       </div>
       <div className="lb-score">{r.score}<span className="u"><Flame size={9} strokeWidth={2.5} /> {r.streak}</span></div>
+      {!r.is_me && (
+        <button type="button" className="lb-more" aria-label={`Report or hide ${r.display_name}`} onClick={() => onMore(r)}>
+          <MoreHorizontal size={18} strokeWidth={2.5} aria-hidden="true" />
+        </button>
+      )}
     </div>
   )
 }

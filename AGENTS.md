@@ -80,7 +80,9 @@ Protected implementation surfaces: `delete_account` (`app/supabase/migrations/*d
 
 - `get_leaderboard` scores are period-scoped (week starts Monday via `date_trunc('week', ...)`, month via `date_trunc('month', ...)`) and scope-gated (`kids` vs. adults are separate pools, never mixed). Sabha participation is opt-in and off by default per account - never flip that default.
 
-Protected implementation surfaces: `get_leaderboard` (`app/supabase/migrations/*leaderboard*`).
+- Any signed-in user can report another person's Sabha row (`report_leaderboard_name`, migration `20261126120000_leaderboard_reports.sql`, Sreeni 2026-11-26, for Apple guideline 1.2) and hide names on their own phone (`app/src/utils/sabhaHidden.js`). Reports store only reporter, subject id and time, never a name; only rows actually on a board are reportable, never your own or your children's; 20 per rolling 24 hours. Hiding is client-side and never changes `get_leaderboard`.
+
+Protected implementation surfaces: `get_leaderboard`, `report_leaderboard_name` (`app/supabase/migrations/*leaderboard*`), `app/src/utils/sabhaHidden.js`.
 
 ## AdMob / ads
 
