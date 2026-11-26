@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   addFamilyMember: vi.fn(),
   session: { user: { email: 'ravi@example.com' } },
   deleteAccount: vi.fn(),
+  jadhagam: true,
 }))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
@@ -28,6 +29,7 @@ vi.mock('../../hooks/useAuth', () => ({
 }))
 vi.mock('../NotificationSettings', () => ({ default: () => null }))
 vi.mock('../../utils/analytics', () => ({ track: vi.fn() }))
+vi.mock('../../utils/features', () => ({ get JADHAGAM_ENABLED() { return h.jadhagam } }))
 
 import ProfilePage from '../ProfilePage'
 import { AppleSignInCanceled } from '../../utils/appleAuth'
@@ -38,6 +40,7 @@ beforeEach(() => {
   h.familyMembers = []
   h.session = { user: { email: 'ravi@example.com' } }
   h.deleteAccount = vi.fn(() => Promise.resolve())
+  h.jadhagam = true
 })
 
 const renderPage = () => render(<MemoryRouter><ProfilePage /></MemoryRouter>)
@@ -144,5 +147,18 @@ describe('ProfilePage add family member - partial failure', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByLabelText("Child's name")).not.toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+})
+
+describe('ProfilePage Jadhagam entry', () => {
+  it('shows the Jadhagam card where the feature is on (Android, web)', () => {
+    renderPage()
+    expect(screen.getByRole('link', { name: /Jadhagam \(birth charts\)/ })).toHaveAttribute('href', '/birth-chart')
+  })
+
+  it('hides it on iPhone, where it is left out of the App Store build', () => {
+    h.jadhagam = false
+    renderPage()
+    expect(screen.queryByText(/Jadhagam \(birth charts\)/)).not.toBeInTheDocument()
   })
 })

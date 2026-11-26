@@ -11,6 +11,7 @@ import { track } from '../utils/analytics'
 import { APP_VERSION } from '../version'
 import CopyLinkButton from './CopyLinkButton'
 import { deleteAllCharts } from '../lib/jadhagam/storage'
+import { JADHAGAM_ENABLED } from '../utils/features'
 import { AppleSignInCanceled, hasAppleIdentity } from '../utils/appleAuth'
 
 export default function ProfilePage() {
@@ -169,13 +170,15 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Link to="/birth-chart" className="card bc-entry">
-        <span>
-          <span className="bc-entry-title">Jadhagam (birth charts)</span>
-          <span className="greet-sub">For you and your family: rasi and amsam charts, star, panchangam and dasa periods</span>
-        </span>
-        <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
-      </Link>
+      {JADHAGAM_ENABLED && (
+        <Link to="/birth-chart" className="card bc-entry">
+          <span>
+            <span className="bc-entry-title">Jadhagam (birth charts)</span>
+            <span className="greet-sub">For you and your family: rasi and amsam charts, star, panchangam and dasa periods</span>
+          </span>
+          <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
+        </Link>
+      )}
 
       {profile.gender === 'male' && (
         <div className="card">
