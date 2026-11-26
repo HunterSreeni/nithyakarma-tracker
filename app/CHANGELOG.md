@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.11.2...app-v1.12.0) (2026-11-26)
+
+
+### Features
+
+* leave the Jadhagam out of the iPhone app for its first App Store review ([06e627c](https://github.com/HunterSreeni/nithyakarma-tracker/commit/06e627c3a1cc5473d3b5fce177c4a260a74f335f))
+* leave the Jadhagam out of the iPhone app for its first App Store review ([78f6cb6](https://github.com/HunterSreeni/nithyakarma-tracker/commit/78f6cb65fe9f5d5fb97a4b5c2f3908f846b196d8))
+
 ## [1.11.2](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.11.1...app-v1.11.2) (2026-11-24)
 
 
