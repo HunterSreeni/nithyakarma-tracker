@@ -1264,6 +1264,56 @@ begin
     if not v_failed then raise exception 'FAIL: app_min_versions accepted a non x.y.z version'; end if;
   end;
 
+  -- Sabha name reports (20261126120000_leaderboard_reports.sql): only a row
+  -- someone else can see on a board is reportable, a repeat is a quiet no-op,
+  -- 20 per rolling day, and app roles cannot touch the table directly.
+  declare
+    v_other_parent uuid;
+    v_own_kid uuid;
+    v_other_kid uuid;
+    v_n int;
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', v_uid::text)::text, true);
+    select id into v_other_parent from profiles where id <> v_uid limit 1;
+    insert into family_members (parent_id, name, gender, bala_sabha_opt_in)
+      values (v_uid, 'Report Own Kid', 'female', true) returning id into v_own_kid;
+    insert into family_members (parent_id, name, gender, bala_sabha_opt_in)
+      values (v_other_parent, 'Report Other Kid', 'female', true) returning id into v_other_kid;
+
+    v_failed := false;
+    begin perform report_leaderboard_name(v_uid);
+    exception when raise_exception then v_failed := true; end;
+    if not v_failed then raise exception 'FAIL: a user could report their own Sabha row'; end if;
+    v_failed := false;
+    begin perform report_leaderboard_name(v_own_kid);
+    exception when raise_exception then v_failed := true; end;
+    if not v_failed then raise exception 'FAIL: a parent could report their own child'; end if;
+    v_failed := false;
+    begin perform report_leaderboard_name(gen_random_uuid());
+    exception when raise_exception then v_failed := true; end;
+    if not v_failed then raise exception 'FAIL: an id not on any board was reportable'; end if;
+
+    perform report_leaderboard_name(v_other_kid);
+    perform report_leaderboard_name(v_other_kid);
+    select count(*) into v_n from leaderboard_reports where reporter_id = v_uid and subject_id = v_other_kid;
+    if v_n <> 1 then raise exception 'FAIL: Sabha report not stored exactly once (got %)', v_n; end if;
+
+    insert into leaderboard_reports (reporter_id, subject_id)
+      select v_uid, gen_random_uuid() from generate_series(1, 19);
+    delete from leaderboard_reports where reporter_id = v_uid and subject_id = v_other_kid;
+    insert into leaderboard_reports (reporter_id, subject_id) values (v_uid, gen_random_uuid());
+    v_failed := false;
+    begin perform report_leaderboard_name(v_other_kid);
+    exception when raise_exception then v_failed := true; end;
+    if not v_failed then raise exception 'FAIL: Sabha reports are not capped at 20 a day'; end if;
+
+    if has_table_privilege('authenticated', 'public.leaderboard_reports', 'select')
+       or has_table_privilege('authenticated', 'public.leaderboard_reports', 'insert')
+       or has_table_privilege('anon', 'public.leaderboard_reports', 'select') then
+      raise exception 'FAIL: app roles can access leaderboard_reports directly';
+    end if;
+  end;
+
   raise notice 'ALL INTEGRATION ASSERTIONS PASSED';
 end $$;
 rollback;

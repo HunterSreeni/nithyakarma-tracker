@@ -136,7 +136,9 @@ export function PrivacyPage() {
       <p>
         If you appear on a leaderboard, other members can see your display name, tier and streak.
         You can hide yourself any time from Profile → Community. Children's entries (Bala Sabha) show
-        first name only and require parent opt-in.
+        first name only and require parent opt-in. You can report or hide any other name on the
+        leaderboard; a report records only who reported which entry and when, and hidden names are
+        kept on your phone.
       </p>
 
       <h3>Deleting your data</h3>

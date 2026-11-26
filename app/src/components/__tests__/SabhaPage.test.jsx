@@ -1,10 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
-const h = vi.hoisted(() => ({ rows: [], rpcError: null, communityEnabled: true, userId: 'u1' }))
+const h = vi.hoisted(() => ({ rows: [], rpcError: null, communityEnabled: true, userId: 'u1', calls: [], reportError: null }))
 vi.mock('../../lib/supabase', () => ({
-  supabase: { rpc: () => Promise.resolve({ data: h.rows, error: h.rpcError }) },
+  supabase: {
+    rpc: (name, args) => {
+      h.calls.push([name, args])
+      if (name === 'report_leaderboard_name') return Promise.resolve({ data: null, error: h.reportError })
+      return Promise.resolve({ data: h.rows, error: h.rpcError })
+    },
+  },
 }))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ profile: { id: h.userId, referral_code: 'ref123', community_enabled: h.communityEnabled } }),
@@ -16,7 +22,10 @@ import { queryClient } from '../../lib/queryClient'
 
 const renderPage = () => render(<MemoryRouter><SabhaPage /></MemoryRouter>)
 
-beforeEach(() => { queryClient.clear(); h.rows = []; h.rpcError = null; h.communityEnabled = true; h.userId = 'u1' })
+beforeEach(() => {
+  queryClient.clear(); h.rows = []; h.rpcError = null; h.communityEnabled = true; h.userId = 'u1'
+  h.calls = []; h.reportError = null; localStorage.clear()
+})
 
 describe('SabhaPage - community opt-in gate', () => {
   it('shows an enable-community prompt instead of the leaderboard when community_enabled is false', async () => {
@@ -62,5 +71,70 @@ describe('SabhaPage - per-account cache', () => {
     renderPage()
     expect(await screen.findByText('Beta (You)')).toBeInTheDocument()
     expect(screen.queryByText('Alpha (You)')).not.toBeInTheDocument()
+  })
+})
+
+// Apple guideline 1.2: report and hide (block) other people's Sabha names.
+describe('SabhaPage - report and hide a name', () => {
+  const board = () => [
+    { subject_id: 'me', display_name: 'Me', tier: 'Shishya', score: 5, streak: 3, is_me: true },
+    { subject_id: 'x1', display_name: 'Rude Name', tier: 'Yogi', score: 4, streak: 9, is_me: false },
+  ]
+
+  it('offers the option on rows of other people only, never on your own', async () => {
+    h.rows = board()
+    renderPage()
+    expect(await screen.findByRole('button', { name: 'Report or hide Rude Name' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Report or hide Me/ })).not.toBeInTheDocument()
+  })
+
+  it('Report name sends the row id to the server and hides it for the reporter', async () => {
+    h.rows = board()
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Report or hide Rude Name' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Report name' }))
+    expect(await screen.findByText("Reported. Thank you - we'll review it.")).toBeInTheDocument()
+    expect(h.calls).toContainEqual(['report_leaderboard_name', { p_subject_id: 'x1' }])
+    expect(screen.queryByText('Rude Name')).not.toBeInTheDocument()
+    expect(screen.getByText('Me (You)')).toBeInTheDocument()
+  })
+
+  it('hiding keeps the real ranks and drops the Hall banner instead of promoting someone else', async () => {
+    h.rows = [
+      { subject_id: 'x1', display_name: 'Top Name', tier: 'Yogi', score: 9, streak: 9, is_me: false },
+      { subject_id: 'me', display_name: 'Me', tier: 'Shishya', score: 5, streak: 3, is_me: true },
+    ]
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Report or hide Top Name' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Hide from my Sabha' }))
+    await waitFor(() => expect(screen.queryByText('Top Name')).not.toBeInTheDocument())
+    expect(screen.queryByText(/Hall of the/)).not.toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument()
+  })
+
+  it('a failed report shows the error and keeps the name', async () => {
+    h.rows = board()
+    h.reportError = { message: 'Too many reports today. Please try again tomorrow.' }
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Report or hide Rude Name' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Report name' }))
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(screen.getAllByText('Rude Name').length).toBeGreaterThan(0)
+  })
+
+  it('Hide works without a report, survives a reload, and Show brings it back', async () => {
+    h.rows = board()
+    const first = renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Report or hide Rude Name' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Hide from my Sabha' }))
+    await waitFor(() => expect(screen.queryByText('Rude Name')).not.toBeInTheDocument())
+    expect(h.calls.some(([n]) => n === 'report_leaderboard_name')).toBe(false)
+    first.unmount()
+
+    renderPage()
+    expect(await screen.findByText(/Hidden names: 1/)).toBeInTheDocument()
+    expect(screen.queryByText('Rude Name')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }))
+    expect(await screen.findByText('Rude Name')).toBeInTheDocument()
   })
 })

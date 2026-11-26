@@ -257,6 +257,12 @@ running things manually.** Nothing in CI would catch a regression in either area
 18. **Streaks & tiers** - per-practice + overall streak continuity/reset; freeze
     credits (consumed on exactly-1-day gap, capped by tier, topped up on tier-up);
     tiers Shishya -> Sadhaka -> Yogi -> Rishi -> Brahmarishi.
+19b. **Sabha report and hide** (2026-11-26, Apple guideline 1.2) - the "..."
+    button on other people's rows only; Report calls `report_leaderboard_name`
+    and hides the name, Hide stays on the phone, "Show" brings names back
+    (`SabhaPage.test.jsx`); server rules (own row/child not reportable, unknown
+    id refused, once per row, 20 a day, no direct table access) in
+    `integration-assertions.sql`.
 19a. **Jadhagam on iPhone** - hidden in the iPhone app for the first App Store
     submission (2026-11-26): no Profile card, no `/birth-chart` route, so no ad
     either (`features.test.js`, `ProfilePage.test.jsx`). Android and web keep it.
