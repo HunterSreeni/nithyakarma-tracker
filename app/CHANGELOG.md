@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.1](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.13.0...app-v1.13.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* keep the iPhone app clear of the status bar and home indicator ([253c890](https://github.com/HunterSreeni/nithyakarma-tracker/commit/253c890730d9e4cb54148030aba5e5d8b5075f18))
+* keep the iPhone app clear of the status bar and home indicator ([da86bb3](https://github.com/HunterSreeni/nithyakarma-tracker/commit/da86bb30f319ea417f06ff437df96d73bcf99251))
+
 ## [1.13.0](https://github.com/HunterSreeni/nithyakarma-tracker/compare/app-v1.12.0...app-v1.13.0) (2026-11-26)
 
 
