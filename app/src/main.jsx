@@ -12,6 +12,15 @@ import { initAnalytics, registerOnce } from './lib/posthog'
 import { getInstallAttribution } from './utils/installReferrer'
 import { trackFirstOpen } from './utils/firstOpen'
 
+// AI-DEV NOTE: iPhone app only. viewport-fit=cover makes WKWebView report real
+// env(safe-area-inset-*) values, and the ios-native class turns on the safe-area
+// rules at the end of index.css. Not in index.html: on Android (Capacitor 8,
+// Chromium 140+) cover means edge-to-edge, and mobile Safari must not change.
+if (Capacitor.getPlatform() === 'ios') {
+  document.querySelector('meta[name="viewport"]')?.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover')
+  document.documentElement.classList.add('ios-native')
+}
+
 initSentry()
 setupDataLifecycle()
 // Product analytics (PostHog EU); no-op outside production builds.

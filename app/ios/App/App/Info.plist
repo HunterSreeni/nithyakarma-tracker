@@ -45,6 +45,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- AI-DEV NOTE: the app has no dark theme. Light mode keeps the status bar clock dark on the paper safe-area strip (index.css) when the phone is in dark mode. -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 	<!-- AI-DEV NOTE: HTTPS and OS crypto only, which is exempt; skips the export-compliance question on every TestFlight upload. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

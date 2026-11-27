@@ -257,6 +257,12 @@ running things manually.** Nothing in CI would catch a regression in either area
 18. **Streaks & tiers** - per-practice + overall streak continuity/reset; freeze
     credits (consumed on exactly-1-day gap, capped by tier, topped up on tier-up);
     tiers Shishya -> Sadhaka -> Yogi -> Rishi -> Brahmarishi.
+19c. **iPhone safe areas** (2026-11-27) - manual on iPhone only (CSS in an
+    iOS-only block, jsdom cannot see it): the clock and battery sit on a plain
+    strip above the top bar on every screen, also while scrolling and on the
+    sign-in and legal pages; the tab bar sits above the home indicator line and
+    the last card on a page scrolls fully clear of it; with the phone in dark
+    mode the clock is still dark and readable. Android unchanged.
 19b. **Sabha report and hide** (2026-11-26, Apple guideline 1.2) - the "..."
     button on other people's rows only; Report calls `report_leaderboard_name`
     and hides the name, Hide stays on the phone, "Show" brings names back
