@@ -1,9 +1,9 @@
 # App Store Listing Copy (iPhone)
 
-For the first App Store submission, version 1.12.0 (Nov 2026). The Jadhagam (birth
+For the first App Store submission, version 1.13.1 (submitted 28 Nov 2026). The Jadhagam (birth
 charts) is left out of the iPhone app for this review (Apple guideline 4.3(b)), so
 nothing here may mention birth charts, horoscope, astrology or jadhagam. The iPhone
-app shows no ads in 1.12.0. Character counts are App Store Connect limits.
+app shows no ads in 1.13.1. Screenshots: `docs/store-screenshots/ios/appstore-6.3/` (1179x2556, uploaded in file order). Character counts are App Store Connect limits.
 
 ## Name (max 30)
 
@@ -96,7 +96,7 @@ WHAT THE APP IS
 A daily tracker for Hindu religious practices (anushtanams) such as Sandhyavandhanam, japam and parayanam (reading of scripture). Users mark what they have done each day, keep a streak, earn points ("punya"), get reminders, read traditional texts and see the traditional calendar (panchangam).
 
 DEMO ACCOUNT
-The account above is set up as an adult male user with Sandhyavandhanam and other practices, one family member, and today's Sandhya already marked.
+The account above is set up as an adult male user with Sandhyavandhanam and other practices, two family members (children), and a streak already started.
 - Today: tap a practice to mark it done. Sandhyavandhanam has three times of day; any one completes the day.
 - Learning: stotrams verse by verse, the Ramayanam by kandam, and other texts.
 - Calendar: the traditional monthly calendar with festival and tharpanam days.
